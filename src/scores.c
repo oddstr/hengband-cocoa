@@ -480,6 +480,8 @@ errr top_twenty(void)
 
 	time_t ct = time((time_t*)0);
 
+	errr err;
+
 	/* Clear the record */
 	(void)WIPE(&the_score, high_score);
 
@@ -541,14 +543,30 @@ errr top_twenty(void)
 		strcpy(the_score.how, p_ptr->died_from);
 	}
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* Lock (for writing) the highscore file, or fail */
-	if (fd_lock(highscore_fd, F_WRLCK)) return (1);
+	err = fd_lock(highscore_fd, F_WRLCK);
+
+	/* Drop permissions */
+	safe_setuid_drop();
+
+	if (err) return (1);
 
 	/* Add a new entry to the score list, see where it went */
 	j = highscore_add(&the_score);
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* Unlock the highscore file, or fail */
-	if (fd_lock(highscore_fd, F_UNLCK)) return (1);
+	err = fd_lock(highscore_fd, F_UNLCK);
+
+	/* Drop permissions */
+	safe_setuid_drop();
+
+	if (err) return (1);
 
 
 	/* Hack -- Display the top fifteen scores */
@@ -877,11 +895,13 @@ msg_print("何かキーを押すとゲームに戻ります");
  */
 void kingly(void)
 {
+	bool seppuku = streq(p_ptr->died_from, "Seppuku");
+
 	/* Hack -- retire in town */
 	dun_level = 0;
 
 	/* Fake death */
-	if (!streq(p_ptr->died_from, "Seppuku"))
+	if (!seppuku)
 #ifdef JP
 		/* 引退したときの識別文字 */
 		(void)strcpy(p_ptr->died_from, "ripe");
@@ -927,14 +947,18 @@ put_str(format("偉大なる%s万歳！", sp_ptr->winner), 17, 22);
 	put_str(format("All Hail the Mighty %s!", sp_ptr->winner), 17, 22);
 #endif
 
+	/* If player did Seppuku, that is already written in playrecord */
+	if (!seppuku)
+	{
 #ifdef JP
-	do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "ダンジョンの探索から引退した。");
-	do_cmd_write_nikki(NIKKI_GAMESTART, 1, "-------- ゲームオーバー --------");
+		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "ダンジョンの探索から引退した。");
+		do_cmd_write_nikki(NIKKI_GAMESTART, 1, "-------- ゲームオーバー --------");
 #else
-	do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "retire exploring dungeons.");
-	do_cmd_write_nikki(NIKKI_GAMESTART, 1, "--------   Game  Over   --------");
+		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "retired exploring dungeons.");
+		do_cmd_write_nikki(NIKKI_GAMESTART, 1, "--------   Game  Over   --------");
 #endif
-	do_cmd_write_nikki(NIKKI_BUNSHOU, 1, "\n\n\n\n");
+		do_cmd_write_nikki(NIKKI_BUNSHOU, 1, "\n\n\n\n");
+	}
 
 	/* Flush input */
 	flush();

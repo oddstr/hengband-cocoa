@@ -415,14 +415,6 @@ errr process_pref_file_command(char *buf)
 	if (buf[1] != ':') return (1);
 
 
-	/* Process "%:<fname>" */
-	if (buf[0] == '%')
-	{
-		/* Attempt to Process the given file */
-		return (process_pref_file(buf + 2));
-	}
-
-
 	/* Process "R:<num>:<a>/<c>" -- attr/char for monster races */
 	if (buf[0] == 'R')
 	{
@@ -434,7 +426,7 @@ errr process_pref_file_command(char *buf)
 			n2 = strtol(zz[2], NULL, 0);
 			if (i >= max_r_idx) return (1);
 			r_ptr = &r_info[i];
-			if (n1) r_ptr->x_attr = n1;
+			if (n1 || (!(n2 & 0x80) && n2)) r_ptr->x_attr = n1; /* Allow TERM_DARK text */
 			if (n2) r_ptr->x_char = n2;
 			return (0);
 		}
@@ -451,7 +443,7 @@ errr process_pref_file_command(char *buf)
 			n2 = strtol(zz[2], NULL, 0);
 			if (i >= max_k_idx) return (1);
 			k_ptr = &k_info[i];
-			if (n1) k_ptr->x_attr = n1;
+			if (n1 || (!(n2 & 0x80) && n2)) k_ptr->x_attr = n1; /* Allow TERM_DARK text */
 			if (n2) k_ptr->x_char = n2;
 			return (0);
 		}
@@ -468,7 +460,7 @@ errr process_pref_file_command(char *buf)
 			n2 = strtol(zz[2], NULL, 0);
 			if (i >= max_f_idx) return (1);
 			f_ptr = &f_info[i];
-			if (n1) f_ptr->x_attr = n1;
+			if (n1 || (!(n2 & 0x80) && n2)) f_ptr->x_attr = n1; /* Allow TERM_DARK text */
 			if (n2) f_ptr->x_char = n2;
 			return (0);
 		}
@@ -1113,11 +1105,22 @@ static errr process_pref_file_aux(cptr name, bool read_pickpref)
 		/* Process "%:<file>" */
 		if (buf[0] == '%')
 		{
-			/* Process that file if allowed */
+			static int depth_count = 0;
+
+			/* Ignore if deeper than 20 level */
+			if (depth_count > 20) continue;
+
+			/* Count depth level */
+			depth_count++;
+
+  			/* Process that file if allowed */
 			if (read_pickpref)
 				(void)process_pickpref_file(buf + 2);
 			else
 				(void)process_pref_file(buf + 2);
+
+			/* Set back depth level */
+			depth_count--;
 
 			/* Continue */
 			continue;
@@ -1185,17 +1188,11 @@ errr process_pref_file(cptr name)
 	if (err1 > 0) return err1;
 
 
-	/* Drop priv's */
-	safe_setuid_drop();
-	
 	/* Build the filename */
 	path_build(buf, sizeof(buf), ANGBAND_DIR_USER, name);
 	
 	/* Process the user pref file */
 	err2 = process_pref_file_aux(buf, FALSE);
-
-	/* Grab priv's */
-	safe_setuid_grab();
 
 
 	/* User file does not exist, but read system pref file */
@@ -1491,6 +1488,7 @@ errr check_load_init(void)
 #define ENTRY_ALIGN 42
 
 #define ENTRY_EXP_ANDR 43
+#define ENTRY_EXP_TO_ADV_ANDR 44
 
 
 static struct
@@ -1546,6 +1544,7 @@ static struct
 	{29,  6, 21, "社会的地位"},
 	{29,  7, 21, "属性"},
 	{29, 14, 21, "強化度"},
+	{29, 16, 21, "次レベル"},
 };
 #else
 = {
@@ -1593,6 +1592,7 @@ static struct
 	{29,  6, 21, "Social Class"},
 	{29,  7, 21, "Align"},
 	{29, 14, 21, "Construction"},
+	{29, 16, 21, "Const to Adv"},
 };
 #endif
 
@@ -1838,12 +1838,15 @@ static void display_player_middle(void)
 		display_player_one_line(ENTRY_MAX_EXP, format("%ld", p_ptr->max_exp), TERM_L_GREEN);
 
 	/* Dump exp to advance */
+	if (p_ptr->prace == RACE_ANDROID) e = ENTRY_EXP_TO_ADV_ANDR;
+	else e = ENTRY_EXP_TO_ADV;
+
 	if (p_ptr->lev >= PY_MAX_LEVEL)
-		display_player_one_line(ENTRY_EXP_TO_ADV, "*****", TERM_L_GREEN);
+		display_player_one_line(e, "*****", TERM_L_GREEN);
 	else if (p_ptr->prace == RACE_ANDROID)
-		display_player_one_line(ENTRY_EXP_TO_ADV, format("%ld", (s32b)(player_exp_a[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
+		display_player_one_line(e, format("%ld", (s32b)(player_exp_a[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
 	else
-		display_player_one_line(ENTRY_EXP_TO_ADV, format("%ld", (s32b)(player_exp[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
+		display_player_one_line(e, format("%ld", (s32b)(player_exp[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
 
 	/* Dump gold */
 	display_player_one_line(ENTRY_GOLD, format("%ld", p_ptr->au), TERM_L_GREEN);
@@ -1853,13 +1856,13 @@ static void display_player_middle(void)
 		int day, hour, min;
 		extract_day_hour_min(&day, &hour, &min);
 
-		sprintf(buf, 
 #ifdef JP
-			"%d日目 %2d:%02d", 
+		if (day < MAX_DAYS) sprintf(buf, "%d日目 %2d:%02d", day, hour, min);
+		else sprintf(buf, "*****日目 %2d:%02d", hour, min);
 #else
-			"Day %d %2d:%02d", 
+		if (day < MAX_DAYS) sprintf(buf, "Day %d %2d:%02d", day, hour, min);
+		else sprintf(buf, "Day ***** %2d:%02d", hour, min);
 #endif
-			day, hour, min);
 	}
 	display_player_one_line(ENTRY_DAY, buf, TERM_L_GREEN);
 
@@ -2338,7 +2341,7 @@ static void player_flags(u32b flgs[TR_FLAG_SIZE])
 		if (p_ptr->lev > 14)
 		{
 			add_flag(flgs, TR_REGEN);
-			if (p_ptr->pclass == CLASS_WARRIOR)
+			if ((p_ptr->pclass == CLASS_WARRIOR) || (p_ptr->pclass == CLASS_BERSERKER))
 			{
 				add_flag(flgs, TR_SLOW_DIGEST);
 				/*
@@ -2571,7 +2574,7 @@ static void player_flags(u32b flgs[TR_FLAG_SIZE])
 		add_flag(flgs, TR_RES_BLIND);
 		add_flag(flgs, TR_RES_CONF);
 		add_flag(flgs, TR_HOLD_LIFE);
-		add_flag(flgs, TR_LITE);
+		if (p_ptr->pclass != CLASS_NINJA) add_flag(flgs, TR_LITE);
 		if (p_ptr->lev > 9)
 			add_flag(flgs, TR_SPEED);
 	}
@@ -2830,10 +2833,10 @@ static void known_obj_immunity(u32b flgs[TR_FLAG_SIZE])
 		/* Known flags */
 		object_flags_known(o_ptr, o_flgs);
 
-		if (have_flag(flgs, TR_IM_ACID)) add_flag(flgs, TR_RES_ACID);
-		if (have_flag(flgs, TR_IM_ELEC)) add_flag(flgs, TR_RES_ELEC);
-		if (have_flag(flgs, TR_IM_FIRE)) add_flag(flgs, TR_RES_FIRE);
-		if (have_flag(flgs, TR_IM_COLD)) add_flag(flgs, TR_RES_COLD);
+		if (have_flag(o_flgs, TR_IM_ACID)) add_flag(flgs, TR_RES_ACID);
+		if (have_flag(o_flgs, TR_IM_ELEC)) add_flag(flgs, TR_RES_ELEC);
+		if (have_flag(o_flgs, TR_IM_FIRE)) add_flag(flgs, TR_RES_FIRE);
+		if (have_flag(o_flgs, TR_IM_COLD)) add_flag(flgs, TR_RES_COLD);
 	}
 }
 
@@ -3206,8 +3209,8 @@ static void display_player_other_flag_info(void)
 	display_flag_aux(row+13, col, "Poison Brd:", TR_BRAND_POIS, &f, DP_WP);
 	display_flag_aux(row+14, col, "Sharpness :", TR_VORPAL, &f, DP_WP);
 	display_flag_aux(row+15, col, "Quake     :", TR_IMPACT, &f, DP_WP);
-	display_flag_aux(row+16, col, "Vampicic  :", TR_VAMPIRIC, &f, DP_WP);
-	display_flag_aux(row+17, col, "Chatic    :", TR_CHAOTIC, &f, DP_WP);
+	display_flag_aux(row+16, col, "Vampiric  :", TR_VAMPIRIC, &f, DP_WP);
+	display_flag_aux(row+17, col, "Chaotic   :", TR_CHAOTIC, &f, DP_WP);
 	display_flag_aux(row+18, col, "Force Wep.:", TR_FORCE_WEAPON, &f, DP_WP);
 #endif
 
@@ -3822,17 +3825,17 @@ void display_player(int mode)
 
 			*statmsg = '\0';
 
-			if (p_ptr->is_dead && p_ptr->total_winner)
+			if (p_ptr->is_dead)
 			{
+				if (p_ptr->total_winner)
+				{
 #ifdef JP
-				strcpy(statmsg, "…あなたは勝利の後引退した。");
+					sprintf(statmsg, "…あなたは勝利の後%sした。", streq(p_ptr->died_from, "Seppuku") ? "切腹" : "引退");
 #else
-				strcpy(statmsg, "...You retired from the adventure after the winning.");
+					sprintf(statmsg, "...You %s after the winning.", streq(p_ptr->died_from, "Seppuku") ? "did Seppuku" : "retired from the adventure");
 #endif
-			}
-			else if (p_ptr->is_dead)
-			{
-				if (!dun_level)
+				}
+				else if (!dun_level)
 				{
 #ifdef JP
 					sprintf(statmsg, "…あなたは%sで%sに殺された。", map_name(), p_ptr->died_from);
@@ -3907,7 +3910,7 @@ void display_player(int mode)
 			if (*statmsg)
 			{
 				char temp[64*2], *t;
-				roff_to_buf(statmsg, 60, temp);
+				roff_to_buf(statmsg, 60, temp, sizeof(temp));
 				t = temp;
 				for(i=0 ; i<2 ; i++)
 				{
@@ -4140,19 +4143,12 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 				fprintf(fff, "\n  [主なペット]\n\n");
 #else
-				fprintf(fff, "\n  [leading pets]\n\n");
+				fprintf(fff, "\n  [Leading Pets]\n\n");
 #endif
 				pet = TRUE;
 			}
 			monster_desc(pet_name, m_ptr, 0x88);
-			fprintf(fff, "%s", pet_name);
-			if (p_ptr->riding == i)
-#ifdef JP
-				fprintf(fff, " 乗馬中");
-#else
-				fprintf(fff, " (riding)");
-#endif
-			fprintf(fff, "\n");
+			fprintf(fff, "%s\n", pet_name);
 		}
 		if (pet) fprintf(fff, "\n");
 	}
@@ -4160,7 +4156,7 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 	fprintf(fff, "\n  [クエスト情報]\n");
 #else
-	fprintf(fff, "\n  [Quest information]\n");
+	fprintf(fff, "\n  [Quest Information]\n");
 #endif
 
 #ifdef JP
@@ -4332,7 +4328,7 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 		fprintf(fff, "\n  [死ぬ直前のメッセージ]\n\n");
 #else
-		fprintf(fff, "\n  [Last messages]\n\n");
+		fprintf(fff, "\n  [Last Messages]\n\n");
 #endif
 		for (i = MIN(message_num(), 30); i >= 0; i--)
 		{
@@ -4344,7 +4340,7 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 	fprintf(fff, "\n  [その他の情報]\n");
 #else
-	fprintf(fff, "\n  [Miscellaneous information]\n");
+	fprintf(fff, "\n  [Miscellaneous Information]\n");
 #endif
 
 #ifdef JP
@@ -4388,21 +4384,21 @@ errr make_character_dump(FILE *fff)
 
 	if (ironman_autoscum)
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     ALWAYS");
+		fprintf(fff, "\n 自動選り好み:       ALWAYS");
 #else
 		fprintf(fff, "\n Autoscum:           ALWAYS");
 #endif
 
 	else if (auto_scum)
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     ON");
+		fprintf(fff, "\n 自動選り好み:       ON");
 #else
 		fprintf(fff, "\n Autoscum:           ON");
 #endif
 
 	else
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     OFF");
+		fprintf(fff, "\n 自動選り好み:       OFF");
 #else
 		fprintf(fff, "\n Autoscum:           OFF");
 #endif
@@ -4439,7 +4435,7 @@ errr make_character_dump(FILE *fff)
 
 	if (vanilla_town)
 #ifdef JP
-		fprintf(fff, "\n 元祖の町のみ: ON");
+		fprintf(fff, "\n 元祖の町のみ:       ON");
 #else
 		fprintf(fff, "\n Vanilla Town:       ON");
 #endif
@@ -4464,15 +4460,15 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 		fprintf(fff, "\n 階段を上がれない:   ON");
 #else
-		fprintf(fff, "\n Diving only:        ON");
+		fprintf(fff, "\n Diving Only:        ON");
 #endif
 
 
 	if (ironman_rooms)
 #ifdef JP
-		fprintf(fff, "\n 普通でない部屋を生成:         ON");
+		fprintf(fff, "\n 普通でない部屋:     ON");
 #else
-		fprintf(fff, "\n Unusual rooms:      ON");
+		fprintf(fff, "\n Unusual Rooms:      ON");
 #endif
 
 
@@ -4493,7 +4489,7 @@ errr make_character_dump(FILE *fff)
 
 	else if (empty_levels)
 #ifdef JP
-		fprintf(fff, "\n アリーナ:           ON");
+		fprintf(fff, "\n アリーナ:           ENABLED");
 #else
 		fprintf(fff, "\n Arena Levels:       ENABLED");
 #endif
@@ -4511,6 +4507,8 @@ errr make_character_dump(FILE *fff)
 #else
 	fprintf(fff, "\n Num. Random Quests: %d", number_of_quests());
 #endif
+
+	fprintf(fff, "\n");
 
 	if (p_ptr->arena_number == 99)
 	{
@@ -4539,9 +4537,9 @@ errr make_character_dump(FILE *fff)
 	else
 	{
 #ifdef JP
-		fprintf(fff, "\n 闘技場:   %2d勝\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number));
+		fprintf(fff, "\n 闘技場: %2d勝\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number));
 #else
-		fprintf(fff, "\n Arena:   %2d victor%s\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number), (p_ptr->arena_number>1) ? "ies" : "y");
+		fprintf(fff, "\n Arena: %2d Victor%s\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number), (p_ptr->arena_number > 1) ? "ies" : "y");
 #endif
 	}
 
@@ -4679,7 +4677,7 @@ fprintf(fff, "\n\n  [突然変異]\n\n");
 	if (equip_cnt)
 	{
 #ifdef JP
-fprintf(fff, "  [ キャラクタの装備 ]\n\n");
+fprintf(fff, "  [キャラクタの装備]\n\n");
 #else
 		fprintf(fff, "  [Character Equipment]\n\n");
 #endif
@@ -4701,7 +4699,7 @@ fprintf(fff, "  [ キャラクタの装備 ]\n\n");
 
 	/* Dump the inventory */
 #ifdef JP
-fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
+fprintf(fff, "  [キャラクタの持ち物]\n\n");
 #else
 	fprintf(fff, "  [Character Inventory]\n\n");
 #endif
@@ -4729,7 +4727,7 @@ fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
 	{
 		/* Header with name of the town */
 #ifdef JP
-		fprintf(fff, "  [ 我が家のアイテム ]\n");
+		fprintf(fff, "  [我が家のアイテム]\n");
 #else
 		fprintf(fff, "  [Home Inventory]\n");
 #endif
@@ -4761,7 +4759,7 @@ fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
 	{
 		/* Header with name of the town */
 #ifdef JP
-		fprintf(fff, "  [ 博物館のアイテム ]\n");
+		fprintf(fff, "  [博物館のアイテム]\n");
 #else
 		fprintf(fff, "  [Museum]\n");
 #endif
@@ -4806,9 +4804,6 @@ errr file_character(cptr name, bool full)
 	int		fd = -1;
 	FILE		*fff = NULL;
 	char		buf[1024];
-
-	/* Drop priv's */
-	safe_setuid_drop();
 
 	/* Build the filename */
 	path_build(buf, sizeof(buf), ANGBAND_DIR_USER, name);
@@ -4863,8 +4858,6 @@ errr file_character(cptr name, bool full)
 	/* Close it */
 	my_fclose(fff);
 
-	/* Grab priv's */
-	safe_setuid_grab();
 
 	/* Message */
 #ifdef JP
@@ -5500,9 +5493,6 @@ strcpy(tmp, "jhelp.hlp");
 			/* Close it */
 			my_fclose(fff);
 
-			/* Drop priv's */
-			safe_setuid_drop();
-
 			/* Build the filename */
 			path_build(buff, sizeof(buff), ANGBAND_DIR_USER, xtmp);
 
@@ -5524,7 +5514,7 @@ msg_print("ファイルが開けません。");
 				break;
 			}
 
-			sprintf(xtmp, "%s: %s", player_name, what);
+			sprintf(xtmp, "%s: %s", player_name, what ? what : caption);
 			my_fputs(ffp, xtmp, 80);
 			my_fputs(ffp, "\n", 80);
 
@@ -5534,9 +5524,6 @@ msg_print("ファイルが開けません。");
 			/* Close it */
 			my_fclose(fff);
 			my_fclose(ffp);
-
-			/* Grab priv's */
-			safe_setuid_grab();
 
 			/* Hack -- Re-Open the file */
 			fff = my_fopen(path, "r");
@@ -6050,6 +6037,7 @@ long total_points(void)
 }
 
 
+#define GRAVE_LINE_WIDTH 31
 
 /*
  * Centers a string within a 31 character string		-JWT-
@@ -6062,10 +6050,10 @@ static void center_string(char *buf, cptr str)
 	i = strlen(str);
 
 	/* Necessary border */
-	j = 15 - i / 2;
+	j = GRAVE_LINE_WIDTH / 2 - i / 2;
 
 	/* Mega-Hack */
-	(void)sprintf(buf, "%*s%s%*s", j, "", str, 31 - i - j, "");
+	(void)sprintf(buf, "%*s%s%*s", j, "", str, GRAVE_LINE_WIDTH - i - j, "");
 }
 
 
@@ -6111,8 +6099,14 @@ static void make_bones(void)
 			/* File type is "TEXT" */
 			FILE_TYPE(FILE_TYPE_TEXT);
 
+			/* Grab permissions */
+			safe_setuid_grab();
+
 			/* Try to write a new "Bones File" */
 			fp = my_fopen(str, "w");
+
+			/* Drop permissions */
+			safe_setuid_drop();
 
 			/* Not allowed to write it?  Weird. */
 			if (!fp) return;
@@ -6154,19 +6148,16 @@ static void print_tomb(void)
 	/* Print the text-tombstone */
 	if (!done)
 	{
-		cptr	p;
-
-		char	tmp[160];
-
-		char	buf[1024];
-#ifndef JP
-		char    dummy[80];
+		cptr   p;
+		char   tmp[160];
+		char   buf[1024];
+		char   dummy[80];
+		char   *t;
+		FILE   *fp;
+		time_t ct = time((time_t)0);
+#ifdef JP
+		int    extra_line = 0;
 #endif
-
-		FILE        *fp;
-
-		time_t	ct = time((time_t)0);
-
 
 		/* Clear screen */
 		Term_clear();
@@ -6177,7 +6168,6 @@ static void print_tomb(void)
 #else
 		path_build(buf, sizeof(buf), ANGBAND_DIR_FILE, "dead.txt");
 #endif
-
 
 		/* Open the News file */
 		fp = my_fopen(buf, "r");
@@ -6198,17 +6188,15 @@ static void print_tomb(void)
 			my_fclose(fp);
 		}
 
-
 		/* King or Queen */
 		if (p_ptr->total_winner || (p_ptr->lev > PY_MAX_LEVEL))
 		{
 #ifdef JP
-		/* 英日切り替え */
-		  p= "偉大なる者";
+			/* 英日切り替え */
+			p= "偉大なる者";
 #else
 			p = "Magnificent";
 #endif
-
 		}
 
 		/* Normal */
@@ -6228,47 +6216,40 @@ static void print_tomb(void)
 		center_string(buf, p);
 		put_str(buf, 8, 11);
 
-
 		center_string(buf, cp_ptr->title);
-
 		put_str(buf, 10, 11);
 
 #ifdef JP
-(void)sprintf(tmp, "レベル: %d", (int)p_ptr->lev);
+		(void)sprintf(tmp, "レベル: %d", (int)p_ptr->lev);
 #else
 		(void)sprintf(tmp, "Level: %d", (int)p_ptr->lev);
 #endif
-
 		center_string(buf, tmp);
 		put_str(buf, 11, 11);
 
 #ifdef JP
-(void)sprintf(tmp, "経験値: %ld", (long)p_ptr->exp);
+		(void)sprintf(tmp, "経験値: %ld", (long)p_ptr->exp);
 #else
 		(void)sprintf(tmp, "Exp: %ld", (long)p_ptr->exp);
 #endif
-
 		center_string(buf, tmp);
 		put_str(buf, 12, 11);
 
 #ifdef JP
-(void)sprintf(tmp, "所持金: %ld", (long)p_ptr->au);
+		(void)sprintf(tmp, "所持金: %ld", (long)p_ptr->au);
 #else
 		(void)sprintf(tmp, "AU: %ld", (long)p_ptr->au);
 #endif
-
 		center_string(buf, tmp);
 		put_str(buf, 13, 11);
 
 #ifdef JP
-	/* 墓に刻む言葉をオリジナルより細かく表示 */
-	if (streq(p_ptr->died_from, "途中終了"))
-	{
-		strcpy(tmp, "<自殺>");
-	}
-	else
-	{
-		if (streq(p_ptr->died_from, "ripe"))
+		/* 墓に刻む言葉をオリジナルより細かく表示 */
+		if (streq(p_ptr->died_from, "途中終了"))
+		{
+			strcpy(tmp, "<自殺>");
+		}
+		else if (streq(p_ptr->died_from, "ripe"))
 		{
 			strcpy(tmp, "引退後に天寿を全う");
 		}
@@ -6278,71 +6259,105 @@ static void print_tomb(void)
 		}
 		else
 		{
-			strcpy(tmp, p_ptr->died_from);
-		}
-	}
-	center_string(buf, tmp);
-	put_str(buf, 14, 11);
-
-	if(!streq(p_ptr->died_from, "ripe") && !streq(p_ptr->died_from, "Seppuku"))
-	{
-		if( dun_level == 0 )
-		{
-			cptr town = (p_ptr->town_num ? "街" : "荒野");
-			if(streq(p_ptr->died_from, "途中終了"))
+			roff_to_buf(p_ptr->died_from, GRAVE_LINE_WIDTH + 1, tmp, sizeof tmp);
+			t = tmp + strlen(tmp) + 1;
+			if (*t)
 			{
-				sprintf(tmp, "%sで死んだ", town);
-			}
-			else
-			{
-				sprintf(tmp, "に%sで殺された", town);
-			}
-		}
-		else
-		{
-			if(streq(p_ptr->died_from, "途中終了"))
-			{
-				sprintf(tmp, "地下 %d 階で死んだ", dun_level);
-			}
-			else
-			{
-				sprintf(tmp, "に地下 %d 階で殺された", dun_level);
+				strcpy(dummy, t); /* 2nd line */
+				if (*(t + strlen(t) + 1)) /* Does 3rd line exist? */
+				{
+					for (t = dummy + strlen(dummy) - 2; iskanji(*(t - 1)); t--) /* Loop */;
+					strcpy(t, "…");
+				}
+				else if (strstr_j(tmp, "『") && suffix(dummy, "』"))
+				{
+					char dummy2[80];
+					char *name_head = strstr_j(tmp, "『");
+					sprintf(dummy2, "%s%s", name_head, dummy);
+					if (strlen(dummy2) <= GRAVE_LINE_WIDTH)
+					{
+						strcpy(dummy, dummy2);
+						*name_head = '\0';
+					}
+				}
+				else if (strstr_j(tmp, "「") && suffix(dummy, "」"))
+				{
+					char dummy2[80];
+					char *name_head = strstr_j(tmp, "「");
+					sprintf(dummy2, "%s%s", name_head, dummy);
+					if (strlen(dummy2) <= GRAVE_LINE_WIDTH)
+					{
+						strcpy(dummy, dummy2);
+						*name_head = '\0';
+					}
+				}
+				center_string(buf, dummy);
+				put_str(buf, 15, 11);
+				extra_line = 1;
 			}
 		}
 		center_string(buf, tmp);
-		put_str(buf, 15, 11);
-	}
+		put_str(buf, 14, 11);
+
+		if (!streq(p_ptr->died_from, "ripe") && !streq(p_ptr->died_from, "Seppuku"))
+		{
+			if (dun_level == 0)
+			{
+				cptr town = p_ptr->town_num ? "街" : "荒野";
+				if (streq(p_ptr->died_from, "途中終了"))
+				{
+					sprintf(tmp, "%sで死んだ", town);
+				}
+				else
+				{
+					sprintf(tmp, "に%sで殺された", town);
+				}
+			}
+			else
+			{
+				if (streq(p_ptr->died_from, "途中終了"))
+				{
+					sprintf(tmp, "地下 %d 階で死んだ", dun_level);
+				}
+				else
+				{
+					sprintf(tmp, "に地下 %d 階で殺された", dun_level);
+				}
+			}
+			center_string(buf, tmp);
+			put_str(buf, 15 + extra_line, 11);
+		}
 #else
 		(void)sprintf(tmp, "Killed on Level %d", dun_level);
 		center_string(buf, tmp);
 		put_str(buf, 14, 11);
 
-
-		if (strlen(p_ptr->died_from) > 24)
-		{
-			strncpy(dummy, p_ptr->died_from, 24);
-			dummy[24] = '\0';
-			(void)sprintf(tmp, "by %s.", dummy);
-		}
-		else
-			(void)sprintf(tmp, "by %s.", p_ptr->died_from);
-
+		roff_to_buf(format("by %s.", p_ptr->died_from), GRAVE_LINE_WIDTH + 1, tmp, sizeof tmp);
 		center_string(buf, tmp);
 		put_str(buf, 15, 11);
+		t = tmp + strlen(tmp) + 1;
+		if (*t)
+		{
+			strcpy(dummy, t); /* 2nd line */
+			if (*(t + strlen(t) + 1)) /* Does 3rd line exist? */
+			{
+				int dummy_len = strlen(dummy);
+				strcpy(dummy + MIN(dummy_len, GRAVE_LINE_WIDTH - 3), "...");
+			}
+			center_string(buf, dummy);
+			put_str(buf, 16, 11);
+		}
 #endif
-
-
 
 		(void)sprintf(tmp, "%-.24s", ctime(&ct));
 		center_string(buf, tmp);
 		put_str(buf, 17, 11);
 
 #ifdef JP
-msg_format("さようなら、%s!", player_name);
+		msg_format("さようなら、%s!", player_name);
 #else
 		msg_format("Goodbye, %s!", player_name);
 #endif
-
 	}
 }
 
@@ -6673,9 +6688,14 @@ void close_game(void)
 	/* Build the filename */
 	path_build(buf, sizeof(buf), ANGBAND_DIR_APEX, "scores.raw");
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* Open the high score file, for reading/writing */
 	highscore_fd = fd_open(buf, O_RDWR);
 
+	/* Drop permissions */
+	safe_setuid_drop();
 
 	/* Handle death */
 	if (p_ptr->is_dead)
@@ -7028,16 +7048,10 @@ errr process_pickpref_file(cptr name)
 
 	errr err = 0;
 
-	/* Drop priv's */
-	safe_setuid_drop();
-
 	/* Build the filename */
 	path_build(buf, sizeof(buf), ANGBAND_DIR_USER, name);
 
 	err = process_pref_file_aux(buf, TRUE);
-
-	/* Grab priv's */
-	safe_setuid_grab();
 
 	/* Result */
 	return (err);
@@ -7109,28 +7123,59 @@ errr counts_write(int where, u32b count)
 {
 	int fd;
 	char buf[1024];
+	errr err;
 
 #ifdef JP
 	path_build(buf, sizeof(buf), ANGBAND_DIR_DATA, "z_info_j.raw");
 #else
 	path_build(buf, sizeof(buf), ANGBAND_DIR_DATA, "z_info.raw");
 #endif
+
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	fd = fd_open(buf, O_RDWR);
+
+	/* Drop permissions */
+	safe_setuid_drop();
+
 	if (fd < 0)
 	{
 		/* File type is "DATA" */
 		FILE_TYPE(FILE_TYPE_DATA);
 
+		/* Grab permissions */
+		safe_setuid_grab();
+
 		/* Create a new high score file */
 		fd = fd_make(buf, 0644);
+
+		/* Drop permissions */
+		safe_setuid_drop();
 	}
 
-	if (fd_lock(fd, F_WRLCK)) return 1;
+	/* Grab permissions */
+	safe_setuid_grab();
+
+	err = fd_lock(fd, F_WRLCK);
+
+	/* Drop permissions */
+	safe_setuid_drop();
+
+	if (err) return 1;
 
 	counts_seek(fd, where, TRUE);
 	fd_write(fd, (char*)(&count), sizeof(u32b));
 
-	if (fd_lock(fd, F_UNLCK)) return 1;
+	/* Grab permissions */
+	safe_setuid_grab();
+
+	err = fd_lock(fd, F_UNLCK);
+
+	/* Drop permissions */
+	safe_setuid_drop();
+
+	if (err) return 1;
 
 	(void)fd_close(fd);
 
@@ -7345,6 +7390,12 @@ Term_putstr(45, hgt - 1, -1, TERM_RED, "緊急セーブ...");
 	Term_putstr(45, hgt - 1, -1, TERM_RED, "Panic save...");
 #endif
 
+
+#ifdef JP
+	do_cmd_write_nikki(NIKKI_GAMESTART, 0, "----ゲーム異常終了----");
+#else
+	do_cmd_write_nikki(NIKKI_GAMESTART, 0, "---- Panic Save and Abort Game ----");
+#endif
 
 	/* Flush output */
 	Term_fresh();

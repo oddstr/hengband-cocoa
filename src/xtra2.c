@@ -107,6 +107,7 @@ void check_experience(void)
 msg_format("レベル %d にようこそ。", p_ptr->lev);
 #else
 		msg_format("Welcome to level %d.", p_ptr->lev);
+
 #endif
 
 		/* Update some stuff */
@@ -116,7 +117,7 @@ msg_format("レベル %d にようこそ。", p_ptr->lev);
 		p_ptr->redraw |= (PR_LEV | PR_TITLE);
 
 		/* Window stuff */
-		p_ptr->window |= (PW_PLAYER | PW_SPELL);
+		p_ptr->window |= (PW_PLAYER | PW_SPELL | PW_INVEN);
 
 		/* HPとMPの上昇量を表示 */
 		level_up = 1;
@@ -364,6 +365,24 @@ static bool kind_is_armor(int k_idx)
 
 
 /*
+ * Hack -- determine if a template is hafted weapon
+ */
+static bool kind_is_hafted(int k_idx)
+{
+	object_kind *k_ptr = &k_info[k_idx];
+
+	/* Analyze the item type */
+	if (k_ptr->tval == TV_HAFTED)
+	{
+		return (TRUE);
+	}
+
+	/* Assume not good */
+	return (FALSE);
+}
+
+
+/*
  * Check for "Quest" completion when a quest monster is killed or charmed.
  */
 void check_quest_completion(monster_type *m_ptr)
@@ -593,7 +612,7 @@ msg_print("魔法の階段が現れた...");
 		cave_set_feat(y, x, FEAT_MORE);
 
 		/* Remember to update everything */
-		p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTERS);
+		p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTERS | PU_MON_LITE);
 	}
 
 	/*
@@ -659,7 +678,8 @@ void monster_death(int m_idx, bool drop_item)
 	object_type *q_ptr;
 
 
-	if (world_monster) world_monster = FALSE;
+	/* The caster is dead? */
+	if (world_monster && world_monster == m_idx) world_monster = 0;
 
 	/* Notice changes in view */
 	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_1 | RF7_SELF_LITE_2))
@@ -753,11 +773,6 @@ void monster_death(int m_idx, bool drop_item)
 	/* Handle the possibility of player vanquishing arena combatant -KMW- */
 	if (p_ptr->inside_arena && !is_pet(m_ptr))
 	{
-		char m_name[80];
-
-		/* Extract monster name */
-		monster_desc(m_name, m_ptr, 0);
-
 		p_ptr->exit_bldg = TRUE;
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS)
@@ -793,7 +808,15 @@ msg_print("勝利！チャンピオンへの道を進んでいる。");
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS) p_ptr->arena_number++;
 		p_ptr->arena_number++;
-		if (record_arena) do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		if (record_arena)
+		{
+			char m_name[80];
+
+			/* Extract monster name */
+			monster_desc(m_name, m_ptr, 0x288);
+
+			do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		}
 	}
 
 	if (m_idx == p_ptr->riding)
@@ -810,9 +833,8 @@ msg_print("地面に落とされた。");
 
 	/* Drop a dead corpse? */
 	if (one_in_(r_ptr->flags1 & RF1_UNIQUE ? 1 : 4) &&
-	    ((r_ptr->flags9 & RF9_DROP_CORPSE) ||
-	     (r_ptr->flags9 & RF9_DROP_SKELETON)) &&
-	    !(p_ptr->inside_arena || p_ptr->inside_battle || (m_ptr->smart & SM_CLONED) || ((m_ptr->r_idx == today_mon) && is_pet(m_ptr))))
+	    (r_ptr->flags9 & (RF9_DROP_CORPSE | RF9_DROP_SKELETON)) &&
+	    !(p_ptr->inside_arena || p_ptr->inside_battle || cloned || ((m_ptr->r_idx == today_mon) && is_pet(m_ptr))))
 	{
 		/* Assume skeleton */
 		bool corpse = FALSE;
@@ -823,7 +845,7 @@ msg_print("地面に落とされた。");
 		 */
 		if (!(r_ptr->flags9 & RF9_DROP_SKELETON))
 			corpse = TRUE;
-		else if ((r_ptr->flags9 & RF9_DROP_CORPSE) && (r_ptr->flags1 && RF1_UNIQUE))
+		else if ((r_ptr->flags9 & RF9_DROP_CORPSE) && (r_ptr->flags1 & RF1_UNIQUE))
 			corpse = TRUE;
 
 		/* Else, a corpse is more likely unless we did a "lot" of damage */
@@ -866,15 +888,15 @@ msg_print("地面に落とされた。");
 	{
 		if (!one_in_(7))
 		{
-			int wy = py, wx = px;
+			int wy = y, wx = x;
 			int attempts = 100;
 			bool pet = is_pet(m_ptr);
 
 			do
 			{
-				scatter(&wy, &wx, py, px, 20, 0);
+				scatter(&wy, &wx, y, x, 20, 0);
 			}
-			while (!(in_bounds(wy, wx) && cave_floor_bold(wy, wx)) && --attempts);
+			while (!(in_bounds(wy, wx) && cave_empty_bold2(wy, wx)) && --attempts);
 
 			if (attempts > 0)
 			{
@@ -1077,7 +1099,29 @@ msg_print("地面に落とされた。");
 		(void)drop_near(q_ptr, -1, y, x);
 	}
 
-	else if ((m_ptr->r_idx == MON_A_GOLD || (m_ptr->r_idx == MON_A_SILVER && !((r_ptr->r_pkills+1)%5))) && !(p_ptr->inside_arena || p_ptr->inside_battle))
+	else if ((r_ptr->d_char == '\\') && (dun_level > 4) &&
+	    !(p_ptr->inside_arena || p_ptr->inside_battle))
+	{
+		/* Get local object */
+		q_ptr = &forge;
+
+		/* Wipe the object */
+		object_wipe(q_ptr);
+
+		/* Activate restriction */
+		get_obj_num_hook = kind_is_hafted;
+
+		/* Prepare allocation table */
+		get_obj_num_prep();
+
+		/* Make a great object */
+		make_object(q_ptr, FALSE, FALSE);
+
+		/* Drop it in the dungeon */
+		(void)drop_near(q_ptr, -1, y, x);
+	}
+
+	else if ((m_ptr->r_idx == MON_A_GOLD || (m_ptr->r_idx == MON_A_SILVER && (r_ptr->r_pkills % 5 == 0))) && !(p_ptr->inside_arena || p_ptr->inside_battle))
 	{
 		/* Get local object */
 		q_ptr = &forge;
@@ -1332,9 +1376,8 @@ msg_print("地面に落とされた。");
 				if (a_info[a_idx].cur_num == 0)
 				{
 					/* Create the artifact */
-					create_named_art(a_idx, y, x);
-
-					a_info[a_idx].cur_num = 1;
+					if (create_named_art(a_idx, y, x)) a_info[a_idx].cur_num = 1;
+					else if (!preserve_mode) a_info[a_idx].cur_num = 1;
 				}
 			}
 		}
@@ -1352,9 +1395,8 @@ msg_print("地面に落とされた。");
 			if (a_info[a_idx].cur_num == 0)
 			{
 				/* Create the artifact */
-				create_named_art(a_idx, y, x);
-
-				a_info[a_idx].cur_num = 1;
+				if (create_named_art(a_idx, y, x)) a_info[a_idx].cur_num = 1;
+				else if (!preserve_mode) a_info[a_idx].cur_num = 1;
 				k_idx = 0;
 			}
 		}
@@ -1463,7 +1505,7 @@ msg_print("地面に落とされた。");
 #ifdef JP
 		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "見事に変愚蛮怒の勝利者となった！");
 #else
-		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "become *WINNER* of Hengband finly!");
+		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "become *WINNER* of Hengband finely!");
 #endif
 
 		if (p_ptr->pclass == CLASS_CHAOS_WARRIOR)
@@ -1583,7 +1625,7 @@ static void get_exp_from_mon(int dam, monster_type *m_ptr)
 		  m_exp_h += m_exp_l / 0x10000L;
 		  m_exp_l %= 0x10000L;
 
-		  div *= r_ptr->hdice * (r_ptr->hside + 1);
+		  div *= r_ptr->hdice * (ironman_nightmare ? 2 : 1) * (r_ptr->hside + 1);
 		}
 		if (!dun_level && (!(r_ptr->flags8 & RF8_WILD_ONLY) || !(r_ptr->flags1 & RF1_UNIQUE))) div *= 5;
 		div_h = div/0x10000L;
@@ -1707,6 +1749,8 @@ bool mon_take_hit(int m_idx, int dam, bool *fear, cptr note)
 	/* Wake it up */
 	m_ptr->csleep = 0;
 
+	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
+
 	/* Hack - Cancel any special player stealth magics. -LM- */
 	if (p_ptr->special_defense & NINJA_S_STEALTH)
 	{
@@ -1723,9 +1767,42 @@ bool mon_take_hit(int m_idx, int dam, bool *fear, cptr note)
 
 		if (r_info[m_ptr->r_idx].flags7 & RF7_TANUKI)
 		{
+			/* You might have unmasked Tanuki first time */
 			r_ptr = &r_info[m_ptr->r_idx];
 			m_ptr->ap_r_idx = m_ptr->r_idx;
 			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
+		}
+
+		if (m_ptr->mflag2 & MFLAG_CHAMELEON)
+		{
+			/* You might have unmasked Chameleon first time */
+			if (r_ptr->flags1 & RF1_UNIQUE)
+				r_ptr = &r_info[MON_CHAMELEON_K];
+			else
+				r_ptr = &r_info[MON_CHAMELEON];
+			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
+		}
+
+		/* When the player kills a Unique, it stays dead */
+		if (r_ptr->flags1 & RF1_UNIQUE && !(m_ptr->smart & SM_CLONED))
+			r_ptr->max_num = 0;
+
+		/* When the player kills a Nazgul, it stays dead */
+		if (r_ptr->flags7 & RF7_UNIQUE_7) r_ptr->max_num--;
+
+		/* Recall even invisible uniques or winners */
+		if (m_ptr->ml || (r_ptr->flags1 & RF1_UNIQUE))
+		{
+			/* Count kills this life */
+			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_pkills < MAX_SHORT)) r_info[MON_KAGE].r_pkills++;
+			else if (r_ptr->r_pkills < MAX_SHORT) r_ptr->r_pkills++;
+
+			/* Count kills in all lives */
+			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_tkills < MAX_SHORT)) r_info[MON_KAGE].r_tkills++;
+			else if (r_ptr->r_tkills < MAX_SHORT) r_ptr->r_tkills++;
+
+			/* Hack -- Auto-recall */
+			monster_race_track(m_ptr->ap_r_idx);
 		}
 
 		/* Extract monster name */
@@ -1927,9 +2004,9 @@ msg_format("%sを殺した。", m_name);
 			/* Special note at death */
 			if (explode)
 #ifdef JP
-msg_format("%sは爆発して粉々になった。", m_name);
+				msg_format("%sは爆発して粉々になった。", m_name);
 #else
-				msg_format("%s explodes into tiny shreds.", m_name);
+				msg_format("%^s explodes into tiny shreds.", m_name);
 #endif
 			else
 			{
@@ -1973,44 +2050,8 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			}
 		}
 
-		if (r_ptr->flags7 & RF7_KILL_EXP)
-			get_exp_from_mon((long)m_ptr->max_maxhp*2, &exp_mon);
-		else
-			get_exp_from_mon(((long)m_ptr->max_maxhp+1L) * 9L / 10L, &exp_mon);
-
 		/* Generate treasure */
 		monster_death(m_idx, TRUE);
-		if (m_ptr->mflag2 & MFLAG_CHAMELEON)
-		{
-			if (r_ptr->flags1 & RF1_UNIQUE)
-				r_ptr = &r_info[MON_CHAMELEON_K];
-			else
-				r_ptr = &r_info[MON_CHAMELEON];
-			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
-		}
-
-		/* When the player kills a Unique, it stays dead */
-		if (r_ptr->flags1 & RF1_UNIQUE && !(m_ptr->smart & SM_CLONED))
-			r_ptr->max_num = 0;
-
-		/* When the player kills a Nazgul, it stays dead */
-		if (r_ptr->flags7 & RF7_UNIQUE_7) r_ptr->max_num--;
-
-		/* Recall even invisible uniques or winners */
-		if (m_ptr->ml || (r_ptr->flags1 & RF1_UNIQUE))
-		{
-			/* Count kills this life */
-			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_pkills < MAX_SHORT)) r_info[MON_KAGE].r_pkills++;
-			else if (r_ptr->r_pkills < MAX_SHORT) r_ptr->r_pkills++;
-
-			/* Count kills in all lives */
-			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_tkills < MAX_SHORT)) r_info[MON_KAGE].r_tkills++;
-			else if (r_ptr->r_tkills < MAX_SHORT) r_ptr->r_tkills++;
-
-			/* Hack -- Auto-recall */
-			monster_race_track(m_ptr->ap_r_idx);
-		}
-
 		if ((m_ptr->r_idx == MON_BANOR) || (m_ptr->r_idx == MON_LUPART))
 		{
 			r_info[MON_BANORLUPART].max_num = 0;
@@ -2055,6 +2096,12 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			/* Delete the monster */
 			delete_monster_idx(m_idx);
 		}
+
+		/* Prevent bug of chaos patron's reward */
+		if (r_ptr->flags7 & RF7_KILL_EXP)
+			get_exp_from_mon((long)exp_mon.max_maxhp*2, &exp_mon);
+		else
+			get_exp_from_mon(((long)exp_mon.max_maxhp+1L) * 9L / 10L, &exp_mon);
 
 		/* Not afraid */
 		(*fear) = FALSE;
@@ -2227,12 +2274,6 @@ void redraw_window(void)
 {
 	/* Only if the dungeon exists */
 	if (!character_dungeon) return;
-	
-	/* Hack - Activate term zero for the redraw */
-	Term_activate(&term_screen[0]);
-	
-	/* Hack -- react to changes */
-	Term_xtra(TERM_XTRA_REACT, 0);
 
 	/* Window stuff */
 	p_ptr->window |= (PW_INVEN | PW_EQUIP | PW_SPELL | PW_PLAYER);
@@ -2245,9 +2286,6 @@ void redraw_window(void)
 
 	/* Redraw */
 	Term_redraw();
-
-	/* Refresh */
-	Term_fresh();
 }
 
 
@@ -2421,13 +2459,15 @@ void verify_panel(void)
 /*
  * Monster health description
  */
-cptr look_mon_desc(int m_idx)
+cptr look_mon_desc(int m_idx, u32b mode)
 {
 	monster_type *m_ptr = &m_list[m_idx];
 	monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
 	bool         living;
 	int          perc;
-	cptr desc = NULL;
+	cptr desc;
+	cptr attitude;
+	cptr clone;
 
 	/* Determine if the monster is "living" */
 	living = monster_living(ap_r_ptr);
@@ -2486,21 +2526,64 @@ cptr look_mon_desc(int m_idx)
 #endif
 	}
 
+
+	/* Need attitude information? */
+	if (!(mode & 0x01))
+	{
+		/* Full information is not needed */
+		attitude = "";
+	}
+	else if (is_pet(m_ptr))
+	{
+#ifdef JP
+		attitude = ", ペット";
+#else
+		attitude = ", pet";
+#endif
+	}
+	else if (is_friendly(m_ptr))
+	{
+#ifdef JP
+		attitude = ", 友好的";
+#else
+		attitude = ", friendly";
+#endif
+	}
+	else
+	{
+#ifdef JP
+		attitude = "";
+#else
+		attitude = "";
+#endif
+	}
+
+
+	/* Clone monster? */
+	if (m_ptr->smart & SM_CLONED)
+	{
+		clone = ", clone";
+	}
+	else
+	{
+		clone = "";
+	}
+
 	/* Display monster's level --- idea borrowed from ToME */
 	if (ap_r_ptr->r_tkills && !(m_ptr->mflag2 & MFLAG_KAGE))
 	{
 #ifdef JP
-		return format("レベル%d, %s", ap_r_ptr->level, desc);
+		return format("レベル%d, %s%s%s", ap_r_ptr->level, desc, attitude, clone);
 #else
-		return format("Level %d, %s", ap_r_ptr->level, desc);
+		return format("Level %d, %s%s%s", ap_r_ptr->level, desc, attitude, clone);
 #endif
 	}
 	else 
 	{
 #ifdef JP
-		return format("レベル???, %s", desc);
+		return format("レベル???, %s%s%s", desc, attitude, clone);
 #else
-		return format("Level ???, %s", desc);
+		return format("Level ???, %s%s%s", desc, attitude, clone);
 #endif
 	}
 }
@@ -2813,7 +2896,7 @@ static bool target_set_accept(int y, int x)
 		byte feat;
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Notice glyphs */
 		if (c_ptr->info & CAVE_OBJECT) return (TRUE);
@@ -2934,6 +3017,67 @@ static void target_set_prepare(int mode)
 
 
 /*
+ * Evaluate number of kill needed to gain level
+ */
+static void evaluate_monster_exp(char *buf, monster_type *m_ptr)
+{
+#define M_INT_GREATER(h1,l1,h2,l2)  ( (h1>h2)||( (h1==h2)&&(l1>=l2)))
+#define M_INT_SUB(h1,l1, h2,l2) {h1-=h2;if(l1<l2){l1+=0x10000;h1--;}l1-=l2;}
+#define M_INT_ADD(h1,l1, h2,l2) {h1+=h2;l1+=l2;if(l1>=0x10000L){l1&=0xFFFF;h1++;}}
+#define M_INT_LSHIFT(h1,l1) {h1=(h1<<1)|(l1>>15);l1=(l1<<1)&0xffff;}
+#define M_INT_RSHIFT(h1,l1) {l1=(l1>>1)|((h1&1)<<15);h1>>=1;}
+#define M_INT_MULT(h1,l1,mul,h2,l2) {l2=(l1*mul)&0xffff;h2=((l1*mul)>>16)+h1*mul;}
+
+	monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
+
+	u32b tmp_h,tmp_l;
+	int bit,result;
+	u32b exp_mon= (ap_r_ptr->mexp)*(ap_r_ptr->level);
+	u32b exp_mon_h= exp_mon / (p_ptr->max_plv+2);
+	u32b exp_mon_l= ((exp_mon % (p_ptr->max_plv+2))*0x10000/(p_ptr->max_plv+2))&0xFFFF;
+	
+	u32b exp_adv_h = player_exp[p_ptr->lev -1] * p_ptr->expfact /100;
+	u32b exp_adv_l = ((player_exp[p_ptr->lev -1]%100) * p_ptr->expfact *0x10000/100)&0xFFFF;
+	
+	M_INT_SUB(exp_adv_h, exp_adv_l, p_ptr->exp, p_ptr->exp_frac);
+	if ((p_ptr->lev>=PY_MAX_LEVEL) || (p_ptr->prace == RACE_ANDROID))
+		sprintf(buf,"**");
+	else if (!ap_r_ptr->r_tkills || (m_ptr->mflag2 & MFLAG_KAGE))
+		sprintf(buf,"??");
+	else if (M_INT_GREATER(exp_mon_h, exp_mon_l, exp_adv_h, exp_adv_l))
+		sprintf(buf,"001");
+	else 
+	{
+		M_INT_MULT(exp_mon_h, exp_mon_l, 1000,tmp_h, tmp_l);
+		if( M_INT_GREATER(exp_adv_h, exp_adv_l, tmp_h, tmp_l) )
+			sprintf(buf,"999");
+		else
+		{
+			bit=1; result=0;
+			M_INT_ADD(exp_adv_h, exp_adv_l, exp_mon_h, exp_mon_l);
+			M_INT_SUB(exp_adv_h, exp_adv_l, 0, 1);
+			while(M_INT_GREATER(exp_adv_h, exp_adv_l, exp_mon_h,exp_mon_l))
+			{
+				M_INT_LSHIFT(exp_mon_h,exp_mon_l);
+				bit <<= 1;
+			}
+			M_INT_RSHIFT(exp_mon_h,exp_mon_l);bit>>=1;
+			for(;bit>=1;bit>>=1)
+			{
+				if(M_INT_GREATER(exp_adv_h,exp_adv_l,exp_mon_h,exp_mon_l))
+				{
+					result |= bit;
+					M_INT_SUB(exp_adv_h,exp_adv_l,exp_mon_h,exp_mon_l);
+				}
+				M_INT_RSHIFT(exp_mon_h,exp_mon_l); 
+			}
+			sprintf(buf,"%03d",result);
+		}
+	}
+}
+
+
+/*
  * Examine a grid, return a keypress.
  *
  * The "mode" argument contains the "TARGET_LOOK" bit flag, which
@@ -2957,488 +3101,214 @@ static void target_set_prepare(int mode)
 static int target_set_aux(int y, int x, int mode, cptr info)
 {
 	cave_type *c_ptr = &cave[y][x];
-
 	s16b this_o_idx, next_o_idx = 0;
-
-	cptr s1, s2, s3;
-
-	bool boring;
-
+	cptr s1 = "", s2 = "", s3 = "", x_info = "";
+	bool boring = TRUE;
 	byte feat;
-
-	int query;
-
+	int query = '\001';
 	char out_val[MAX_NLEN+80];
 
+#ifdef ALLOW_EASY_FLOOR
+	int floor_list[23], floor_num = 0;
 
-	/* Repeat forever */
-	while (1)
+	/* Scan all objects in the grid */
+	if (easy_floor)
 	{
-		/* Paranoia */
-		query = ' ';
+		floor_num = scan_floor(floor_list, y, x, 0x02);
 
-		/* Assume boring */
-		boring = TRUE;
-
-		/* Default */
-#ifdef JP
-s1 = "";
-#else
-		s1 = "You see ";
-#endif
-
-		s2 = "";
-		s3 = "";
-
-		/* Hack -- under the player */
-		if ((y == py) && (x == px))
-		{
-			/* Description */
-#ifdef JP
-			s1 = "あなたは";
-			s2 = "の上";
-			s3 = "にいる";
-#else
-			s1 = "You are ";
-
-			/* Preposition */
-			s2 = "on ";
-#endif
-
-		}
-		else
+		if (floor_num)
 		{
 #ifdef JP
-			s1 = "ターゲット:";
+			x_info = "x物 ";
 #else
-			s1 = "Target:";
+			x_info = "x,";
 #endif
-		}
-
-		/* Hack -- hallucination */
-		if (p_ptr->image)
-		{
-#ifdef JP
-cptr name = "何か奇妙な物";
-#else
-			cptr name = "something strange";
-#endif
-
-
-			/* Display a message */
-#ifdef JP
-			sprintf(out_val, "%s%s%s%s [%s]", s1, name, s2, s3, info);
-#else
-			sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, name, info);
-#endif
-
-			prt(out_val, 0, 0);
-			move_cursor_relative(y, x);
-			query = inkey();
-
-			/* Stop on everything but "return" */
-			if ((query != '\r') && (query != '\n')) break;
-
-			/* Repeat forever */
-			continue;
-		}
-
-
-		/* Actual monsters */
-		if (c_ptr->m_idx)
-		{
-			monster_type *m_ptr = &m_list[c_ptr->m_idx];
-			monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
-
-			/* Visible */
-			if (m_ptr->ml)
-			{
-				bool recall = FALSE;
-
-				char m_name[80];
-
-				/* Not boring */
-				boring = FALSE;
-
-				/* Get the monster name ("a kobold") */
-				monster_desc(m_name, m_ptr, 0x08);
-
-				/* Hack -- track this monster race */
-				monster_race_track(m_ptr->ap_r_idx);
-
-				/* Hack -- health bar for this monster */
-				health_track(c_ptr->m_idx);
-
-				/* Hack -- handle stuff */
-				handle_stuff();
-
-				/* Interact */
-				while (1)
-				{
-					/* Recall */
-					if (recall)
-					{
-						/* Save */
-						screen_save();
-
-						/* Recall on screen */
-						screen_roff(m_ptr->ap_r_idx, 0);
-
-						/* Hack -- Complete the prompt (again) */
-#ifdef JP
-Term_addstr(-1, TERM_WHITE, format("  [r思 %s]", info));
-#else
-						Term_addstr(-1, TERM_WHITE, format("  [r,%s]", info));
-#endif
-
-
-						/* Command */
-						query = inkey();
-
-						/* Restore */
-						screen_load();
-					}
-
-					/* Normal */
-					else
-					{
-						cptr attitude;
-						cptr tekitou;
-
-						if (p_ptr->riding && (p_ptr->riding == c_ptr->m_idx))
-						{
-#ifdef JP
-							 tekitou = "(ペット)";
-#else
-							 tekitou = "(pet)";
-#endif
-						}
-						else
-						{
-							 tekitou = "";
-						}
-
-						if (is_pet(m_ptr) && (p_ptr->riding != c_ptr->m_idx))
-#ifdef JP
-attitude = " (ペット) ";
-#else
-							attitude = " (pet) ";
-#endif
-
-						else if (is_friendly(m_ptr))
-#ifdef JP
-attitude = " (友好的) ";
-#else
-							attitude = " (friendly) ";
-#endif
-
-						else
-#ifdef JP
-attitude = " ";
-#else
-							attitude = " ";
-#endif
-
-
-						/* Describe, and prompt for recall */
-{
-#define M_INT_GREATER(h1,l1,h2,l2)  ( (h1>h2)||( (h1==h2)&&(l1>=l2)))
-#define M_INT_SUB(h1,l1, h2,l2) {h1-=h2;if(l1<l2){l1+=0x10000;h1--;}l1-=l2;}
-#define M_INT_ADD(h1,l1, h2,l2) {h1+=h2;l1+=l2;if(l1>=0x10000L){l1&=0xFFFF;h1++;}}
-#define M_INT_LSHIFT(h1,l1) {h1=(h1<<1)|(l1>>15);l1=(l1<<1)&0xffff;}
-#define M_INT_RSHIFT(h1,l1) {l1=(l1>>1)|((h1&1)<<15);h1>>=1;}
-#define M_INT_MULT(h1,l1,mul,h2,l2) {l2=(l1*mul)&0xffff;h2=((l1*mul)>>16)+h1*mul;}
-	char acount[10];
-	u32b tmp_h,tmp_l;
-	int bit,result;
-	u32b exp_mon= (ap_r_ptr->mexp)*(ap_r_ptr->level);
-	u32b exp_mon_h= exp_mon / (p_ptr->max_plv+2);
-	u32b exp_mon_l= ((exp_mon % (p_ptr->max_plv+2))*0x10000/(p_ptr->max_plv+2))&0xFFFF;
-	
-	u32b exp_adv_h = player_exp[p_ptr->lev -1] * p_ptr->expfact /100;
-	u32b exp_adv_l = ((player_exp[p_ptr->lev -1]%100) * p_ptr->expfact *0x10000/100)&0xFFFF;
-	
-	M_INT_SUB(exp_adv_h, exp_adv_l, p_ptr->exp, p_ptr->exp_frac);
-	if ((p_ptr->lev>=PY_MAX_LEVEL) || (p_ptr->prace == RACE_ANDROID))
-		sprintf(acount,"[**]");
-	else if (!ap_r_ptr->r_tkills || (m_ptr->mflag2 & MFLAG_KAGE))
-		sprintf(acount,"[??]");
-	else if (M_INT_GREATER(exp_mon_h, exp_mon_l, exp_adv_h, exp_adv_l))
-		sprintf(acount,"[001]");
-	else 
-	{
-		M_INT_MULT(exp_mon_h, exp_mon_l, 1000,tmp_h, tmp_l);
-		if( M_INT_GREATER(exp_adv_h, exp_adv_l, tmp_h, tmp_l) )
-			sprintf(acount,"[999]");
-		else
-		{
-			bit=1; result=0;
-			M_INT_ADD(exp_adv_h, exp_adv_l, exp_mon_h, exp_mon_l);
-			M_INT_SUB(exp_adv_h, exp_adv_l, 0, 1);
-			while(M_INT_GREATER(exp_adv_h, exp_adv_l, exp_mon_h,exp_mon_l))
-			{
-				M_INT_LSHIFT(exp_mon_h,exp_mon_l);
-				bit <<= 1;
-			}
-			M_INT_RSHIFT(exp_mon_h,exp_mon_l);bit>>=1;
-			for(;bit>=1;bit>>=1)
-			{
-				if(M_INT_GREATER(exp_adv_h,exp_adv_l,exp_mon_h,exp_mon_l))
-				{
-					result |= bit;
-					M_INT_SUB(exp_adv_h,exp_adv_l,exp_mon_h,exp_mon_l);
-				}
-				M_INT_RSHIFT(exp_mon_h,exp_mon_l); 
-			}
-			sprintf(acount,"[%03d]",result);
 		}
 	}
-	sprintf(out_val, 
-#ifdef JP
-		"%s%s%s(%s)%s%s%s%s%s[r思 %s]",
-		acount, s1, m_name, look_mon_desc(c_ptr->m_idx), tekitou, s2, s3, 
-#else
-		"%s%s%s%s%s(%s)%s%s%s[r, %s]",
-		acount, s1, s2, s3, m_name, look_mon_desc(c_ptr->m_idx), tekitou, 
-#endif
-		(m_ptr->smart & SM_CLONED ? " (clone)": ""),
-		attitude,info);
-}
-
-						prt(out_val, 0, 0);
-
-						/* Place cursor */
-						move_cursor_relative(y, x);
-
-						/* Command */
-						query = inkey();
-					}
-
-					/* Normal commands */
-					if (query != 'r') break;
-
-					/* Toggle recall */
-					recall = !recall;
-				}
-
-				/* Always stop at "normal" keys */
-				if ((query != '\r') && (query != '\n') && (query != ' ')) break;
-
-				/* Sometimes stop at "space" key */
-				if ((query == ' ') && !(mode & (TARGET_LOOK))) break;
-
-				/* Change the intro */
-#ifdef JP
-s1 = "それは";
-#else
-				s1 = "It is ";
-#endif
-
-
-				/* Hack -- take account of gender */
-#ifdef JP
-if (ap_r_ptr->flags1 & (RF1_FEMALE)) s1 = "彼女は";
-#else
-				if (ap_r_ptr->flags1 & (RF1_FEMALE)) s1 = "She is ";
-#endif
-
-#ifdef JP
-else if (ap_r_ptr->flags1 & (RF1_MALE)) s1 = "彼は";
-#else
-				else if (ap_r_ptr->flags1 & (RF1_MALE)) s1 = "He is ";
-#endif
-
-
-				/* Use a preposition */
-#ifdef JP
-				s2 = "を";
-				s3 = "持っている";
-#else
-				s2 = "carrying ";
-#endif
-
-
-				/* Scan all objects being carried */
-				for (this_o_idx = m_ptr->hold_o_idx; this_o_idx; this_o_idx = next_o_idx)
-				{
-					char o_name[MAX_NLEN];
-
-					object_type *o_ptr;
-
-					/* Acquire object */
-					o_ptr = &o_list[this_o_idx];
-
-					/* Acquire next object */
-					next_o_idx = o_ptr->next_o_idx;
-
-					/* Obtain an object description */
-					object_desc(o_name, o_ptr, TRUE, 3);
-
-					/* Describe the object */
-#ifdef JP
-					sprintf(out_val, "%s%s%s%s[%s]", s1, o_name, s2, s3, info);
-#else
-					sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, o_name, info);
-#endif
-
-					prt(out_val, 0, 0);
-					move_cursor_relative(y, x);
-					query = inkey();
-
-					/* Always stop at "normal" keys */
-					if ((query != '\r') && (query != '\n') && (query != ' ')) break;
-
-					/* Sometimes stop at "space" key */
-					if ((query == ' ') && !(mode & (TARGET_LOOK))) break;
-
-					/* Change the intro */
-#ifdef JP
-s2 = "をまた";
-#else
-					s2 = "also carrying ";
-#endif
-
-				}
-
-				/* Double break */
-				if (this_o_idx) break;
-
-				/* Use a preposition */
-#ifdef JP
-			      s2 = "の上";
-			      s3 = "にいる";
-#else
-				s2 = "on ";
-#endif
-
-			}
-		}
-
-
-#ifdef ALLOW_EASY_FLOOR
-
-		/* Scan all objects in the grid */
-		if (easy_floor)
-		{
-			int floor_list[23], floor_num;
-			int min_width = 0;
-
-			floor_num = scan_floor(floor_list, y, x, 0x02);
-
-			if (floor_num)
-			{
-				/* Not boring */
-				boring = FALSE;
-
-				while (1)
-				{
-					if (floor_num == 1)
-					{
-						char o_name[MAX_NLEN];
-
-						object_type *o_ptr;
-
-						/* Acquire object */
-						o_ptr = &o_list[floor_list[0]];
-
-						/* Describe the object */
-						object_desc(o_name, o_ptr, TRUE, 3);
-
-						/* Message */
-#ifdef JP
-sprintf(out_val, "%s%s%s%s[%s]",
-s1, o_name, s2, s3, info);
-#else
-						sprintf(out_val, "%s%s%s%s [%s]",
-							s1, s2, s3, o_name, info);
-#endif
-
-					}
-					else
-					{
-						/* Message */
-#ifdef JP
-						sprintf(out_val, "%s %d個のアイテム%s%s ['x'で一覧, %s]",
-							s1, floor_num, s2, s3, info);
-#else
-						sprintf(out_val, "%s%s%sa pile of %d items [x,%s]",
-							s1, s2, s3, floor_num, info);
-#endif
-
-					}
-
-					prt(out_val, 0, 0);
-					move_cursor_relative(y, x);
-
-					/* Command */
-					query = inkey();
-
-					/* Display list of items (query == "el", not "won") */
-					if (floor_num == 1 || query != 'x')
-					{
-						/* Stop */
-						break;
-					}
-					else while (1)
-					{
-						int i, o_idx;
-						cave_type *c_ptr;
-
-						/* Save screen */
-						screen_save();
-
-						/* Display */
-						(void)show_floor(0, y, x, &min_width);
-
-						/* Prompt */
-#ifdef JP
-						prt("Enterで次へ、他のキーを押すとゲームに戻ります", 0, 0);
-#else
-						prt("Hit Enter to scroll, Hit any other key to continue", 0, 0);
-#endif
-
-						/* Wait */
-						query = inkey();
-
-						/* Load screen */
-						screen_load();
-
-						/* Exit unless 'Enter' */
-						if (query != '\n' && query != '\r') break;
-
-						/* Get the object being moved. */
-						c_ptr = &cave[y][x];
-						o_idx =	c_ptr->o_idx;
- 
-						/* Only rotate a pile of two or more objects. */
-						if (o_idx && o_list[o_idx].next_o_idx)
-						{
-
-							/* Remove the first object from the list. */
-							excise_object_idx(o_idx);
-	
-							/* Find end of the list. */
-							i = c_ptr->o_idx;
-							while (o_list[i].next_o_idx)
-								i = o_list[i].next_o_idx;
-	
-							/* Add after the last object. */
-							o_list[i].next_o_idx = o_idx;
-						}
-					}
-				}
-
-				/* Stop */
-				break;
-			}
-		}
 
 #endif /* ALLOW_EASY_FLOOR */
 
+	/* Hack -- under the player */
+	if ((y == py) && (x == px))
+	{
+		/* Description */
+#ifdef JP
+		s1 = "あなたは";
+		s2 = "の上";
+		s3 = "にいる";
+#else
+		s1 = "You are ";
 
-		/* Scan all objects in the grid */
-		for (this_o_idx = c_ptr->o_idx; this_o_idx; this_o_idx = next_o_idx)
+		/* Preposition */
+		s2 = "on ";
+#endif
+	}
+	else
+	{
+#ifdef JP
+		s1 = "ターゲット:";
+#else
+		s1 = "Target:";
+#endif
+	}
+
+	/* Hack -- hallucination */
+	if (p_ptr->image)
+	{
+#ifdef JP
+		cptr name = "何か奇妙な物";
+#else
+		cptr name = "something strange";
+#endif
+
+
+		/* Display a message */
+#ifdef JP
+		sprintf(out_val, "%s%s%s%s [%s]", s1, name, s2, s3, info);
+#else
+		sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, name, info);
+#endif
+
+		prt(out_val, 0, 0);
+		move_cursor_relative(y, x);
+		query = inkey();
+
+		/* Stop on everything but "return" */
+		if ((query != '\r') && (query != '\n')) return query;
+
+		/* Repeat forever */
+		return 0;
+	}
+
+
+	/* Actual monsters */
+	if (c_ptr->m_idx && m_list[c_ptr->m_idx].ml)
+	{
+		monster_type *m_ptr = &m_list[c_ptr->m_idx];
+		monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
+		char m_name[80];
+		bool recall = FALSE;
+
+		/* Not boring */
+		boring = FALSE;
+
+		/* Get the monster name ("a kobold") */
+		monster_desc(m_name, m_ptr, 0x08);
+
+		/* Hack -- track this monster race */
+		monster_race_track(m_ptr->ap_r_idx);
+
+		/* Hack -- health bar for this monster */
+		health_track(c_ptr->m_idx);
+
+		/* Hack -- handle stuff */
+		handle_stuff();
+
+		/* Interact */
+		while (1)
 		{
+			char acount[10];
+
+			/* Recall */
+			if (recall)
+			{
+				/* Save */
+				screen_save();
+
+				/* Recall on screen */
+				screen_roff(m_ptr->ap_r_idx, 0);
+
+				/* Hack -- Complete the prompt (again) */
+#ifdef JP
+				Term_addstr(-1, TERM_WHITE, format("  [r思 %s%s]", x_info, info));
+#else
+				Term_addstr(-1, TERM_WHITE, format("  [r,%s%s]", x_info, info));
+#endif
+
+				/* Command */
+				query = inkey();
+
+				/* Restore */
+				screen_load();
+
+				/* Normal commands */
+				if (query != 'r') break;
+
+				/* Toggle recall */
+				recall = FALSE;
+
+				/* Cleare recall text and repeat */
+				continue;
+			}
+
+			/*** Normal ***/
+
+			/* Describe, and prompt for recall */
+			evaluate_monster_exp(acount, m_ptr);
+
+#ifdef JP
+			sprintf(out_val, "[%s]%s%s(%s)%s%s [r思 %s%s]", acount, s1, m_name, look_mon_desc(c_ptr->m_idx, 0x01), s2, s3, x_info, info);
+#else
+			sprintf(out_val, "[%s]%s%s%s%s(%s) [r, %s%s]", acount, s1, s2, s3, m_name, look_mon_desc(c_ptr->m_idx, 0x01), x_info, info);
+#endif
+
+			prt(out_val, 0, 0);
+
+			/* Place cursor */
+			move_cursor_relative(y, x);
+
+			/* Command */
+			query = inkey();
+
+			/* Normal commands */
+			if (query != 'r') break;
+
+			/* Toggle recall */
+			recall = TRUE;
+		}
+
+		/* Always stop at "normal" keys */
+		if ((query != '\r') && (query != '\n') && (query != ' ') && (query != 'x')) return query;
+
+		/* Sometimes stop at "space" key */
+		if ((query == ' ') && !(mode & (TARGET_LOOK))) return query;
+
+		/* Change the intro */
+#ifdef JP
+		s1 = "それは";
+#else
+		s1 = "It is ";
+#endif
+
+
+		/* Hack -- take account of gender */
+#ifdef JP
+		if (ap_r_ptr->flags1 & (RF1_FEMALE)) s1 = "彼女は";
+#else
+		if (ap_r_ptr->flags1 & (RF1_FEMALE)) s1 = "She is ";
+#endif
+
+#ifdef JP
+		else if (ap_r_ptr->flags1 & (RF1_MALE)) s1 = "彼は";
+#else
+		else if (ap_r_ptr->flags1 & (RF1_MALE)) s1 = "He is ";
+#endif
+
+
+		/* Use a preposition */
+#ifdef JP
+		s2 = "を";
+		s3 = "持っている";
+#else
+		s2 = "carrying ";
+#endif
+
+
+		/* Scan all objects being carried */
+		for (this_o_idx = m_ptr->hold_o_idx; this_o_idx; this_o_idx = next_o_idx)
+		{
+			char o_name[MAX_NLEN];
+
 			object_type *o_ptr;
 
 			/* Acquire object */
@@ -3447,180 +3317,14 @@ s1, o_name, s2, s3, info);
 			/* Acquire next object */
 			next_o_idx = o_ptr->next_o_idx;
 
-			/* Describe it */
-			if (o_ptr->marked)
-			{
-				char o_name[MAX_NLEN];
+			/* Obtain an object description */
+			object_desc(o_name, o_ptr, TRUE, 3);
 
-				/* Not boring */
-				boring = FALSE;
-
-				/* Obtain an object description */
-				object_desc(o_name, o_ptr, TRUE, 3);
-
-				/* Describe the object */
+			/* Describe the object */
 #ifdef JP
-sprintf(out_val, "%s%s%s%s[%s]", s1, o_name, s2, s3, info);
+			sprintf(out_val, "%s%s%s%s[%s]", s1, o_name, s2, s3, info);
 #else
-				sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, o_name, info);
-#endif
-
-				prt(out_val, 0, 0);
-				move_cursor_relative(y, x);
-				query = inkey();
-
-				/* Always stop at "normal" keys */
-				if ((query != '\r') && (query != '\n') && (query != ' ')) break;
-
-				/* Sometimes stop at "space" key */
-				if ((query == ' ') && !(mode & TARGET_LOOK)) break;
-
-				/* Change the intro */
-#ifdef JP
-s1 = "それは";
-#else
-				s1 = "It is ";
-#endif
-
-
-				/* Plurals */
-#ifdef JP
-if (o_ptr->number != 1) s1 = "それらは";
-#else
-				if (o_ptr->number != 1) s1 = "They are ";
-#endif
-
-
-				/* Preposition */
-#ifdef JP
-				s2 = "の上";
-				s3 = "に見える";
-#else
-				s2 = "on ";
-#endif
-
-			}
-		}
-
-		/* Double break */
-		if (this_o_idx) break;
-
-		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
-
-		/* Require knowledge about grid, or ability to see grid */
-		if (!(c_ptr->info & CAVE_MARK) && !player_can_see_bold(y, x))
-		{
-			/* Forget feature */
-			feat = FEAT_NONE;
-		}
-
-		/* Terrain feature if needed */
-		if (boring || (feat > FEAT_INVIS))
-		{
-			cptr name;
-
-			/* Hack -- special handling for building doors */
-			if ((feat >= FEAT_BLDG_HEAD) && (feat <= FEAT_BLDG_TAIL))
-			{
-				name = building[feat - FEAT_BLDG_HEAD].name;
-			}
-			else if (feat == FEAT_ENTRANCE)
-			{
-#ifdef JP
-				name = format("%s(%d階相当)", d_text + d_info[c_ptr->special].text, d_info[c_ptr->special].mindepth);
-#else
-				name = format("%s(level %d)", d_text + d_info[c_ptr->special].text, d_info[c_ptr->special].mindepth);
-#endif
-			}
-			else if (feat == FEAT_TOWN)
-			{
-				name = town[c_ptr->special].name;
-			}
-			else if (p_ptr->wild_mode && (feat == FEAT_FLOOR))
-			{
-#ifdef JP
-				name = "道";
-#else
-				name = "road";
-#endif
-			}
-			else
-			{
-				name = f_name + f_info[feat].name;
-			}
-
-
-			/* Pick a prefix */
-			if (*s2 && ((feat >= FEAT_MINOR_GLYPH) &&
-			   (feat <= FEAT_PATTERN_XTRA2)))
-			{
-#ifdef JP
-s2 = "の上";
-#else
-				s2 = "on ";
-#endif
-
-			}
-			else if (*s2 && ((feat >= FEAT_DOOR_HEAD) &&
-				(feat <= FEAT_PERM_SOLID)))
-			{
-#ifdef JP
-s2 = "の中";
-#else
-				s2 = "in ";
-#endif
-
-			}
-			else if (*s2 && (feat == FEAT_TOWN))
-			{
-#ifdef JP
-s2 = "の中";
-#else
-				s2 = "in ";
-#endif
-
-			}
-
-			/* Hack -- special introduction for store & building doors -KMW- */
-			if (((feat >= FEAT_SHOP_HEAD) && (feat <= FEAT_SHOP_TAIL)) ||
-			    ((feat >= FEAT_BLDG_HEAD) && (feat <= FEAT_BLDG_TAIL)) ||
-			    (feat == FEAT_MUSEUM) ||
-			    (feat == FEAT_ENTRANCE))
-			{
-#ifdef JP
-s2 = "の入口";
-#else
-				s3 = "";
-#endif
-
-			}
-			else if ((feat == FEAT_TOWN) || (feat == FEAT_FLOOR) || (feat == FEAT_DIRT) || (feat == FEAT_FLOWER))
-			{
-#ifndef JP
-				s3 ="";
-#endif
-			}
-			else
-			{
-				/* Pick proper indefinite article */
-#ifndef JP
-				s3 = (is_a_vowel(name[0])) ? "an " : "a ";
-#endif
-			}
-
-			/* Display a message */
-			if (p_ptr->wizard)
-#ifdef JP
-			sprintf(out_val, "%s%s%s%s[%s] %x %d %d %d %d (%d,%d)", s1, name, s2, s3, info, c_ptr->info, c_ptr->feat, c_ptr->dist, c_ptr->cost, c_ptr->when, x, y);
-#else
-			sprintf(out_val, "%s%s%s%s [%s] %x %d %d %d %d (%d,%d)", s1, s2, s3, name, info, c_ptr->info, c_ptr->feat, c_ptr->dist, c_ptr->cost, c_ptr->when, x, y);
-#endif
-			else
-#ifdef JP
-			sprintf(out_val, "%s%s%s%s[%s]", s1, name, s2, s3, info);
-#else
-			sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, name, info);
+			sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, o_name, info);
 #endif
 
 			prt(out_val, 0, 0);
@@ -3628,15 +3332,353 @@ s2 = "の入口";
 			query = inkey();
 
 			/* Always stop at "normal" keys */
-			if ((query != '\r') && (query != '\n') && (query != ' ')) break;
+			if ((query != '\r') && (query != '\n') && (query != ' ') && (query != 'x')) return query;
+
+			/* Sometimes stop at "space" key */
+			if ((query == ' ') && !(mode & (TARGET_LOOK))) return query;
+
+			/* Change the intro */
+#ifdef JP
+			s2 = "をまた";
+#else
+			s2 = "also carrying ";
+#endif
 		}
 
-		/* Stop on everything but "return" */
-		if ((query != '\r') && (query != '\n')) break;
+		/* Use a preposition */
+#ifdef JP
+		s2 = "の上";
+		s3 = "にいる";
+#else
+		s2 = "on ";
+#endif
 	}
 
-	/* Keep going */
-	return (query);
+
+#ifdef ALLOW_EASY_FLOOR
+	if (floor_num)
+	{
+		int min_width = 0;
+
+		while (1)
+		{
+			if (floor_num == 1)
+			{
+				char o_name[MAX_NLEN];
+
+				object_type *o_ptr;
+
+				/* Acquire object */
+				o_ptr = &o_list[floor_list[0]];
+
+				/* Describe the object */
+				object_desc(o_name, o_ptr, TRUE, 3);
+
+				/* Message */
+#ifdef JP
+				sprintf(out_val, "%s%s%s%s[%s]",
+					s1, o_name, s2, s3, info);
+#else
+				sprintf(out_val, "%s%s%s%s [%s]",
+					s1, s2, s3, o_name, info);
+#endif
+
+				prt(out_val, 0, 0);
+				move_cursor_relative(y, x);
+
+				/* Command */
+				query = inkey();
+
+				/* End this grid */
+				return query;
+			}
+
+			/* Provide one cushion before item listing  */
+			if (boring)
+			{
+				/* Display rough information about items */
+#ifdef JP
+				sprintf(out_val, "%s %d個のアイテム%s%s ['x'で一覧, %s]",
+					s1, floor_num, s2, s3, info);
+#else
+				sprintf(out_val, "%s%s%sa pile of %d items [x,%s]",
+					s1, s2, s3, floor_num, info);
+#endif
+
+				prt(out_val, 0, 0);
+				move_cursor_relative(y, x);
+
+				/* Command */
+				query = inkey();
+
+				/* No request for listing */
+				if (query != 'x' && query != ' ') return query;
+			}
+
+
+			/** Display list of items **/
+
+			/* Continue scrolling list if requested */
+			while (1)
+			{
+				int i, o_idx;
+				cave_type *c_ptr;
+
+				/* Save screen */
+				screen_save();
+
+				/* Display */
+				(void)show_floor(0, y, x, &min_width);
+
+				/* Prompt */
+#ifdef JP
+				sprintf(out_val, "%s %d個のアイテム%s%s [Enterで次へ, %s]",
+					s1, floor_num, s2, s3, info);
+#else
+				sprintf(out_val, "%s%s%sa pile of %d items [Enter,%s]",
+					s1, s2, s3, floor_num, info);
+#endif
+				prt(out_val, 0, 0);
+
+
+				/* Wait */
+				query = inkey();
+
+				/* Load screen */
+				screen_load();
+
+				/* Exit unless 'Enter' */
+				if (query != '\n' && query != '\r')
+				{
+					return query;
+				}
+
+				/* Get the object being moved. */
+				c_ptr = &cave[y][x];
+				o_idx =	c_ptr->o_idx;
+ 
+				/* Only rotate a pile of two or more objects. */
+				if (!(o_idx && o_list[o_idx].next_o_idx)) continue;
+
+				/* Remove the first object from the list. */
+				excise_object_idx(o_idx);
+	
+				/* Find end of the list. */
+				i = c_ptr->o_idx;
+				while (o_list[i].next_o_idx)
+					i = o_list[i].next_o_idx;
+	
+				/* Add after the last object. */
+				o_list[i].next_o_idx = o_idx;
+
+				/* Loop and re-display the list */
+			}
+		}
+
+		/* End this grid */
+		return query;
+	}
+#endif /* ALLOW_EASY_FLOOR */
+
+
+	/* Scan all objects in the grid */
+	for (this_o_idx = c_ptr->o_idx; this_o_idx; this_o_idx = next_o_idx)
+	{
+		object_type *o_ptr;
+
+		/* Acquire object */
+		o_ptr = &o_list[this_o_idx];
+
+		/* Acquire next object */
+		next_o_idx = o_ptr->next_o_idx;
+
+		/* Describe it */
+		if (o_ptr->marked)
+		{
+			char o_name[MAX_NLEN];
+
+			/* Not boring */
+			boring = FALSE;
+
+			/* Obtain an object description */
+			object_desc(o_name, o_ptr, TRUE, 3);
+
+			/* Describe the object */
+#ifdef JP
+			sprintf(out_val, "%s%s%s%s[%s]", s1, o_name, s2, s3, info);
+#else
+			sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, o_name, info);
+#endif
+
+			prt(out_val, 0, 0);
+			move_cursor_relative(y, x);
+			query = inkey();
+
+			/* Always stop at "normal" keys */
+			if ((query != '\r') && (query != '\n') && (query != ' ') && (query != 'x')) return query;
+
+			/* Sometimes stop at "space" key */
+			if ((query == ' ') && !(mode & TARGET_LOOK)) return query;
+
+			/* Change the intro */
+#ifdef JP
+			s1 = "それは";
+#else
+			s1 = "It is ";
+#endif
+
+
+			/* Plurals */
+#ifdef JP
+			if (o_ptr->number != 1) s1 = "それらは";
+#else
+			if (o_ptr->number != 1) s1 = "They are ";
+#endif
+
+
+			/* Preposition */
+#ifdef JP
+			s2 = "の上";
+			s3 = "に見える";
+#else
+			s2 = "on ";
+#endif
+
+		}
+	}
+
+
+	/* Feature code (applying "mimic" field) */
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
+
+	/* Require knowledge about grid, or ability to see grid */
+	if (!(c_ptr->info & CAVE_MARK) && !player_can_see_bold(y, x))
+	{
+		/* Forget feature */
+		feat = FEAT_NONE;
+	}
+
+	/* Terrain feature if needed */
+	if (boring || (feat > FEAT_INVIS))
+	{
+		cptr name;
+
+		/* Hack -- special handling for building doors */
+		if ((feat >= FEAT_BLDG_HEAD) && (feat <= FEAT_BLDG_TAIL))
+		{
+			name = building[feat - FEAT_BLDG_HEAD].name;
+		}
+		else if (feat == FEAT_ENTRANCE)
+		{
+#ifdef JP
+			name = format("%s(%d階相当)", d_text + d_info[c_ptr->special].text, d_info[c_ptr->special].mindepth);
+#else
+			name = format("%s(level %d)", d_text + d_info[c_ptr->special].text, d_info[c_ptr->special].mindepth);
+#endif
+		}
+		else if (feat == FEAT_TOWN)
+		{
+			name = town[c_ptr->special].name;
+		}
+		else if (p_ptr->wild_mode && (feat == FEAT_FLOOR))
+		{
+#ifdef JP
+			name = "道";
+#else
+			name = "road";
+#endif
+		}
+		else
+		{
+			name = f_name + f_info[feat].name;
+		}
+
+
+		/* Pick a prefix */
+		if (*s2 && ((feat >= FEAT_MINOR_GLYPH) &&
+			    (feat <= FEAT_PATTERN_XTRA2)))
+		{
+#ifdef JP
+			s2 = "の上";
+#else
+			s2 = "on ";
+#endif
+
+		}
+		else if (*s2 && ((feat >= FEAT_DOOR_HEAD) &&
+				 (feat <= FEAT_PERM_SOLID)))
+		{
+#ifdef JP
+			s2 = "の中";
+#else
+			s2 = "in ";
+#endif
+
+		}
+		else if (*s2 && (feat == FEAT_TOWN))
+		{
+#ifdef JP
+			s2 = "の中";
+#else
+			s2 = "in ";
+#endif
+
+		}
+
+		/* Hack -- special introduction for store & building doors -KMW- */
+		if (((feat >= FEAT_SHOP_HEAD) && (feat <= FEAT_SHOP_TAIL)) ||
+		    ((feat >= FEAT_BLDG_HEAD) && (feat <= FEAT_BLDG_TAIL)) ||
+		    (feat == FEAT_MUSEUM) ||
+		    (feat == FEAT_ENTRANCE))
+		{
+#ifdef JP
+			s2 = "の入口";
+#else
+			s3 = "";
+#endif
+
+		}
+		else if ((feat == FEAT_TOWN) || (feat == FEAT_FLOOR) || (feat == FEAT_DIRT) || (feat == FEAT_FLOWER))
+		{
+#ifndef JP
+			s3 ="";
+#endif
+		}
+		else
+		{
+			/* Pick proper indefinite article */
+#ifndef JP
+			s3 = (is_a_vowel(name[0])) ? "an " : "a ";
+#endif
+		}
+
+		/* Display a message */
+		if (p_ptr->wizard)
+#ifdef JP
+			sprintf(out_val, "%s%s%s%s[%s] %x %d %d %d %d (%d,%d)", s1, name, s2, s3, info, c_ptr->info, c_ptr->feat, c_ptr->dist, c_ptr->cost, c_ptr->when, y, x);
+#else
+			sprintf(out_val, "%s%s%s%s [%s] %x %d %d %d %d (%d,%d)", s1, s2, s3, name, info, c_ptr->info, c_ptr->feat, c_ptr->dist, c_ptr->cost, c_ptr->when, y, x);
+#endif
+		else
+#ifdef JP
+			sprintf(out_val, "%s%s%s%s[%s]", s1, name, s2, s3, info);
+#else
+			sprintf(out_val, "%s%s%s%s [%s]", s1, s2, s3, name, info);
+#endif
+
+		prt(out_val, 0, 0);
+		move_cursor_relative(y, x);
+		query = inkey();
+
+		/* Always stop at "normal" keys */
+		if ((query != '\r') && (query != '\n') && (query != ' ')) return query;
+	}
+
+	/* Stop on everything but "return" */
+	if ((query != '\r') && (query != '\n')) return query;
+
+	/* Repeat forever */
+	return 0;
 }
 
 
@@ -3699,6 +3741,7 @@ bool target_set(int mode)
 
 	int wid, hgt;
 
+
 	/* Get size */
 	get_screen_size(&wid, &hgt);
 
@@ -3753,7 +3796,7 @@ strcpy(info, "q止 p自 o現 +次 -前");
 			}
 
 			/* Describe and Prompt */
-			query = target_set_aux(y, x, mode, info);
+			while (!(query = target_set_aux(y, x, mode, info)));
 
 			/* Cancel tracking */
 			/* health_track(0); */
@@ -3967,6 +4010,8 @@ strcpy(info, "q止 p自 o現 +次 -前");
 		/* Arbitrary grids */
 		else
 		{
+			bool move_fast = FALSE;
+
 			if (!(mode & TARGET_LOOK)) prt_path(y, x);
 
 			/* Access */
@@ -3981,7 +4026,7 @@ strcpy(info, "q止 t決 p自 m近 +次 -前");
 
 
 			/* Describe and Prompt (enable "TARGET_LOOK") */
-			query = target_set_aux(y, x, mode | TARGET_LOOK, info);
+			while (!(query = target_set_aux(y, x, mode | TARGET_LOOK, info)));
 
 			/* Cancel tracking */
 			/* health_track(0); */
@@ -4080,6 +4125,9 @@ strcpy(info, "q止 t決 p自 m近 +次 -前");
 					/* Extract the action (if any) */
 					d = get_keymap_dir(query);
 
+					/* XTRA HACK MOVEFAST */
+					if (isupper(query)) move_fast = TRUE;
+
 					if (!d) bell();
 					break;
 				}
@@ -4091,9 +4139,18 @@ strcpy(info, "q止 t決 p自 m近 +次 -前");
 				int dx = ddx[d];
 				int dy = ddy[d];
 
-				/* Move */
-				x += dx;
-				y += dy;
+				/* XTRA HACK MOVEFAST */
+				if (move_fast)
+				{
+					int mag = MIN(wid / 2, hgt / 2);
+					x += dx * mag;
+					y += dy * mag;
+				}
+				else
+				{
+					x += dx;
+					y += dy;
+				}
 
 				/* Do not move horizontally if unnecessary */
 				if (((x < panel_col_min + wid / 2) && (dx > 0)) ||
@@ -5577,11 +5634,14 @@ msg_print("場所を選んでスペースキーを押して下さい。");
 				/* XTRA HACK MOVEFAST */
 				if (move_fast)
 				{
-				     x += dx * wid / 2;
-				     y += dy * hgt / 2;
-				} else {
-				x += dx;
-				y += dy;
+					int mag = MIN(wid / 2, hgt / 2);
+					x += dx * mag;
+					y += dy * mag;
+				}
+				else
+				{
+					x += dx;
+					y += dy;
 				}
 
 				/* Do not move horizontally if unnecessary */

@@ -39,15 +39,15 @@
 
 /* Savefile version for Hengband 1.1.1 and later */
 #define H_VER_MAJOR 1
-#define H_VER_MINOR 3
-#define H_VER_PATCH 2
+#define H_VER_MINOR 4
+#define H_VER_PATCH 0
 #define H_VER_EXTRA 0
 
 /* Added for ZAngband */
 #define FAKE_VERSION   0
 #define FAKE_VER_MAJOR 11
-#define FAKE_VER_MINOR 3
-#define FAKE_VER_PATCH 1
+#define FAKE_VER_MINOR 4
+#define FAKE_VER_PATCH 7
 
 #define ANGBAND_2_8_1
 #define ZANGBAND
@@ -371,6 +371,14 @@
 #define LITE_MAX 600
 
 /*
+ * Maximum size of the "mon_lite" array (see "cave.c")
+ * Note that the "view radius" will NEVER exceed 20, monster illumination
+ * flags are dependent on CAVE_VIEW, and even if the "view" was octagonal,
+ * we would never require more than 1520 entries in the array.
+ */
+#define MON_LITE_MAX 1536
+
+/*
  * Maximum size of the "view" array (see "cave.c")
  * Note that the "view radius" will NEVER exceed 20, and even if the "view"
  * was octagonal, we would never require more than 1520 entries in the array.
@@ -385,7 +393,7 @@
  * must also be large enough to allow "good enough" use as a circular queue,
  * to calculate monster flow, but note that the flow code is "paranoid".
  */
-#define TEMP_MAX 1536
+#define TEMP_MAX 2298
 
 
 /*
@@ -477,6 +485,7 @@
  */
 #define TOWN_DAWN         10000    /* Number of ticks from dawn to dawn XXX */
 #define TURNS_PER_TICK    10L      /* Number of energy-gain-turns per ticks */
+#define MAX_DAYS          20000    /* Maximum days */
 #define BREAK_GLYPH       550      /* Rune of protection resistance */
 #define BREAK_MINOR_GLYPH 299      /* For explosive runes */
 #define BTH_PLUS_ADJ       3       /* Adjust BTH per plus-to-hit */
@@ -549,6 +558,10 @@
 #define PF_SUMMON_SPELL 0x0010
 #define PF_BALL_SPELL   0x0020
 #define PF_RYOUTE       0x0040
+
+
+/* Maximum number of preservable pets */
+#define MAX_PARTY_MON 21
 
 
 /*
@@ -674,7 +687,7 @@
 #define VALID_REALM        (MAX_REALM + MAX_MAGIC - MIN_TECHNIC + 1)
 #define NUM_TECHNIC        (MAX_REALM - MIN_TECHNIC + 1)
 
-#define is_magic(A) ((A) < MAX_MAGIC + 1 ? TRUE : FALSE)
+#define is_magic(A) ((((A) > REALM_NONE) && ((A) < MAX_MAGIC + 1)) ? TRUE : FALSE)
 #define tval2realm(A) ((A) - TV_LIFE_BOOK + 1)
 #define technic2magic(A)      (is_magic(A) ? (A) : (A) - MIN_TECHNIC + 1 + MAX_MAGIC)
 #define is_good_realm(REALM)   ((REALM) == REALM_LIFE || (REALM) == REALM_CRUSADE)
@@ -721,13 +734,6 @@
  * Total number of inventory slots (hard-coded).
  */
 #define INVEN_TOTAL     36
-
-
-/*
- * A "stack" of items is limited to less than 100 items (hard-coded).
- */
-#define MAX_STACK_SIZE                  100
-
 
 
 /*
@@ -1050,7 +1056,7 @@
 #define FEAT_MIRROR             0xc3
 
 /* unknown grid (not detected)  */
-#define FEAT_UNDETECTD          0xc4
+#define FEAT_UNDETECTED         0xc4
 
 /* special traps */
 #define FEAT_TRAP_ARMAGEDDON    0xc5
@@ -1690,7 +1696,7 @@
 #define TV_STAFF        55
 #define TV_WAND         65
 #define TV_ROD          66
-#define TV_PARCHEMENT   69
+#define TV_PARCHMENT    69
 #define TV_SCROLL       70
 #define TV_POTION       75
 #define TV_FLASK        77
@@ -2376,6 +2382,15 @@
  *   ITEM: Affect each object in the "blast area" in some way
  *   KILL: Affect each monster in the "blast area" in some way
  *   HIDE: Hack -- disable "visual" feedback from projection
+ *   DISI: Disintegrate non-permanent features
+ *   PLAYER: Main target is player (used for riding player)
+ *   AIMED: Target is only player or monster, so don't affect another.
+ *          Depend on PROJECT_PLAYER.
+ *          (used for minimum (rad == 0) balls on riding player)
+ *   REFLECTABLE: Refrectable spell attacks (used for "bolts")
+ *   NO_HANGEKI: Avoid counter attacks of monsters
+ *   PATH: Only used for printing project path
+ *   FAST: Hide "visual" of flying bolts until blast
  */
 #define PROJECT_JUMP        0x01
 #define PROJECT_BEAM        0x02
@@ -2387,11 +2402,18 @@
 #define PROJECT_HIDE        0x80
 #define PROJECT_DISI        0x100
 #define PROJECT_PLAYER      0x200
-#define PROJECT_MONSTER     0x400
+#define PROJECT_AIMED       0x400
 #define PROJECT_REFLECTABLE 0x800
 #define PROJECT_NO_HANGEKI  0x1000
 #define PROJECT_PATH        0x2000
 #define PROJECT_FAST        0x4000
+
+
+/*
+ * Special caster ID for project()
+ */
+#define PROJECT_WHO_UNCTRL_POWER -1
+
 
 /*
  * Bit flags for the "enchant()" function
@@ -2528,7 +2550,7 @@
 #define PR_STATE        0x00100000L     /* Display Extra (State) */
 #define PR_SPEED        0x00200000L     /* Display Extra (Speed) */
 #define PR_STUDY        0x00400000L     /* Display Extra (Study) */
-#define PR_MANE         0x00800000L     /* Display Extra (Mane) */
+#define PR_IMITATION    0x00800000L     /* Display Extra (Imitation) */
 #define PR_EXTRA        0x01000000L     /* Display Extra Info */
 #define PR_BASIC        0x02000000L     /* Display Basic Info */
 #define PR_MAP          0x04000000L     /* Display Map */
@@ -3987,16 +4009,21 @@
 #define cave_perma_bold(Y,X) \
 	(((cave[Y][X].feat >= FEAT_PERM_EXTRA) && \
 	  (cave[Y][X].feat <= FEAT_PERM_SOLID)) || \
-	 ((cave[Y][X].feat == FEAT_LESS) || \
-	  (cave[Y][X].feat == FEAT_MORE) || \
-	  (cave[Y][X].feat == FEAT_ENTRANCE)) || \
-	 ((cave[Y][X].feat == FEAT_LESS_LESS) || \
-	  (cave[Y][X].feat == FEAT_MORE_MORE)) || \
-	 ((cave[Y][X].feat >= FEAT_BLDG_HEAD) && \
-	  (cave[Y][X].feat <= FEAT_BLDG_TAIL)) || \
+	 (cave[Y][X].feat == FEAT_LESS) || \
+	 (cave[Y][X].feat == FEAT_MORE) || \
+	 (cave[Y][X].feat == FEAT_ENTRANCE) || \
+	 (cave[Y][X].feat == FEAT_LESS_LESS) || \
+	 (cave[Y][X].feat == FEAT_MORE_MORE) || \
+	 (cave[Y][X].feat == FEAT_MOUNTAIN) || \
+	 ((cave[Y][X].feat >= FEAT_QUEST_ENTER) && \
+	  (cave[Y][X].feat <= FEAT_QUEST_UP)) || \
+	 ((cave[Y][X].feat >= FEAT_PATTERN_START) && \
+	  (cave[Y][X].feat <= FEAT_PATTERN_XTRA2)) || \
 	 ((cave[Y][X].feat >= FEAT_SHOP_HEAD) && \
 	  (cave[Y][X].feat <= FEAT_SHOP_TAIL)) || \
-	  (cave[Y][X].feat == FEAT_MUSEUM))
+	 (cave[Y][X].feat == FEAT_MUSEUM) || \
+	 ((cave[Y][X].feat >= FEAT_BLDG_HEAD) && \
+	  (cave[Y][X].feat <= FEAT_BLDG_TAIL)))
 
 
 /*
@@ -4045,19 +4072,19 @@
 #define cave_perma_grid(C) \
 	((((C)->feat >= FEAT_PERM_EXTRA) && \
 	  ((C)->feat <= FEAT_PERM_SOLID)) || \
-	  ((C)->feat == FEAT_LESS) || \
-	  ((C)->feat == FEAT_MORE) || \
-	  ((C)->feat == FEAT_ENTRANCE) || \
-	  ((C)->feat == FEAT_LESS_LESS) || \
-	  ((C)->feat == FEAT_MORE_MORE) || \
-	  ((C)->feat == FEAT_MOUNTAIN) || \
+	 ((C)->feat == FEAT_LESS) || \
+	 ((C)->feat == FEAT_MORE) || \
+	 ((C)->feat == FEAT_ENTRANCE) || \
+	 ((C)->feat == FEAT_LESS_LESS) || \
+	 ((C)->feat == FEAT_MORE_MORE) || \
+	 ((C)->feat == FEAT_MOUNTAIN) || \
 	 (((C)->feat >= FEAT_QUEST_ENTER) && \
 	  ((C)->feat <= FEAT_QUEST_UP)) || \
 	 (((C)->feat >= FEAT_PATTERN_START) && \
 	  ((C)->feat <= FEAT_PATTERN_XTRA2)) || \
 	 (((C)->feat >= FEAT_SHOP_HEAD) && \
 	  ((C)->feat <= FEAT_SHOP_TAIL)) || \
-	  ((C)->feat == FEAT_MUSEUM) || \
+	 ((C)->feat == FEAT_MUSEUM) || \
 	 (((C)->feat >= FEAT_BLDG_HEAD) && \
 	  ((C)->feat <= FEAT_BLDG_TAIL)))
 
@@ -4940,3 +4967,9 @@ extern int PlayerUID;
 
 #define SCREEN_BUF_SIZE 65536           /* max screen dump buffer size */
 
+
+/*
+ * Bit flags for screen_object()
+ */
+#define SCROBJ_FAKE_OBJECT  0x00000001
+#define SCROBJ_FORCE_DETAIL 0x00000002

@@ -1452,7 +1452,10 @@ s32b object_value(object_type *o_ptr)
 bool can_player_destroy_object(object_type *o_ptr)
 {
 	/* Artifacts cannot be destroyed */
-	if (artifact_p(o_ptr) || o_ptr->art_name)
+	if (!artifact_p(o_ptr) && !o_ptr->art_name) return TRUE;
+
+	/* If object is unidentified, makes fake inscription */
+	if (!object_known_p(o_ptr))
 	{
 		byte feel = FEEL_SPECIAL;
 
@@ -1475,7 +1478,8 @@ bool can_player_destroy_object(object_type *o_ptr)
 		return FALSE;
 	}
 
-	return TRUE;
+	/* Identified artifact -- Nothing to do */
+	return FALSE;
 }
 
 
@@ -1552,14 +1556,24 @@ void reduce_charges(object_type *o_ptr, int amt)
  */
 
 /*
- *  Determine if an item can partly absorb a second item.
+ * A "stack" of items is limited to less than or equal to 99 items (hard-coded).
  */
-static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
+#define MAX_STACK_SIZE 99
+
+
+/*
+ *  Determine if an item can partly absorb a second item.
+ *  Return maximum number of stack.
+ */
+static int object_similar_part(object_type *o_ptr, object_type *j_ptr)
 {
 	int i;
 
+	/* Default maximum number of stack */
+	int max_num = MAX_STACK_SIZE;
+
 	/* Require identical object types */
-	if (o_ptr->k_idx != j_ptr->k_idx) return (0);
+	if (o_ptr->k_idx != j_ptr->k_idx) return 0;
 
 
 	/* Analyze the items */
@@ -1571,13 +1585,13 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		case TV_CAPTURE:
 		{
 			/* Never okay */
-			return (0);
+			return 0;
 		}
 
 		case TV_STATUE:
 		{
-			if ((o_ptr->sval != SV_PHOTO) || (j_ptr->sval != SV_PHOTO)) return (0);
-			if (o_ptr->pval != j_ptr->pval) return (0);
+			if ((o_ptr->sval != SV_PHOTO) || (j_ptr->sval != SV_PHOTO)) return 0;
+			if (o_ptr->pval != j_ptr->pval) return 0;
 			break;
 		}
 
@@ -1586,7 +1600,7 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		case TV_CORPSE:
 		{
 			/* Same monster */
-			if (o_ptr->pval != j_ptr->pval) return (0);
+			if (o_ptr->pval != j_ptr->pval) return 0;
 
 			/* Assume okay */
 			break;
@@ -1608,10 +1622,10 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 			if ((!(o_ptr->ident & (IDENT_EMPTY)) &&
 				!object_known_p(o_ptr)) ||
 				(!(j_ptr->ident & (IDENT_EMPTY)) &&
-				!object_known_p(j_ptr))) return(0);
+				!object_known_p(j_ptr))) return 0;
 
 			/* Require identical charges, since staffs are bulky. */
-			if (o_ptr->pval != j_ptr->pval) return (0);
+			if (o_ptr->pval != j_ptr->pval) return 0;
 
 			/* Assume okay */
 			break;
@@ -1624,7 +1638,7 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 			if ((!(o_ptr->ident & (IDENT_EMPTY)) &&
 				!object_known_p(o_ptr)) ||
 				(!(j_ptr->ident & (IDENT_EMPTY)) &&
-				!object_known_p(j_ptr))) return(0);
+				!object_known_p(j_ptr))) return 0;
 
 			/* Wand charges combine in O&ZAngband.  */
 
@@ -1635,6 +1649,9 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		/* Staffs and Wands and Rods */
 		case TV_ROD:
 		{
+			/* Prevent overflaw of timeout */
+			max_num = MIN(max_num, MAX_SHORT / k_info[o_ptr->k_idx].pval);
+
 			/* Assume okay */
 			break;
 		}
@@ -1656,7 +1673,7 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		case TV_DRAG_ARMOR:
 		{
 			/* Require permission */
-			if (!stack_allow_items) return (0);
+			if (!stack_allow_items) return 0;
 
 			/* Fall through */
 		}
@@ -1665,9 +1682,10 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		case TV_RING:
 		case TV_AMULET:
 		case TV_LITE:
+		case TV_WHISTLE:
 		{
 			/* Require full knowledge of both items */
-			if (!object_known_p(o_ptr) || !object_known_p(j_ptr)) return (0);
+			if (!object_known_p(o_ptr) || !object_known_p(j_ptr)) return 0;
 
 			/* Fall through */
 		}
@@ -1678,39 +1696,39 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		case TV_SHOT:
 		{
 			/* Require identical knowledge of both items */
-			if (object_known_p(o_ptr) != object_known_p(j_ptr)) return (0);
+			if (object_known_p(o_ptr) != object_known_p(j_ptr)) return 0;
 
 			/* Require identical "bonuses" */
-			if (o_ptr->to_h != j_ptr->to_h) return (FALSE);
-			if (o_ptr->to_d != j_ptr->to_d) return (FALSE);
-			if (o_ptr->to_a != j_ptr->to_a) return (FALSE);
+			if (o_ptr->to_h != j_ptr->to_h) return 0;
+			if (o_ptr->to_d != j_ptr->to_d) return 0;
+			if (o_ptr->to_a != j_ptr->to_a) return 0;
 
 			/* Require identical "pval" code */
-			if (o_ptr->pval != j_ptr->pval) return (FALSE);
+			if (o_ptr->pval != j_ptr->pval) return 0;
 
 			/* Require identical "artifact" names */
-			if (o_ptr->name1 != j_ptr->name1) return (FALSE);
+			if (o_ptr->name1 != j_ptr->name1) return 0;
 
 			/* Random artifacts never stack */
-			if (o_ptr->art_name || j_ptr->art_name) return (FALSE);
+			if (o_ptr->art_name || j_ptr->art_name) return 0;
 
 			/* Require identical "ego-item" names */
-			if (o_ptr->name2 != j_ptr->name2) return (FALSE);
+			if (o_ptr->name2 != j_ptr->name2) return 0;
 
 			/* Require identical added essence  */
-			if (o_ptr->xtra3 != j_ptr->xtra3) return (FALSE);
-			if (o_ptr->xtra4 != j_ptr->xtra4) return (FALSE);
+			if (o_ptr->xtra3 != j_ptr->xtra3) return 0;
+			if (o_ptr->xtra4 != j_ptr->xtra4) return 0;
 
 			/* Hack -- Never stack "powerful" items */
-			if (o_ptr->xtra1 || j_ptr->xtra1) return (FALSE);
+			if (o_ptr->xtra1 || j_ptr->xtra1) return 0;
 
 			/* Hack -- Never stack recharging items */
-			if (o_ptr->timeout || j_ptr->timeout) return (FALSE);
+			if (o_ptr->timeout || j_ptr->timeout) return 0;
 
 			/* Require identical "values" */
-			if (o_ptr->ac != j_ptr->ac) return (FALSE);
-			if (o_ptr->dd != j_ptr->dd) return (FALSE);
-			if (o_ptr->ds != j_ptr->ds) return (FALSE);
+			if (o_ptr->ac != j_ptr->ac) return 0;
+			if (o_ptr->dd != j_ptr->dd) return 0;
+			if (o_ptr->ds != j_ptr->ds) return 0;
 
 			/* Probably okay */
 			break;
@@ -1720,7 +1738,7 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 		default:
 		{
 			/* Require knowledge */
-			if (!object_known_p(o_ptr) || !object_known_p(j_ptr)) return (0);
+			if (!object_known_p(o_ptr) || !object_known_p(j_ptr)) return 0;
 
 			/* Probably okay */
 			break;
@@ -1730,29 +1748,29 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 
 	/* Hack -- Identical art_flags! */
 	for (i = 0; i < TR_FLAG_SIZE; i++)
-		if (o_ptr->art_flags[i] != j_ptr->art_flags[i]) return (0);
+		if (o_ptr->art_flags[i] != j_ptr->art_flags[i]) return 0;
 
 	/* Hack -- Require identical "cursed" status */
-	if (o_ptr->curse_flags != j_ptr->curse_flags) return (0);
+	if (o_ptr->curse_flags != j_ptr->curse_flags) return 0;
 
 	/* Hack -- Require identical "broken" status */
-	if ((o_ptr->ident & (IDENT_BROKEN)) != (j_ptr->ident & (IDENT_BROKEN))) return (0);
+	if ((o_ptr->ident & (IDENT_BROKEN)) != (j_ptr->ident & (IDENT_BROKEN))) return 0;
 
 
 	/* Hack -- require semi-matching "inscriptions" */
 	if (o_ptr->inscription && j_ptr->inscription &&
 	    (o_ptr->inscription != j_ptr->inscription))
-		return (0);
+		return 0;
 
 	/* Hack -- normally require matching "inscriptions" */
-	if (!stack_force_notes && (o_ptr->inscription != j_ptr->inscription)) return (0);
+	if (!stack_force_notes && (o_ptr->inscription != j_ptr->inscription)) return 0;
 
 	/* Hack -- normally require matching "discounts" */
-	if (!stack_force_costs && (o_ptr->discount != j_ptr->discount)) return (0);
+	if (!stack_force_costs && (o_ptr->discount != j_ptr->discount)) return 0;
 
 
 	/* They match, so they must be similar */
-	return (TRUE);
+	return max_num;
 }
 
 /*
@@ -1761,12 +1779,16 @@ static bool object_similar_part(object_type *o_ptr, object_type *j_ptr)
 bool object_similar(object_type *o_ptr, object_type *j_ptr)
 {
 	int total = o_ptr->number + j_ptr->number;
+	int max_num;
 
-	if (!object_similar_part(o_ptr, j_ptr))
-		return FALSE;
+	/* Are these objects similar? */
+	max_num = object_similar_part(o_ptr, j_ptr);
+
+	/* Return if not similar */
+	if (!max_num) return FALSE;
 
 	/* Maximal "stacking" limit */
-	if (total >= MAX_STACK_SIZE) return (0);
+	if (total > max_num) return (0);
 
 
 	/* They match, so they must be similar */
@@ -1780,10 +1802,12 @@ bool object_similar(object_type *o_ptr, object_type *j_ptr)
  */
 void object_absorb(object_type *o_ptr, object_type *j_ptr)
 {
+	int max_num = object_similar_part(o_ptr, j_ptr);
 	int total = o_ptr->number + j_ptr->number;
+	int diff = (total > max_num) ? total - max_num : 0;
 
-	/* Add together the item counts */
-	o_ptr->number = ((total < MAX_STACK_SIZE) ? total : (MAX_STACK_SIZE - 1));
+	/* Combine quantity, lose excess items */
+	o_ptr->number = (total > max_num) ? max_num : total;
 
 	/* Hack -- blend "known" status */
 	if (object_known_p(j_ptr)) object_known(o_ptr);
@@ -1812,14 +1836,14 @@ void object_absorb(object_type *o_ptr, object_type *j_ptr)
 	/* Hack -- if rods are stacking, add the pvals (maximum timeouts) and current timeouts together. -LM- */
 	if (o_ptr->tval == TV_ROD)
 	{
-		o_ptr->pval += j_ptr->pval;
-		o_ptr->timeout += j_ptr->timeout;
+		o_ptr->pval += j_ptr->pval * (j_ptr->number - diff) / j_ptr->number;
+		o_ptr->timeout += j_ptr->timeout * (j_ptr->number - diff) / j_ptr->number;
 	}
 
 	/* Hack -- if wands are stacking, combine the charges. -LM- */
 	if (o_ptr->tval == TV_WAND)
 	{
-		o_ptr->pval += j_ptr->pval;
+		o_ptr->pval += j_ptr->pval * (j_ptr->number - diff) / j_ptr->number;
 	}
 }
 
@@ -3809,6 +3833,9 @@ static void a_m_aux_4(object_type *o_ptr, int level, int power)
 {
 	object_kind *k_ptr = &k_info[o_ptr->k_idx];
 
+	/* Unused */
+	(void)level;
+
 	/* Apply magic (good or bad) according to type */
 	switch (o_ptr->tval)
 	{
@@ -3932,6 +3959,9 @@ static void a_m_aux_4(object_type *o_ptr, int level, int power)
 				/* Ignore dead monsters */
 				if (!r_ptr->rarity) continue;
 
+				/* Ignore uncommon monsters */
+				if (r_ptr->rarity > 100) continue;
+
 				/* Prefer less out-of-depth monsters */
 				if (randint0(check)) continue;
 
@@ -4042,7 +4072,7 @@ static void a_m_aux_4(object_type *o_ptr, int level, int power)
 			if (cheat_peek)
 			{
 #ifdef JP
-				msg_format("%sの像,", r_name + r_ptr->name);
+				msg_format("%sの像", r_name + r_ptr->name);
 #else
 				msg_format("Statue of %s", r_name + r_ptr->name);
 #endif
@@ -5018,21 +5048,11 @@ s16b drop_near(object_type *j_ptr, int chance, int y, int x)
 
 
 	/* Find a grid */
-	for (i = 0; !flag; i++)
+	for (i = 0; !flag && (i < 1000); i++)
 	{
 		/* Bounce around */
-		if (i < 1000)
-		{
-			ty = rand_spread(by, 1);
-			tx = rand_spread(bx, 1);
-		}
-
-		/* Random locations */
-		else
-		{
-			ty = randint0(cur_hgt);
-			tx = randint0(cur_wid);
-		}
+		ty = rand_spread(by, 1);
+		tx = rand_spread(bx, 1);
 
 		/* Grid */
 		c_ptr = &cave[ty][tx];
@@ -5053,6 +5073,93 @@ s16b drop_near(object_type *j_ptr, int chance, int y, int x)
 
 		/* Okay */
 		flag = TRUE;
+	}
+
+
+	if (!flag)
+	{
+		int candidates = 0, pick;
+
+		for (ty = 1; ty < cur_hgt - 1; ty++)
+		{
+			for (tx = 1; tx < cur_wid - 1; tx++)
+			{
+				/* Grid */
+				c_ptr = &cave[ty][tx];
+
+				/* A valid space found */
+				if (((c_ptr->feat == FEAT_FLOOR) ||
+				     (c_ptr->feat == FEAT_SHAL_WATER) ||
+				     (c_ptr->feat == FEAT_GRASS) ||
+				     (c_ptr->feat == FEAT_DIRT) ||
+				     (c_ptr->feat == FEAT_SHAL_LAVA)) &&
+				    cave_clean_bold(ty, ty))
+					candidates++;
+			}
+		}
+
+		/* No valid place! */
+		if (!candidates)
+		{
+			/* Message */
+#ifdef JP
+			msg_format("%sは消えた。", o_name);
+#else
+			msg_format("The %s disappear%s.", o_name, (plural ? "" : "s"));
+#endif
+
+			/* Debug */
+#ifdef JP
+			if (p_ptr->wizard) msg_print("(床スペースがない)");
+#else
+			if (p_ptr->wizard) msg_print("(no floor space)");
+#endif
+
+			/* Mega-Hack -- preserve artifacts */
+			if (preserve_mode)
+			{
+				/* Hack -- Preserve unknown artifacts */
+				if (artifact_p(j_ptr) && !object_known_p(j_ptr))
+				{
+					/* Mega-Hack -- Preserve the artifact */
+					a_info[j_ptr->name1].cur_num = 0;
+				}
+			}
+
+			/* Failure */
+			return 0;
+		}
+
+		/* Choose a random one */
+		pick = randint1(candidates);
+
+		for (ty = 1; ty < cur_hgt - 1; ty++)
+		{
+			for (tx = 1; tx < cur_wid - 1; tx++)
+			{
+				/* Grid */
+				c_ptr = &cave[ty][tx];
+
+				/* A valid space found */
+				if (((c_ptr->feat == FEAT_FLOOR) ||
+				     (c_ptr->feat == FEAT_SHAL_WATER) ||
+				     (c_ptr->feat == FEAT_GRASS) ||
+				     (c_ptr->feat == FEAT_DIRT) ||
+				     (c_ptr->feat == FEAT_SHAL_LAVA)) &&
+				    cave_clean_bold(ty, ty))
+				{
+					pick--;
+
+					/* Is this a picked one? */
+					if (!pick) break;
+				}
+			}
+
+			if (!pick) break;
+		}
+
+		by = ty;
+		bx = tx;
 	}
 
 
@@ -5850,7 +5957,8 @@ s16b inven_takeoff(int item, int amt)
 	object_desc(o_name, q_ptr, TRUE, 3);
 
 	/* Took off weapon */
-	if (item == INVEN_RARM)
+	if (((item == INVEN_RARM) || (item == INVEN_LARM)) &&
+	    (o_ptr->tval >= TV_DIGGING) && (o_ptr->tval <= TV_SWORD))
 	{
 #ifdef JP
 		act = "を装備からはずした";
@@ -6007,17 +6115,24 @@ void combine_pack(void)
 		/* Scan the items above that item */
 		for (j = 0; j < i; j++)
 		{
+			int max_num;
+
 			/* Get the item */
 			j_ptr = &inventory[j];
 
 			/* Skip empty items */
 			if (!j_ptr->k_idx) continue;
 
+			/*
+			 * Get maximum number of the stack if these
+			 * are similar, get zero otherwise.
+			 */
+			max_num = object_similar_part(j_ptr, o_ptr);
+
 			/* Can we (partialy) drop "o_ptr" onto "j_ptr"? */
-			if (object_similar_part(j_ptr, o_ptr)
-			    && j_ptr->number < MAX_STACK_SIZE-1)
+			if (max_num && j_ptr->number < max_num)
 			{
-				if (o_ptr->number + j_ptr->number < MAX_STACK_SIZE)
+				if (o_ptr->number + j_ptr->number <= max_num)
 				{
 					/* Take note */
 					flag = TRUE;
@@ -6040,16 +6155,30 @@ void combine_pack(void)
 				}
 				else
 				{
-					int remain = j_ptr->number + o_ptr->number - 99;
-					
+					int old_num = o_ptr->number;
+					int remain = j_ptr->number + o_ptr->number - max_num;
+#if 0
 					o_ptr->number -= remain;
-					
+#endif
 					/* Add together the item counts */
 					object_absorb(j_ptr, o_ptr);
 
 					o_ptr->number = remain;
-					
+
+					/* Hack -- if rods are stacking, add the pvals (maximum timeouts) and current timeouts together. -LM- */
+					if (o_ptr->tval == TV_ROD)
+					{
+						o_ptr->pval =  o_ptr->pval * remain / old_num;
+						o_ptr->timeout = o_ptr->timeout * remain / old_num;
+					}
+
+					/* Hack -- if wands are stacking, combine the charges. -LM- */
+					if (o_ptr->tval == TV_WAND)
+					{
+						o_ptr->pval = o_ptr->pval * remain / old_num;
+					}
 				}
+
 				/* Window stuff */
 				p_ptr->window |= (PW_INVEN);
 				
@@ -6065,7 +6194,6 @@ void combine_pack(void)
 #else
 	if (flag) msg_print("You combine some items in your pack.");
 #endif
-
 }
 
 
@@ -6202,6 +6330,8 @@ void display_koff(int k_idx)
 
 	object_type forge;
 	object_type *q_ptr;
+	int         sval;
+	int         use_realm;
 
 	char o_name[MAX_NLEN];
 
@@ -6228,21 +6358,27 @@ void display_koff(int k_idx)
 	/* Mention the object name */
 	Term_putstr(0, 0, -1, TERM_WHITE, o_name);
 
+	/* Access the item's sval */
+	sval = q_ptr->sval;
+	use_realm = tval2realm(q_ptr->tval);
+
 	/* Warriors are illiterate */
-	if (!(p_ptr->realm1 || p_ptr->realm2)) return;
+	if (p_ptr->realm1 || p_ptr->realm2)
+	{
+		if ((use_realm != p_ptr->realm1) && (use_realm != p_ptr->realm2)) return;
+	}
+	else
+	{
+		if ((p_ptr->pclass != CLASS_SORCERER) && (p_ptr->pclass != CLASS_RED_MAGE)) return;
+		if (!is_magic(use_realm)) return;
+		if ((p_ptr->pclass == CLASS_RED_MAGE) && (use_realm != REALM_ARCANE) && (sval > 1)) return;
+	}
 
 	/* Display spells in readible books */
-	if ((q_ptr->tval == REALM1_BOOK) ||
-	    (q_ptr->tval == REALM2_BOOK))
 	{
-		int     sval;
 		int     spell = -1;
 		int     num = 0;
 		byte    spells[64];
-
-
-		/* Access the item's sval */
-		sval = q_ptr->sval;
 
 		/* Extract spells */
 		for (spell = 0; spell < 32; spell++)
@@ -6256,8 +6392,7 @@ void display_koff(int k_idx)
 		}
 
 		/* Print spells */
-		print_spells(0, spells, num, 2, 0,
-		    (q_ptr->tval == REALM1_BOOK ? p_ptr->realm1 : p_ptr->realm2));
+		print_spells(0, spells, num, 2, 0, use_realm);
 	}
 }
 
@@ -6483,7 +6618,7 @@ bool process_frakir(int xx, int yy)
 #ifdef JP
 			return (get_check("本当にこのまま進むか？"));
 #else
-			return (get_check("Realy want to go ahead? "));
+			return (get_check("Really want to go ahead? "));
 #endif
 		}
 	}
@@ -6505,7 +6640,7 @@ bool process_frakir(int xx, int yy)
 #ifdef JP
 		return (get_check("本当にこのまま進むか？"));
 #else
-		return (get_check("Realy want to go ahead? "));
+		return (get_check("Really want to go ahead? "));
 #endif
 	}
 	return(TRUE);
@@ -6671,7 +6806,7 @@ static essence_type essence_info[] =
 	{TR_MAGIC_MASTERY, "magic mastery", 4, TR_MAGIC_MASTERY, 20},
 	{TR_STEALTH, "stealth", 4, TR_STEALTH, 40},
 	{TR_SEARCH, "serching", 4, TR_SEARCH, 15},
-	{TR_INFRA, "inflavision", 4, TR_INFRA, 15},
+	{TR_INFRA, "infravision", 4, TR_INFRA, 15},
 	{TR_TUNNEL, "digging", 4, TR_TUNNEL, 15},
 	{TR_SPEED, "speed", 4, TR_SPEED, 12},
 	{TR_BLOWS, "extra attack", 1, TR_BLOWS, 20},
@@ -6890,7 +7025,7 @@ static cptr essence_name[] =
 	"",
 	"stealth",
 	"serching",
-	"inflavision",
+	"infravision",
 	"digging",
 	"speed",
 	"extra atk",
@@ -7657,7 +7792,7 @@ static void add_essence(int mode)
 
 	if (es_ptr->add == ESSENCE_SLAY_GLOVE)
 		item_tester_tval = TV_GLOVES;
-	else if (mode == 1)
+	else if (mode == 1 || mode == 5)
 		item_tester_hook = item_tester_hook_melee_ammo;
 	else if (es_ptr->add == ESSENCE_ATTACK)
 		item_tester_hook = item_tester_hook_weapon;
@@ -7695,11 +7830,11 @@ static void add_essence(int mode)
 #ifdef JP
 		msg_print("そのアイテムはこれ以上改良できない。");
 #else
-		msg_print("This item is no more able to be improved");
+		msg_print("This item is no more able to be improved.");
 #endif
 		return;
 	}
-	
+
 	object_desc(o_name, o_ptr, FALSE, 0);
 
 	use_essence = es_ptr->value;
@@ -7728,7 +7863,16 @@ static void add_essence(int mode)
 		}
 		if (is_pval_flag(es_ptr->add))
 		{
-			if (es_ptr->add == TR_BLOWS)
+			if (o_ptr->pval < 0)
+			{
+#ifdef JP
+				msg_print("このアイテムの能力修正を強化することはできない。");
+#else
+				msg_print("You cannot increase magic number of this item.");
+#endif
+				return;
+			}
+			else if (es_ptr->add == TR_BLOWS)
 			{
 				if (o_ptr->pval > 1)
 				{
@@ -7738,15 +7882,21 @@ static void add_essence(int mode)
 					if (!get_check("The magic number of this weapon will become 1. Are you sure? ")) return;
 #endif
 				}
+
 				o_ptr->pval = 1;
+#ifdef JP
+				msg_format("エッセンスを%d個使用します。", use_essence);
+#else
+				msg_format("It will take %d essences.", use_essence);
+#endif
 			}
-			else if (o_ptr->pval)
+			else if (o_ptr->pval > 0)
 			{
 				use_essence *= o_ptr->pval;
 #ifdef JP
-				msg_format("エッセンスを%d個使用します。",use_essence);
+				msg_format("エッセンスを%d個使用します。", use_essence);
 #else
-				msg_format("It will take %d essences.",use_essence);
+				msg_format("It will take %d essences.", use_essence);
 #endif
 			}
 			else
@@ -7755,7 +7905,6 @@ static void add_essence(int mode)
 				char tmp_val[160];
 				int pval;
 				int limit = MIN(5, p_ptr->magic_num1[es_ptr->essence]/es_ptr->value);
-
 
 #ifdef JP
 				sprintf(tmp, "いくつ付加しますか？ (1-%d): ", limit);
@@ -7768,14 +7917,15 @@ static void add_essence(int mode)
 				pval = atoi(tmp_val);
 				if (pval > limit) pval = limit;
 				else if (pval < 1) pval = 1;
-				o_ptr->pval = pval;
+				o_ptr->pval += pval;
 				use_essence *= pval;
 #ifdef JP
-				msg_format("エッセンスを%d個使用します。",use_essence);
+				msg_format("エッセンスを%d個使用します。", use_essence);
 #else
-				msg_format("It will take %d essences.",use_essence);
+				msg_format("It will take %d essences.", use_essence);
 #endif
 			}
+
 			if (p_ptr->magic_num1[es_ptr->essence] < use_essence)
 			{
 #ifdef JP
@@ -7803,16 +7953,16 @@ static void add_essence(int mode)
 			else if (val < 1) val = 1;
 			use_essence *= val;
 #ifdef JP
-			msg_format("エッセンスを%d個使用します。",use_essence);
+			msg_format("エッセンスを%d個使用します。", use_essence);
 #else
-			msg_format("It will take %d essences.",use_essence);
+			msg_format("It will take %d essences.", use_essence);
 #endif
 			if (p_ptr->magic_num1[es_ptr->essence] < use_essence)
 			{
 #ifdef JP
 				msg_print("エッセンスが足りない。");
 #else
-				msg_print("You don't have enough essences");
+				msg_print("You don't have enough essences.");
 #endif
 				return;
 			}
@@ -7914,7 +8064,7 @@ static void add_essence(int mode)
 #ifdef JP
 			msg_print("エッセンスが足りない。");
 #else
-			msg_print("You don't have enough essences");
+			msg_print("You don't have enough essences.");
 #endif
 			return;
 		}
@@ -8012,9 +8162,9 @@ static void erase_essence(void)
 
 	object_desc(o_name, o_ptr, FALSE, 0);
 #ifdef JP
-	if (!get_check(format("よろしいですか？[%s]", o_name))) return;
+	if (!get_check(format("よろしいですか？ [%s]", o_name))) return;
 #else
-	if (!get_check(format("Are you sure?[%s]", o_name))) return;
+	if (!get_check(format("Are you sure? [%s]", o_name))) return;
 #endif
 
 	energy_use = 100;
@@ -8024,6 +8174,8 @@ static void erase_essence(void)
 		o_ptr->to_h -= (o_ptr->xtra4>>8);
 		o_ptr->to_d -= (o_ptr->xtra4 & 0x000f);
 		o_ptr->xtra4 = 0;
+		if (o_ptr->to_h < 0) o_ptr->to_h = 0;
+		if (o_ptr->to_d < 0) o_ptr->to_d = 0;
 	}
 	o_ptr->xtra3 = 0;
 	object_flags(o_ptr, flgs);
@@ -8031,7 +8183,7 @@ static void erase_essence(void)
 #ifdef JP
 	msg_print("エッセンスを取り去った。");
 #else
-	msg_print("You removed all essence you have added");
+	msg_print("You removed all essence you have added.");
 #endif
 
 	/* Combine the pack */
@@ -8075,7 +8227,7 @@ void do_cmd_kaji(bool only_browse)
 #ifdef JP
 			msg_print("うまく見えなくて作業できない！");
 #else
-			msg_print("You are hullcinating!");
+			msg_print("You are hallucinating!");
 #endif
 
 			return;
@@ -8200,7 +8352,7 @@ void do_cmd_kaji(bool only_browse)
 		Term_erase(14, 17, 255);
 		Term_erase(14, 16, 255);
 
-		roff_to_buf( kaji_tips[mode-1],62,temp);
+		roff_to_buf(kaji_tips[mode-1], 62, temp, sizeof(temp));
 		for(j=0, line = 17;temp[j];j+=(1+strlen(&temp[j])))
 		{
 			prt(&temp[j], line, 15);

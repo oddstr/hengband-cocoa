@@ -1672,7 +1672,7 @@ static bool vault_aux_battle(int r_idx)
 	monster_race *r_ptr = &r_info[r_idx];
 
 	/* Decline town monsters */
-/*	if (!monster_dungeon(r_idx)) return FALSE; */
+/*	if (!mon_hook_dungeon(r_idx)) return FALSE; */
 
 	/* Decline unique monsters */
 /*	if (r_ptr->flags1 & (RF1_UNIQUE)) return (FALSE); */
@@ -2704,17 +2704,23 @@ msg_print("すみません、でもうちで誰かに死なれちゃ困りますんで。");
 				}
 				else
 				{
-					int oldturn = turn;
+					s32b oldturn = turn;
 #ifdef JP
 					do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "宿屋に泊まった。");
 #else
 					do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "stay over night at the inn");
 #endif
 					turn = (turn / (TURNS_PER_TICK*TOWN_DAWN/2) + 1) * (TURNS_PER_TICK*TOWN_DAWN/2);
+					if (dungeon_turn < dungeon_turn_limit)
+					{
+						dungeon_turn += MIN(turn - oldturn, TURNS_PER_TICK*250);
+						if (dungeon_turn > dungeon_turn_limit) dungeon_turn = dungeon_turn_limit;
+					}
+
+					prevent_turn_overflow();
+
 					if (((oldturn + TURNS_PER_TICK * TOWN_DAWN / 4) % (TURNS_PER_TICK * TOWN_DAWN)) > TURNS_PER_TICK * TOWN_DAWN/4) do_cmd_write_nikki(NIKKI_HIGAWARI, 0, NULL);
 					p_ptr->chp = p_ptr->mhp;
-
-					dungeon_turn += MIN(turn - oldturn, TURNS_PER_TICK*250);
 
 					if (ironman_nightmare)
 					{
@@ -3277,6 +3283,7 @@ static bool compare_weapons(void)
 	object_type *i_ptr;
 	cptr q, s;
 	int row = 2;
+	bool old_character_xtra = character_xtra;
 
 	screen_save();
 	/* Clear the screen */
@@ -3340,8 +3347,13 @@ s = "比べるものがありません。";
 	if (o1_ptr != i_ptr)
 		object_copy(i_ptr, o1_ptr);
 
+	/* Hack -- prevent "icky" message */
+	character_xtra = TRUE;
+
 	/* Get the new values */
 	calc_bonuses();
+
+	character_xtra = old_character_xtra;
 
 	/* List the new values */
 	list_weapon(o1_ptr, row, 2);
@@ -3353,8 +3365,13 @@ s = "比べるものがありません。";
 	else
 		object_copy(i_ptr, &orig_weapon);
 
+	/* Hack -- prevent "icky" message */
+	character_xtra = TRUE;
+
 	/* Get the new values */
 	calc_bonuses();
+
+	character_xtra = old_character_xtra;
 
 	/* List the new values */
 	list_weapon(o2_ptr, row, 40);
@@ -3471,7 +3488,7 @@ static bool eval_ac(int iAC)
 	}
 
 	/* Display note */
-	roff_to_buf(memo, 70, buf);
+	roff_to_buf(memo, 70, buf, sizeof(buf));
 	for (t = buf; t[0]; t += strlen(t) + 1)
 		put_str(t, (row++) + 4, 4);
 
@@ -4399,7 +4416,7 @@ msg_print("お金が足りません！");
 			p_ptr->word_recall = 1;
 			p_ptr->recall_dungeon = select_dungeon;
 			max_dlv[p_ptr->recall_dungeon] = ((amt > d_info[select_dungeon].maxdepth) ? d_info[select_dungeon].maxdepth : ((amt < d_info[select_dungeon].mindepth) ? d_info[select_dungeon].mindepth : amt));
-			if (record_maxdeapth)
+			if (record_maxdepth)
 #ifdef JP
 				do_cmd_write_nikki(NIKKI_TRUMP, select_dungeon, "トランプタワーで");
 #else

@@ -36,11 +36,11 @@ N:8:Farmer Maggot
 #tells you to get off his land.
 は「わしの土地から出ていけ」と言っている。
 #says, "Grip! Fang! Wolf! Come on, lads!"
-「かみつき！きば！おおかみ！みんな来い！」
+「くいつき！きば！おおかみ！みんな来い！」
 #says, "They won't harm you -- not unless I tell 'em to!"
 「あいつらは噛みついたりせんよ。わしが命令せんかぎりな！」
 #says, "Here, Grip! Fang! Heel!"
-「ここだ、かみつき！きば！来い！」
+「ここだ、くいつき！きば！来い！」
 exclaims, "Well, if that isn't queerer than ever?"
 #asks, "Were you coming to visit me?"
 「わしに会いにきたのかい？」
@@ -254,7 +254,7 @@ says, 'Give 'til it hurts!'
 #says, 'Don't force me to put an arrow in your skull...'
 「俺にお前の頭を射抜かせないでくれ...」
 #says, 'Kevin Costner has soiled my name!'
-「ケビン・コスナーは俺の名前を地に落した！」
+「ケビン・コスナーは俺の名前を地に落とした！」
 
 
 #N:169:Brodda, the Easterling
@@ -700,7 +700,7 @@ N:791:Fiona the Sorceress
 3
 「私を甘く見ないほうがいいわよ。」
 「アンバーを敵に回して勝てると思っているの？」
-は子悪魔的に微笑んだ。
+は小悪魔的に微笑んだ。
 
 #N:792:Tselakus, the Dreadlord
 
@@ -975,14 +975,14 @@ N:936:Kenshirou of hokuto
 
 N:945:Biketal of Fire
 8
-何故に、人間は、そう生きようとするのだ。
-何故に、人間は、少ない命を削るのだ。
-ひと思いに死んだ方が、楽ではないか。
-何故に、人間は、その小さな体で、大きな土地を求めるのだ。
-何故に、人間は、少ない命をわずかにのばすため、他のものの命をうばうのだ。
-人間がいると、この大地は死んでいく。
-人間は一人も、この大地にはいらん。この大地は私の物だ。
-きさまはここで、最期だ！！
+「何故に、人間は、そう生きようとするのだ。」
+「何故に、人間は、少ない命を削るのだ。」
+「ひと思いに死んだ方が、楽ではないか。」
+「何故に、人間は、その小さな体で、大きな土地を求めるのだ。」
+「何故に、人間は、少ない命をわずかにのばすため、他のものの命をうばうのだ。」
+「人間がいると、この大地は死んでいく。」
+「人間は一人も、この大地にはいらん。この大地は私の物だ。」
+「きさまはここで、最期だ！！」
 
 N:1003:The ghost 'Q'
 2
@@ -1079,7 +1079,7 @@ N:*:Default lines
 #says: 'Your puny efforts make me laugh!'
 「お前の貧相な努力は片腹痛いわ！」
 #says: 'Drop dead, wimp!'
-「雑魚が！死骸を落すがいい！」
+「雑魚が！死骸を落とすがいい！」
 #says: 'You should have fled while you had the chance.'
 「チャンスがあるうちにさっさと逃げておけばいいものを」
 #screams: 'Die by my hand!'

@@ -134,6 +134,9 @@ bool teleport_away(int m_idx, int dis, bool dec_valour)
 	/* Redraw the new grid */
 	lite_spot(ny, nx);
 
+	if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+		p_ptr->update |= (PU_MON_LITE);
+
 	return (TRUE);
 }
 
@@ -241,7 +244,8 @@ void teleport_to_player(int m_idx, int power)
 	/* Redraw the new grid */
 	lite_spot(ny, nx);
 
-	p_ptr->update |= (PU_MON_LITE);
+	if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+		p_ptr->update |= (PU_MON_LITE);
 }
 
 
@@ -258,12 +262,12 @@ void teleport_to_player(int m_idx, int power)
  * we decrease the minimum acceptable distance to try to increase randomness.
  * -GJW
  */
-void teleport_player(int dis)
+static bool teleport_player_aux(int dis)
 {
 	int d, i, min, ox, oy;
 	int tries = 0;
 
-	int xx = -1, yy = -1;
+	int xx, yy;
 
 	/* Initialize */
 	int y = py;
@@ -271,17 +275,17 @@ void teleport_player(int dis)
 
 	bool look = TRUE;
 
-	if (p_ptr->wild_mode) return;
+	if (p_ptr->wild_mode) return FALSE;
 
 	if (p_ptr->anti_tele)
 	{
 #ifdef JP
-msg_print("不思議な力がテレポートを防いだ！");
+		msg_print("不思議な力がテレポートを防いだ！");
 #else
 		msg_print("A mysterious force prevents you from teleporting!");
 #endif
 
-		return;
+		return FALSE;
 	}
 
 	if (dis > 200) dis = 200; /* To be on the safe side... */
@@ -333,8 +337,10 @@ msg_print("不思議な力がテレポートを防いだ！");
 		min = min / 2;
 
 		/* Stop after MAX_TRIES tries */
-		if (tries > MAX_TRIES) return;
+		if (tries > MAX_TRIES) return FALSE;
 	}
+
+	if ((y == py) && (x == px)) return FALSE;
 
 	/* Sound */
 	sound(SOUND_TELEPORT);
@@ -366,38 +372,6 @@ msg_print("不思議な力がテレポートを防いだ！");
 	/* Redraw the old spot */
 	lite_spot(oy, ox);
 
-	/* Monsters with teleport ability may follow the player */
-	while (xx < 2)
-	{
-		yy = -1;
-
-		while (yy < 2)
-		{
-			if (xx == 0 && yy == 0)
-			{
-				/* Do nothing */
-			}
-			else
-			{
-				if (cave[oy+yy][ox+xx].m_idx)
-				{
-					if ((r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].flags6 & RF6_TPORT) &&
-					    !(r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].flags3 & RF3_RES_TELE))
-						/*
-						 * The latter limitation is to avoid
-						 * totally unkillable suckers...
-						 */
-					{
-						if (!(m_list[cave[oy+yy][ox+xx].m_idx].csleep))
-							teleport_to_player(cave[oy+yy][ox+xx].m_idx, r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].level);
-					}
-				}
-			}
-			yy++;
-		}
-		xx++;
-	}
-
 	forget_flow();
 
 	/* Redraw the new spot */
@@ -417,8 +391,84 @@ msg_print("不思議な力がテレポートを防いだ！");
 
 	/* Handle stuff XXX XXX XXX */
 	handle_stuff();
+
+	return TRUE;
 }
 
+void teleport_player(int dis)
+{
+	int yy, xx;
+
+	/* Save the old location */
+	int oy = py;
+	int ox = px;
+
+	if (!teleport_player_aux(dis)) return;
+
+	/* Monsters with teleport ability may follow the player */
+	for (xx = -1; xx < 2; xx++)
+	{
+		for (yy = -1; yy < 2; yy++)
+		{
+			int tmp_m_idx = cave[oy+yy][ox+xx].m_idx;
+
+			/* A monster except your mount may follow */
+			if (tmp_m_idx && p_ptr->riding != tmp_m_idx)
+			{
+				monster_type *m_ptr = &m_list[tmp_m_idx];
+				monster_race *r_ptr = &r_info[m_ptr->r_idx];
+
+				/*
+				 * The latter limitation is to avoid
+				 * totally unkillable suckers...
+				 */
+				if ((r_ptr->flags6 & RF6_TPORT) &&
+				    !(r_ptr->flags3 & RF3_RES_TELE))
+				{
+					if (!m_ptr->csleep) teleport_to_player(tmp_m_idx, r_ptr->level);
+				}
+			}
+		}
+	}
+}
+
+
+void teleport_player_away(int m_idx, int dis)
+{
+	int yy, xx;
+
+	/* Save the old location */
+	int oy = py;
+	int ox = px;
+
+	if (!teleport_player_aux(dis)) return;
+
+	/* Monsters with teleport ability may follow the player */
+	for (xx = -1; xx < 2; xx++)
+	{
+		for (yy = -1; yy < 2; yy++)
+		{
+			int tmp_m_idx = cave[oy+yy][ox+xx].m_idx;
+
+			/* A monster except your mount or caster may follow */
+			if (tmp_m_idx && (p_ptr->riding != tmp_m_idx) && (m_idx != tmp_m_idx))
+			{
+				monster_type *m_ptr = &m_list[tmp_m_idx];
+				monster_race *r_ptr = &r_info[m_ptr->r_idx];
+
+				/*
+				 * The latter limitation is to avoid
+				 * totally unkillable suckers...
+				 */
+				if ((r_ptr->flags6 & RF6_TPORT) &&
+				    !(r_ptr->flags3 & RF3_RES_TELE))
+				{
+					if (!m_ptr->csleep) teleport_to_player(tmp_m_idx, r_ptr->level);
+				}
+			}
+		}
+	}
+}
 
 
 /*
@@ -515,6 +565,66 @@ msg_print("不思議な力がテレポートを防いだ！");
 }
 
 
+void teleport_away_followable(int m_idx)
+{
+	monster_type *m_ptr = &m_list[m_idx];
+	int          oldfy = m_ptr->fy;
+	int          oldfx = m_ptr->fx;
+	bool         old_ml = m_ptr->ml;
+	int          old_cdis = m_ptr->cdis;
+
+	teleport_away(m_idx, MAX_SIGHT * 2 + 5, FALSE);
+
+	if (old_ml && (old_cdis <= MAX_SIGHT) && !world_monster && los(py, px, oldfy, oldfx))
+	{
+		bool follow = FALSE;
+
+		if ((p_ptr->muta1 & MUT1_VTELEPORT) || (p_ptr->pclass == CLASS_IMITATOR)) follow = TRUE;
+		else
+		{
+			u32b flgs[TR_FLAG_SIZE];
+			object_type *o_ptr;
+			int i;
+
+			for (i = INVEN_RARM; i < INVEN_TOTAL; i++)
+			{
+				o_ptr = &inventory[i];
+				if (o_ptr->k_idx && !cursed_p(o_ptr))
+				{
+					object_flags(o_ptr, flgs);
+					if (have_flag(flgs, TR_TELEPORT))
+					{
+						follow = TRUE;
+						break;
+					}
+				}
+			}
+		}
+
+		if (follow)
+		{
+#ifdef JP
+			if (get_check_strict("ついていきますか？", CHECK_OKAY_CANCEL))
+#else
+			if (get_check_strict("Do you follow it? ", CHECK_OKAY_CANCEL))
+#endif
+			{
+				if (one_in_(3))
+				{
+					teleport_player(200);
+#ifdef JP
+					msg_print("失敗！");
+#else
+					msg_print("Failed!");
+#endif
+				}
+				else teleport_player_to(m_ptr->fy, m_ptr->fx, TRUE);
+				p_ptr->energy_need += ENERGY_NEED();
+			}
+		}
+	}
+}
+
 
 /*
  * Teleport the player one level up or down (random when legal)
@@ -523,7 +633,7 @@ void teleport_player_level(void)
 {
 	/* No effect in arena or quest */
 	if (p_ptr->inside_arena || (p_ptr->inside_quest && !random_quest_number(dun_level)) ||
-	    (quest_number(dun_level) && (dun_level > 1) && ironman_downward))
+	    ((quest_number(dun_level) || (dun_level >= d_info[dungeon_type].maxdepth)) && (dun_level > 1) && ironman_downward))
 	{
 #ifdef JP
 msg_print("効果がなかった。");
@@ -748,7 +858,7 @@ if (get_check("ここは最深到達階より浅い階です。この階に戻って来ますか？ "))
 #endif
 		{
 			max_dlv[dungeon_type] = dun_level;
-			if (record_maxdeapth)
+			if (record_maxdepth)
 #ifdef JP
 				do_cmd_write_nikki(NIKKI_TRUMP, dungeon_type, "帰還のときに");
 #else
@@ -839,7 +949,7 @@ sprintf(ppp, "何階にセットしますか (%d-%d):", d_info[select_dungeon].mindepth, m
 
 		max_dlv[select_dungeon] = dummy;
 
-		if (record_maxdeapth)
+		if (record_maxdepth)
 #ifdef JP
 			do_cmd_write_nikki(NIKKI_TRUMP, select_dungeon, "フロア・リセットで");
 #else
@@ -894,6 +1004,9 @@ bool apply_disenchant(int mode)
 	/* No item, nothing happens */
 	if (!o_ptr->k_idx) return (FALSE);
 
+	/* Disenchant equipments only -- No disenchant on monster ball */
+	if (o_ptr->tval < TV_BOW || TV_CARD < o_ptr->tval)
+		return FALSE;
 
 	/* Nothing to disenchant */
 	if ((o_ptr->to_h <= 0) && (o_ptr->to_d <= 0) && (o_ptr->to_a <= 0) && (o_ptr->pval <= 1))
@@ -1224,6 +1337,9 @@ act = "は鋭さを増した！";
 
 				o_ptr->name2 = EGO_SHARPNESS;
 				o_ptr->pval = m_bonus(5, dun_level) + 1;
+
+				if ((o_ptr->sval == SV_HAYABUSA) && (o_ptr->pval > 2))
+					o_ptr->pval = 2;
 			}
 			else
 			{
@@ -1241,7 +1357,7 @@ act = "は破壊力を増した！";
 #ifdef JP
 act = "は人間の血を求めている！";
 #else
-			act = "seems looking for human!";
+			act = "seems to be looking for humans!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_HUMAN;
@@ -1250,7 +1366,7 @@ act = "は人間の血を求めている！";
 #ifdef JP
 act = "は電撃に覆われた！";
 #else
-			act = "coverd with lightning!";
+			act = "covered with lightning!";
 #endif
 
 			o_ptr->name2 = EGO_BRAND_ELEC;
@@ -1268,7 +1384,7 @@ act = "は酸に覆われた！";
 #ifdef JP
 act = "は邪悪なる怪物を求めている！";
 #else
-			act = "seems looking for evil monster!";
+			act = "seems to be looking for evil monsters!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_EVIL;
@@ -1277,7 +1393,7 @@ act = "は邪悪なる怪物を求めている！";
 #ifdef JP
 act = "は異世界の住人の肉体を求めている！";
 #else
-			act = "seems looking for demon!";
+			act = "seems to be looking for demons!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_DEMON;
@@ -1286,7 +1402,7 @@ act = "は異世界の住人の肉体を求めている！";
 #ifdef JP
 act = "は屍を求めている！";
 #else
-			act = "seems looking for undead!";
+			act = "seems to be looking for undead!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_UNDEAD;
@@ -1295,7 +1411,7 @@ act = "は屍を求めている！";
 #ifdef JP
 act = "は動物の血を求めている！";
 #else
-			act = "seems looking for animal!";
+			act = "seems to be looking for animals!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_ANIMAL;
@@ -1304,7 +1420,7 @@ act = "は動物の血を求めている！";
 #ifdef JP
 act = "はドラゴンの血を求めている！";
 #else
-			act = "seems looking for dragon!";
+			act = "seems to be looking for dragons!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_DRAGON;
@@ -1313,7 +1429,7 @@ act = "はドラゴンの血を求めている！";
 #ifdef JP
 act = "はトロルの血を求めている！";
 #else
-			act = "seems looking for troll!";
+			act = "seems to be looking for troll!s";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_TROLL;
@@ -1322,7 +1438,7 @@ act = "はトロルの血を求めている！";
 #ifdef JP
 act = "はオークの血を求めている！";
 #else
-			act = "seems looking for orc!";
+			act = "seems to be looking for orcs!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_ORC;
@@ -1331,7 +1447,7 @@ act = "はオークの血を求めている！";
 #ifdef JP
 act = "は巨人の血を求めている！";
 #else
-			act = "seems looking for giant!";
+			act = "seems to be looking for giants!";
 #endif
 
 			o_ptr->name2 = EGO_SLAY_GIANT;
@@ -2513,7 +2629,7 @@ msg_format("%sは既に強化されています！",
 #else
 		msg_format("The %s %s already %s!",
 		    o_name, ((o_ptr->number > 1) ? "are" : "is"),
-		    ((o_ptr->number > 1) ? "kaji items" : "an kaji item"));
+		    ((o_ptr->number > 1) ? "customized items" : "a customized item"));
 #endif
 	}
 
@@ -2895,7 +3011,7 @@ s = "鑑定するべきアイテムがない。";
 	}
 
 	/* Describe it fully */
-	(void)identify_fully_aux(o_ptr);
+	(void)screen_object(o_ptr, 0L);
 
 	/* Auto-inscription/destroy */
 	idx = is_autopick(o_ptr);
@@ -2916,10 +3032,7 @@ s = "鑑定するべきアイテムがない。";
 bool item_tester_hook_recharge(object_type *o_ptr)
 {
 	/* Recharge staffs */
-	if (o_ptr->tval == TV_STAFF)
-	{
-		if (o_ptr->sval != SV_STAFF_NOTHING) return (TRUE);
-	}
+	if (o_ptr->tval == TV_STAFF) return (TRUE);
 
 	/* Recharge wands */
 	if (o_ptr->tval == TV_WAND) return (TRUE);
@@ -3964,6 +4077,39 @@ s16b experience_of_spell(int spell, int use_realm)
 
 
 /*
+ * Modify spell fail rate
+ * Using p_ptr->to_m_chance, p_ptr->dec_mana, p_ptr->easy_spell and p_ptr->heavy_spell
+ */
+int mod_spell_chance_1(int chance)
+{
+	chance += p_ptr->to_m_chance;
+
+	if (p_ptr->heavy_spell) chance += 20;
+
+	if (p_ptr->dec_mana && p_ptr->easy_spell) chance -= 4;
+	else if (p_ptr->easy_spell) chance -= 3;
+	else if (p_ptr->dec_mana) chance -= 2;
+
+	return chance;
+}
+
+
+/*
+ * Modify spell fail rate (as "suffix" process)
+ * Using p_ptr->dec_mana, p_ptr->easy_spell and p_ptr->heavy_spell
+ * Note: variable "chance" cannot be negative.
+ */
+int mod_spell_chance_2(int chance)
+{
+	if (p_ptr->dec_mana) chance--;
+
+	if (p_ptr->heavy_spell) chance += 5;
+
+	return MAX(chance, 0);
+}
+
+
+/*
  * Returns spell chance of failure for spell -RAK-
  */
 s16b spell_chance(int spell, int use_realm)
@@ -4016,7 +4162,6 @@ s16b spell_chance(int spell, int use_realm)
 		chance += 5 * (shouhimana - p_ptr->csp);
 	}
 
-	chance += p_ptr->to_m_chance;
 	if ((use_realm != p_ptr->realm1) && ((p_ptr->pclass == CLASS_MAGE) || (p_ptr->pclass == CLASS_PRIEST))) chance += 5;
 
 	/* Extract the minimum failure rate */
@@ -4035,10 +4180,7 @@ s16b spell_chance(int spell, int use_realm)
 	if (((p_ptr->pclass == CLASS_PRIEST) || (p_ptr->pclass == CLASS_SORCERER)) && p_ptr->icky_wield[0]) chance += 25;
 	if (((p_ptr->pclass == CLASS_PRIEST) || (p_ptr->pclass == CLASS_SORCERER)) && p_ptr->icky_wield[1]) chance += 25;
 
-	if (p_ptr->heavy_spell) chance += 20;
-	if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-	else if (p_ptr->easy_spell) chance-=3;
-	else if (p_ptr->dec_mana) chance-=2;
+	chance = mod_spell_chance_1(chance);
 
 	if ((use_realm == REALM_NATURE) && ((p_ptr->align > 50) || (p_ptr->align < -50))) chance += penalty;
 	if (((use_realm == REALM_LIFE) || (use_realm == REALM_CRUSADE)) && (p_ptr->align < -20)) chance += penalty;
@@ -4054,19 +4196,16 @@ s16b spell_chance(int spell, int use_realm)
 	/* Always a 5 percent chance of working */
 	if (chance > 95) chance = 95;
 
-	if ((use_realm == p_ptr->realm1) || (use_realm == p_ptr->realm2))
+	if ((use_realm == p_ptr->realm1) || (use_realm == p_ptr->realm2)
+	    || (p_ptr->pclass == CLASS_SORCERER) || (p_ptr->pclass == CLASS_RED_MAGE))
 	{
 		s16b exp = experience_of_spell(spell, use_realm);
 		if(exp > 1399) chance--;
 		if(exp > 1599) chance--;
 	}
-	if(p_ptr->dec_mana) chance--;
-	if (p_ptr->heavy_spell) chance += 5;
-
-	chance = MAX(chance,0);
 
 	/* Return the chance */
-	return (chance);
+	return mod_spell_chance_2(chance);
 }
 
 
@@ -4353,7 +4492,7 @@ static void spell_info(char *p, int spell, int use_realm)
 		case 15: sprintf(p, " %s%d+d%d", s_dur, plev/2, plev/2); break;
 		case 16: sprintf(p, " %s25+d30", s_dur); break;
 		case 17: sprintf(p, " %s30+d20", s_dur); break;
-		case 19: sprintf(p, " %s%d+d%d", s_dur, plev+20, plev); break;
+		case 19: sprintf(p, " %s%d+d%d", s_dur, plev, plev+20); break;
 		case 20: sprintf(p, " %s50+d50", s_dur); break;
 		case 23: sprintf(p, " %s20+d20", s_dur); break;
 		case 31: sprintf(p, " %s13+d13", s_dur); break;
@@ -4543,9 +4682,9 @@ put_str(buf, y, x + 29);
 
 			max = FALSE;
 			if (!increment && (shougou == 4)) max = TRUE;
-			else if ((increment == 32) && (shougou == 3)) max = TRUE;
+			else if ((increment == 32) && (shougou >= 3)) max = TRUE;
 			else if (s_ptr->slevel >= 99) max = TRUE;
-			else if (p_ptr->pclass == CLASS_RED_MAGE) max = TRUE;
+			else if ((p_ptr->pclass == CLASS_RED_MAGE) && (shougou >= 2)) max = TRUE;
 
 			strncpy(ryakuji,shougou_moji[shougou],4);
 			ryakuji[3] = ']';
@@ -5124,7 +5263,7 @@ int elec_dam(int dam, cptr kb_str, int monspell)
 	/* Vulnerability (Ouch!) */
 	if (p_ptr->muta3 & MUT3_VULN_ELEM) dam *= 2;
 	if (p_ptr->special_defense & KATA_KOUKIJIN) dam += dam / 3;
-	if (p_ptr->prace == RACE_ANDROID) dam += dam / 3;
+	if (prace_is_(RACE_ANDROID)) dam += dam / 3;
 
 	/* Resist the damage */
 	if (p_ptr->resist_elec) dam = (dam + 2) / 3;
@@ -5622,12 +5761,9 @@ bool polymorph_monster(int y, int x)
 /*
  * Dimension Door
  */
-bool dimension_door(void)
+static bool dimension_door_aux(int x, int y)
 {
 	int	plev = p_ptr->lev;
-	int	x = 0, y = 0;
-
-	if (!tgt_pt(&x, &y)) return FALSE;
 
 	p_ptr->energy_need += (s16b)((s32b)(60 - plev) * ENERGY_NEED() / 100L);
 
@@ -5635,28 +5771,63 @@ bool dimension_door(void)
 		(distance(y, x, py, px) > plev / 2 + 10) ||
 		(!randint0(plev / 10 + 10)))
 	{
-		if( p_ptr->pclass != CLASS_MIRROR_MASTER ){
-#ifdef JP
-			msg_print("精霊界から物質界に戻る時うまくいかなかった！");
-#else
-			msg_print("You fail to exit the astral plane correctly!");
-#endif
-		}
-		else
-		{
-#ifdef JP
-			msg_print("鏡の世界をうまく通れなかった！");
-#else
-			msg_print("You fail to exit the astral plane correctly!");
-#endif
-		}
 		p_ptr->energy_need += (s16b)((s32b)(60 - plev) * ENERGY_NEED() / 100L);
 		teleport_player((plev+2)*2);
+
+		/* Failed */
+		return FALSE;
 	}
 	else
+	{
 		teleport_player_to(y, x, TRUE);
 
-	return (TRUE);
+		/* Success */
+		return TRUE;
+	}
+}
+
+
+/*
+ * Dimension Door
+ */
+bool dimension_door(void)
+{
+	int x = 0, y = 0;
+
+	/* Rerutn FALSE if cancelled */
+	if (!tgt_pt(&x, &y)) return FALSE;
+
+	if (dimension_door_aux(x, y)) return TRUE;
+
+#ifdef JP
+	msg_print("精霊界から物質界に戻る時うまくいかなかった！");
+#else
+	msg_print("You fail to exit the astral plane correctly!");
+#endif
+
+	return TRUE;
+}
+
+
+/*
+ * Mirror Master's Dimension Door
+ */
+bool mirror_tunnel(void)
+{
+	int x = 0, y = 0;
+
+	/* Rerutn FALSE if cancelled */
+	if (!tgt_pt(&x, &y)) return FALSE;
+
+	if (dimension_door_aux(x, y)) return TRUE;
+
+#ifdef JP
+	msg_print("鏡の世界をうまく通れなかった！");
+#else
+	msg_print("You fail to pass the mirror plane correctly!");
+#endif
+
+	return TRUE;
 }
 
 
@@ -5976,6 +6147,9 @@ msg_format("乱暴な魔法のために%sが壊れた！", o_name);
 	{
 		p_ptr->csp = p_ptr->msp;
 	}
+
+	/* Redraw mana and hp */
+	p_ptr->redraw |= (PR_MANA);
 
 	p_ptr->notice |= (PN_COMBINE | PN_REORDER);
 	p_ptr->window |= (PW_INVEN);

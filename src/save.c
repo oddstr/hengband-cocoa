@@ -1032,8 +1032,22 @@ static bool wr_savefile_new(void)
 
 	/* Space */
 	wr_u32b(0L);
-	wr_u32b(0L);
+	wr_u16b(0);
+	wr_byte(0);
 
+#ifdef JP
+# ifdef EUC
+	/* EUC kanji code */
+	wr_byte(2);
+# endif
+# ifdef SJIS
+	/* SJIS kanji code */
+	wr_byte(3);
+# endif
+#else
+	/* ASCII */
+	wr_byte(1);
+#endif
 
 	/* Write the RNG state */
 	wr_randomizer();
@@ -1265,8 +1279,14 @@ static bool save_player_aux(char *name)
 	FILE_TYPE(FILE_TYPE_SAVE);
 
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* Create the savefile */
 	fd = fd_make(name, mode);
+
+	/* Drop permissions */
+	safe_setuid_drop();
 
 	/* File is okay */
 	if (fd >= 0)
@@ -1274,8 +1294,14 @@ static bool save_player_aux(char *name)
 		/* Close the "fd" */
 		(void)fd_close(fd);
 
+		/* Grab permissions */
+		safe_setuid_grab();
+
 		/* Open the savefile */
 		fff = my_fopen(name, "wb");
+
+		/* Drop permissions */
+		safe_setuid_drop();
 
 		/* Successful open */
 		if (fff)
@@ -1287,8 +1313,14 @@ static bool save_player_aux(char *name)
 			if (my_fclose(fff)) ok = FALSE;
 		}
 
+		/* Grab permissions */
+		safe_setuid_grab();
+
 		/* Remove "broken" files */
 		if (!ok) (void)fd_kill(name);
+
+		/* Drop permissions */
+		safe_setuid_drop();
 	}
 
 
@@ -1338,8 +1370,14 @@ bool save_player(void)
 	strcat(safe, "n");
 #endif /* VM */
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* Remove it */
 	fd_kill(safe);
+
+	/* Drop permissions */
+	safe_setuid_drop();
 
 	update_playtime();
 
@@ -1358,6 +1396,9 @@ bool save_player(void)
 		strcat(temp, "o");
 #endif /* VM */
 
+		/* Grab permissions */
+		safe_setuid_grab();
+
 		/* Remove it */
 		fd_kill(temp);
 
@@ -1370,6 +1411,9 @@ bool save_player(void)
 		/* Remove preserved savefile */
 		fd_kill(temp);
 
+		/* Drop permissions */
+		safe_setuid_drop();
+
 		/* Hack -- Pretend the character was loaded */
 		character_loaded = TRUE;
 
@@ -1379,8 +1423,14 @@ bool save_player(void)
 		strcpy(temp, savefile);
 		strcat(temp, ".lok");
 
+		/* Grab permissions */
+		safe_setuid_grab();
+
 		/* Remove lock file */
 		fd_kill(temp);
+
+		/* Drop permissions */
+		safe_setuid_drop();
 
 #endif
 

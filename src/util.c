@@ -256,6 +256,11 @@ errr path_parse(char *buf, int max, cptr file)
 	/* Accept the filename */
 	(void)strnfmt(buf, max, "%s", file);
 
+#if defined(MAC_MPW) && defined(CARBON)
+     /* Fix it according to the current operating system */
+    convert_pathname(buf);
+#endif /* MAC_MPW && CARBON */
+
 	/* Success */
 	return (0);
 }
@@ -357,7 +362,7 @@ FILE *my_fopen(cptr file, cptr mode)
 	{
 		/* setting file type/creator */
 		tempfff = fopen(buf, mode);
-		fsetfileinfo(file, _fcreator, _ftype);
+		fsetfileinfo(buf, _fcreator, _ftype);
 		fclose(tempfff);
 	}
 #endif
@@ -440,6 +445,17 @@ errr my_fgets(FILE *fff, char *buf, huge n)
 		/* Convert weirdness */
 		for (s = tmp; *s; s++)
 		{
+#if defined(MACINTOSH) || defined(MACH_O_CARBON)
+
+			/*
+			 * Be nice to the Macintosh, where a file can have Mac or Unix
+			 * end of line, especially since the introduction of OS X.
+			 * MPW tools were also very tolerant to the Unix EOL.
+			 */
+			if (*s == '\r') *s = '\n';
+
+#endif /* MACINTOSH || MACH_O_CARBON */
+
 			/* Handle newline */
 			if (*s == '\n')
 			{
@@ -682,15 +698,15 @@ int fd_make(cptr file, int mode)
 #else /* BEN_HACK */
 
 # if defined(MACINTOSH) && defined(MAC_MPW)
-
-	/* setting file type and creator -- AR */
 	{
-		errr errr_tmp;
-		errr_tmp = open(buf, O_CREAT | O_EXCL | O_WRONLY | O_BINARY, mode);
-		fsetfileinfo(file, _fcreator, _ftype);
-		return(errr_tmp);
+		int fdes;
+		/* Create the file, fail if exists, write-only, binary */
+		fdes = open(buf, O_CREAT | O_EXCL | O_WRONLY | O_BINARY, mode);
+		/* Set creator and type if the file is successfully opened */
+		if (fdes >= 0) fsetfileinfo(buf, _fcreator, _ftype);
+		/* Return the descriptor */
+		return (fdes);
 	}
-
 # else
 	/* Create the file, fail if exists, write-only, binary */
 	return (open(buf, O_CREAT | O_EXCL | O_WRONLY | O_BINARY, mode));
@@ -1148,6 +1164,9 @@ void text_to_ascii(char *buf, cptr str)
 		{
 			/* Skip the backslash */
 			str++;
+
+			/* Paranoia */
+			if (!(*str)) break;
 
 			/* Macro Trigger */
 			if (*str == '[')
@@ -1700,8 +1719,20 @@ static char inkey_aux(void)
 	/* Hack : キー入力待ちで止まっているので、流れた行の記憶は不要。 */
 	num_more = 0;
 
-	/* Wait for a keypress */
-	(void)(Term_inkey(&ch, TRUE, TRUE));
+	if (parse_macro)
+	{
+		/* Scan next keypress from macro action */
+		if (Term_inkey(&ch, FALSE, TRUE))
+		{
+			/* Over-flowed? Cancel macro action */
+			parse_macro = FALSE;
+		}
+	}
+	else
+	{
+		/* Wait for a keypress */
+		(void) (Term_inkey(&ch, TRUE, TRUE));
+	}
 
 
 	/* End "macro action" */
@@ -2156,6 +2187,22 @@ char inkey(void)
  */
 
 /*
+ * Initialize the quark array
+ */
+void quark_init(void)
+{
+	/* Quark variables */
+	C_MAKE(quark__str, QUARK_MAX, cptr);
+
+	/* Prepare first quark, which is used when quark_add() is failed */
+	quark__str[1] = string_make("");
+
+	/* There is one quark (+ NULL) */
+	quark__num = 2;
+}
+
+
+/*
  * Add a new "quark" to the set of quarks.
  */
 s16b quark_add(cptr str)
@@ -2169,8 +2216,8 @@ s16b quark_add(cptr str)
 		if (streq(quark__str[i], str)) return (i);
 	}
 
-	/* Paranoia -- Require room */
-	if (quark__num == QUARK_MAX) return (0);
+	/* Return "" when no room is available */
+	if (quark__num == QUARK_MAX) return 1;
 
 	/* New maximal quark */
 	quark__num = i + 1;
@@ -2190,8 +2237,8 @@ cptr quark_str(s16b i)
 {
 	cptr q;
 
-	/* Verify */
-	if ((i < 0) || (i >= quark__num)) i = 0;
+	/* Return NULL for an invalid index */
+	if ((i < 1) || (i >= quark__num)) return NULL;
 
 	/* Access the quark */
 	q = quark__str[i];
@@ -3679,7 +3726,7 @@ menu_naiyou menu_info[10][10] =
 		{"Items(other)", 4, FALSE},
 		{"Equip", 5, FALSE},
 		{"Door/Box", 6, FALSE},
-		{"Infomations", 7, FALSE},
+		{"Informations", 7, FALSE},
 		{"Options", 8, FALSE},
 		{"Other commands", 9, FALSE},
 		{"", 0, FALSE},
@@ -3706,7 +3753,7 @@ menu_naiyou menu_info[10][10] =
 		{"Target(*)", '*', TRUE},
 		{"Dig(T/^t)", 'T', TRUE},
 		{"Go up stairs(<)", '<', TRUE},
-		{"Go down staies(>)", '>', TRUE},
+		{"Go down stairs(>)", '>', TRUE},
 		{"Command pets(p)", 'p', TRUE},
 		{"Search mode ON/OFF(S/#)", 'S', TRUE}
 	},
@@ -3771,7 +3818,7 @@ menu_naiyou menu_info[10][10] =
 		{"Identify symbol(/)", '/', TRUE},
 		{"Show prev messages(^p)", KTRL('P'), TRUE},
 		{"Current time(^t/')", KTRL('T'), TRUE},
-		{"Various infomations(~)", '~', TRUE},
+		{"Various informations(~)", '~', TRUE},
 		{"Play record menu(|)", '|', TRUE},
 		{"", 0, FALSE}
 	},
@@ -3821,9 +3868,13 @@ special_menu_naiyou special_menu_info[] =
 {
 	{"超能力/特殊能力", 0, 0, MENU_CLASS, CLASS_MINDCRAFTER},
 	{"ものまね/特殊能力", 0, 0, MENU_CLASS, CLASS_IMITATOR},
+	{"歌/特殊能力", 0, 0, MENU_CLASS, CLASS_BARD},
 	{"必殺技/特殊能力", 0, 0, MENU_CLASS, CLASS_SAMURAI},
 	{"練気術/魔法/特殊能力", 0, 0, MENU_CLASS, CLASS_FORCETRAINER},
+	{"技/特殊能力", 0, 0, MENU_CLASS, CLASS_BERSERKER},
+	{"技術/特殊能力", 0, 0, MENU_CLASS, CLASS_SMITH},
 	{"鏡魔法/特殊能力", 0, 0, MENU_CLASS, CLASS_MIRROR_MASTER},
+	{"忍術/特殊能力", 0, 0, MENU_CLASS, CLASS_NINJA},
 	{"広域マップ(<)", 2, 6, MENU_WILD, FALSE},
 	{"通常マップ(>)", 2, 7, MENU_WILD, TRUE},
 	{"", 0, 0, 0, 0},
@@ -3833,9 +3884,13 @@ special_menu_naiyou special_menu_info[] =
 {
 	{"MindCraft/Special", 0, 0, MENU_CLASS, CLASS_MINDCRAFTER},
 	{"Imitation/Special", 0, 0, MENU_CLASS, CLASS_IMITATOR},
+	{"Song/Special", 0, 0, MENU_CLASS, CLASS_BARD},
 	{"Technique/Special", 0, 0, MENU_CLASS, CLASS_SAMURAI},
 	{"Mind/Magic/Special", 0, 0, MENU_CLASS, CLASS_FORCETRAINER},
+	{"BrutalPower/Special", 0, 0, MENU_CLASS, CLASS_BERSERKER},
+	{"Technique/Special", 0, 0, MENU_CLASS, CLASS_SMITH},
 	{"MirrorMagic/Special", 0, 0, MENU_CLASS, CLASS_MIRROR_MASTER},
+	{"Ninjutsu/Special", 0, 0, MENU_CLASS, CLASS_NINJA},
 	{"Enter global map(<)", 2, 6, MENU_WILD, FALSE},
 	{"Enter local map(>)", 2, 7, MENU_WILD, TRUE},
 	{"", 0, 0, 0, 0},
@@ -4305,6 +4360,12 @@ prt(format("回数: %d", command_arg), 0, 0);
 	if (!caretcmd)
 		caretcmd = command_cmd;
 #endif
+
+#ifdef JP
+#undef strchr
+#define strchr strchr_j
+#endif
+
 	/* Hack -- Scan equipment */
 	for (i = INVEN_RARM; i < INVEN_TOTAL; i++)
 	{
@@ -4806,7 +4867,7 @@ void build_gamma_table(int gamma)
 
 #endif /* SUPPORT_GAMMA */
 
-void roff_to_buf(cptr str, int maxlen, char *tbuf)
+void roff_to_buf(cptr str, int maxlen, char *tbuf, size_t bufsize)
 {
 	int read_pt = 0;
 	int write_pt = 0;
@@ -4879,6 +4940,10 @@ void roff_to_buf(cptr str, int maxlen, char *tbuf)
 #ifdef JP
 		if (!kinsoku) word_punct = read_pt;
 #endif
+
+		/* Not enough buffer size */
+		if (write_pt + 3 >= bufsize) break;
+
 		tbuf[write_pt++] = ch[0];
 		line_len++;
 		read_pt++;
