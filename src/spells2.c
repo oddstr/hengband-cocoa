@@ -748,7 +748,7 @@ info[i++] = "あなたは怪物の特殊攻撃をダメージ2倍でまねることができる。(100 MP)";
 			break;
 		case CLASS_BEASTMASTER:
 #ifdef JP
-info[i++] = "あなたは1匹の生命のあるモンスターを支配することができる。(レベル/4 MP)";
+info[i++] = "あなたは1体の生命のあるモンスターを支配することができる。(レベル/4 MP)";
 #else
 			info[i++] = "You can dominate a monster (cost level/4).";
 #endif
@@ -1871,7 +1871,7 @@ info[i++] = "あなたの位置はひじょうに不安定だ。";
 #ifdef JP
 info[i++] = "あなたの武器は攻撃を外しやすい。";
 #else
-		info[i++] = "Your weapon causes you miss blows.";
+		info[i++] = "Your weapon causes you to miss blows.";
 #endif
 
 	}
@@ -1997,7 +1997,7 @@ info[i++] = "あなたの手は赤く輝いている。";
 #ifdef JP
 info[i++] = "あなたの手は火炎に覆われている。";
 #else
-		info[i++] = "You can strike enemy with flame.";
+		info[i++] = "You can strike the enemy with flame.";
 #endif
 
 	}
@@ -2006,7 +2006,7 @@ info[i++] = "あなたの手は火炎に覆われている。";
 #ifdef JP
 info[i++] = "あなたの手は冷気に覆われている。";
 #else
-		info[i++] = "You can strike enemy with cold.";
+		info[i++] = "You can strike the enemy with cold.";
 #endif
 
 	}
@@ -2015,7 +2015,7 @@ info[i++] = "あなたの手は冷気に覆われている。";
 #ifdef JP
 info[i++] = "あなたの手は酸に覆われている。";
 #else
-		info[i++] = "You can strike enemy with acid.";
+		info[i++] = "You can strike the enemy with acid.";
 #endif
 
 	}
@@ -2024,7 +2024,7 @@ info[i++] = "あなたの手は酸に覆われている。";
 #ifdef JP
 info[i++] = "あなたの手は電撃に覆われている。";
 #else
-		info[i++] = "You can strike enemy with electoric shock.";
+		info[i++] = "You can strike the enemy with electoric shock.";
 #endif
 
 	}
@@ -2033,7 +2033,7 @@ info[i++] = "あなたの手は電撃に覆われている。";
 #ifdef JP
 info[i++] = "あなたの手は毒に覆われている。";
 #else
-		info[i++] = "You can strike enemy with poison.";
+		info[i++] = "You can strike the enemy with poison.";
 #endif
 
 	}
@@ -2331,7 +2331,7 @@ info[i++] = "あなたの身体は光っている。";
 #ifdef JP
 info[i++] = "あなたは行動の前に危険を察知することができる。";
 #else
-		info[i++] = "You will be warn before dangerous action.";
+		info[i++] = "You will be warned before dangerous actions.";
 #endif
 
 	}
@@ -2340,7 +2340,7 @@ info[i++] = "あなたは行動の前に危険を察知することができる。";
 #ifdef JP
 info[i++] = "あなたは少ない消費魔力で魔法を唱えることができる。";
 #else
-		info[i++] = "You can cast spell with fewer mana.";
+		info[i++] = "You can cast spells with fewer mana points.";
 #endif
 
 	}
@@ -2358,7 +2358,7 @@ info[i++] = "あなたは低い失敗率で魔法を唱えることができる。";
 #ifdef JP
 info[i++] = "あなたは高い失敗率で魔法を唱えなければいけない。";
 #else
-		info[i++] = "Fail rate of your magic is incresed.";
+		info[i++] = "Fail rate of your magic is increased.";
 #endif
 
 	}
@@ -3370,7 +3370,7 @@ info[i++] = "あなたの手は赤く輝いている。";
 #ifdef JP
 info[i++] = "この後帰還の詔を発動する。";
 #else
-		info[i++] = "You waiting to be recalled";
+		info[i++] = "You are waiting to be recalled";
 #endif
 
 	}
@@ -4696,6 +4696,7 @@ void aggravate_monsters(int who)
 			{
 				/* Wake up */
 				m_ptr->csleep = 0;
+				if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				sleep = TRUE;
 			}
 			if (!is_pet(m_ptr)) m_ptr->mflag2 |= MFLAG_NOPET;
@@ -4736,7 +4737,7 @@ bool symbol_genocide(int power, int player_cast)
 	int     msec = delay_factor * delay_factor * delay_factor;
 
 	/* Prevent genocide in quest levels */
-	if (p_ptr->inside_quest && !random_quest_number(dun_level))
+	if ((p_ptr->inside_quest && !random_quest_number(dun_level)) || p_ptr->inside_arena || p_ptr->inside_battle)
 	{
 		return (FALSE);
 	}
@@ -4796,6 +4797,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -4873,7 +4875,7 @@ bool mass_genocide(int power, int player_cast)
 
 
 	/* Prevent mass genocide in quest levels */
-	if (p_ptr->inside_quest && !random_quest_number(dun_level))
+	if ((p_ptr->inside_quest && !random_quest_number(dun_level)) || p_ptr->inside_arena || p_ptr->inside_battle)
 	{
 		return (FALSE);
 	}
@@ -4925,6 +4927,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -5003,7 +5006,7 @@ bool mass_genocide_undead(int power, int player_cast)
 
 
 	/* Prevent mass genocide in quest levels */
-	if (p_ptr->inside_quest && !random_quest_number(dun_level))
+	if ((p_ptr->inside_quest && !random_quest_number(dun_level)) || p_ptr->inside_arena || p_ptr->inside_battle)
 	{
 		return (FALSE);
 	}
@@ -5057,6 +5060,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -5087,7 +5091,7 @@ msg_format("%^sが目を覚ました。", m_name);
 #ifdef JP
 take_hit(DAMAGE_GENO, randint1(3), "アンデッド消滅の呪文を唱えた疲労", -1);
 #else
-			take_hit(DAMAGE_GENO, randint1(3), "the strain of casting Mass Genocide", -1);
+			take_hit(DAMAGE_GENO, randint1(3), "the strain of casting Annihilate Undead", -1);
 #endif
 
 		}
@@ -5291,6 +5295,9 @@ bool destroy_area(int y1, int x1, int r, int full)
 		return (FALSE);
 	}
 
+	/* Lose monster light */
+	clear_mon_lite();
+
 	/* Big area of affect */
 	for (y = (y1 - r); y <= (y1 + r); y++)
 	{
@@ -5314,7 +5321,7 @@ bool destroy_area(int y1, int x1, int r, int full)
 			r_ptr = &r_info[m_ptr->r_idx];
 
 			/* Lose room and vault */
-			c_ptr->info &= ~(CAVE_ROOM | CAVE_ICKY | CAVE_UNSAFE | CAVE_OBJECT);
+			c_ptr->info &= ~(CAVE_ROOM | CAVE_ICKY | CAVE_UNSAFE);
 
 			/* Lose light and knowledge */
 			c_ptr->info &= ~(CAVE_MARK | CAVE_GLOW);
@@ -5325,12 +5332,21 @@ bool destroy_area(int y1, int x1, int r, int full)
 				/* Hurt the player later */
 				flag = TRUE;
 
+				/* Process "re-glowing" */
+				if (is_mirror_grid(c_ptr)) c_ptr->info |= CAVE_GLOW;
+
 				/* Do not hurt this grid */
 				continue;
 			}
 
 			/* Hack -- Skip the epicenter */
-			if ((y == y1) && (x == x1)) continue;
+			if ((y == y1) && (x == x1))
+			{
+				/* Process "re-glowing" */
+				if (is_mirror_grid(c_ptr)) c_ptr->info |= CAVE_GLOW;
+
+				continue;
+			}
 
 			if ((r_ptr->flags1 & RF1_QUESTOR))
 			{
@@ -5338,7 +5354,13 @@ bool destroy_area(int y1, int x1, int r, int full)
 				m_list[c_ptr->m_idx].hp = m_list[c_ptr->m_idx].maxhp;
 
 				/* Try to teleport away quest monsters */
-				if (!teleport_away(c_ptr->m_idx, (r * 2) + 1, TRUE)) continue;
+				if (!teleport_away(c_ptr->m_idx, (r * 2) + 1, TRUE))
+				{
+					/* Process "re-glowing" */
+					if (is_mirror_grid(c_ptr)) c_ptr->info |= CAVE_GLOW;
+
+					continue;
+				}
 			}
 			else
 			{
@@ -5531,10 +5553,22 @@ bool earthquake(int cy, int cx, int r)
 			c_ptr->info &= ~(CAVE_GLOW | CAVE_MARK);
 
 			/* Skip the epicenter */
-			if (!dx && !dy) continue;
+			if (!dx && !dy)
+			{
+				/* Process "re-glowing" */
+				if (is_mirror_grid(c_ptr)) c_ptr->info |= CAVE_GLOW;
+
+				continue;
+			}
 
 			/* Skip most grids */
-			if (randint0(100) < 85) continue;
+			if (randint0(100) < 85)
+			{
+				/* Process "re-glowing" */
+				if (is_mirror_grid(c_ptr)) c_ptr->info |= CAVE_GLOW;
+
+				continue;
+			}
 
 			/* Damage this grid */
 			map[16+yy-cy][16+xx-cx] = TRUE;
@@ -5545,7 +5579,7 @@ bool earthquake(int cy, int cx, int r)
 	}
 
 	/* First, affect the player (if necessary) */
-	if (hurt && !(p_ptr->prace == RACE_SPECTRE) && !(p_ptr->wraith_form) && !(p_ptr->kabenuke))
+	if (hurt && !prace_is_(RACE_SPECTRE) && !p_ptr->wraith_form && !p_ptr->kabenuke)
 	{
 		/* Check around the player */
 		for (i = 0; i < 8; i++)
@@ -5862,6 +5896,8 @@ msg_format("%^sは岩石に埋もれてしまった！", m_name);
 		}
 	}
 
+	/* Lose monster light */
+	clear_mon_lite();
 
 	/* Examine the quaked region */
 	for (dy = -r; dy <= r; dy++)
@@ -5888,9 +5924,6 @@ msg_format("%^sは岩石に埋もれてしまった！", m_name);
 
 				/* Delete objects */
 				delete_object(yy, xx);
-
-				/* Clear mirror, runes flag */
-				c_ptr->info &= ~CAVE_OBJECT;
 
 				/* Wall (or floor) type */
 				t = (floor ? randint0(100) : 200);
@@ -5998,7 +6031,7 @@ void discharge_minion(void)
 		if (dam > 800) dam = 800;
 		project(i, 2+(r_ptr->level/20), m_ptr->fy,
 			m_ptr->fx, dam, GF_PLASMA, 
-			PROJECT_STOP | PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL | PROJECT_MONSTER, -1);
+			PROJECT_STOP | PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL, -1);
 		delete_monster_idx(i);
 	}
 }
@@ -6063,6 +6096,8 @@ static void cave_temp_room_lite(void)
 			{
 				/* Wake up! */
 				m_ptr->csleep = 0;
+
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 
 				/* Notice the "waking up" */
 				if (m_ptr->ml)
@@ -6314,6 +6349,11 @@ void lite_room(int y1, int x1)
 
 	/* Now, lite them all up at once */
 	cave_temp_room_lite();
+
+	if (p_ptr->special_defense & NINJA_S_STEALTH)
+	{
+		if (cave[py][px].info & CAVE_GLOW) set_superstealth(FALSE);
+	}
 }
 
 
@@ -6388,11 +6428,6 @@ msg_print("白い光が辺りを覆った。");
 
 	/* Lite up the room */
 	lite_room(py, px);
-
-	if (p_ptr->special_defense & NINJA_S_STEALTH)
-	{
-		set_superstealth(FALSE);
-	}
 
 	/* Assume seen */
 	return (TRUE);
@@ -6658,6 +6693,8 @@ msg_print("テレポートを邪魔された！");
 #endif
 
 		m_ptr->csleep = 0;
+		if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
+
 		/* Failure */
 		return FALSE;
 	}
@@ -6704,14 +6741,7 @@ msg_print("テレポートを邪魔された！");
 	verify_panel();
 
 	/* Update stuff */
-	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
-
-	/* Notice changes in view */
-	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_1 | RF7_SELF_LITE_2))
-	{
-		/* Update some things */
-		p_ptr->update |= (PU_MON_LITE);
-	}
+	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 	/* Update the monsters */
 	p_ptr->update |= (PU_DISTANCE);
@@ -6758,9 +6788,9 @@ bool project_hook(int typ, int dir, int dam, int flg)
 
 
 /*
- * Cast a bolt spell
- * Stop if we hit a monster, as a "bolt"
- * Affect monsters (not grids or objects)
+ * Cast a bolt spell.
+ * Stop if we hit a monster, as a "bolt".
+ * Affect monsters and grids (not objects).
  */
 bool fire_bolt(int typ, int dir, int dam)
 {
@@ -6770,9 +6800,9 @@ bool fire_bolt(int typ, int dir, int dam)
 
 
 /*
- * Cast a beam spell
- * Pass through monsters, as a "beam"
- * Affect monsters (not grids or objects)
+ * Cast a beam spell.
+ * Pass through monsters, as a "beam".
+ * Affect monsters, grids and objects.
  */
 bool fire_beam(int typ, int dir, int dam)
 {
@@ -6971,7 +7001,7 @@ bool wall_stone(void)
 	bool dummy = (project(0, 1, py, px, 0, GF_STONE_WALL, flg, -1));
 
 	/* Update stuff */
-	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
+	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 	/* Update the monsters */
 	p_ptr->update |= (PU_MONSTERS);
@@ -7534,4 +7564,132 @@ void kawarimi(bool success)
 
 	p_ptr->special_defense &= ~(NINJA_KAWARIMI);
 	p_ptr->redraw |= (PR_STATUS);
+}
+
+
+/*
+ * "Rush Attack" routine for Samurai or Ninja
+ * Return value is for checking "done"
+ */
+bool rush_attack(bool *mdeath)
+{
+	int dir;
+	int tx, ty;
+	int tm_idx = 0;
+	u16b path_g[32];
+	int path_n, i;
+	bool tmp_mdeath = FALSE;
+	bool moved = FALSE;
+
+	if (mdeath) *mdeath = FALSE;
+
+	project_length = 5;
+	if (!get_aim_dir(&dir)) return FALSE;
+
+	/* Use the given direction */
+	tx = px + project_length * ddx[dir];
+	ty = py + project_length * ddy[dir];
+
+	/* Hack -- Use an actual "target" */
+	if ((dir == 5) && target_okay())
+	{
+		tx = target_col;
+		ty = target_row;
+	}
+
+	if (in_bounds(ty, tx)) tm_idx = cave[ty][tx].m_idx;
+
+	path_n = project_path(path_g, project_length, py, px, ty, tx, PROJECT_STOP | PROJECT_KILL);
+	project_length = 0;
+
+	/* No need to move */
+	if (!path_n) return TRUE;
+
+	/* Use ty and tx as to-move point */
+	ty = py;
+	tx = px;
+
+	/* Project along the path */
+	for (i = 0; i < path_n; i++)
+	{
+		monster_type *m_ptr;
+
+		int ny = GRID_Y(path_g[i]);
+		int nx = GRID_X(path_g[i]);
+
+		if (cave_empty_bold(ny, nx) && player_can_enter(cave[ny][nx].feat))
+		{
+			ty = ny;
+			tx = nx;
+
+			/* Go to next grid */
+			continue;
+		}
+
+		if (!cave[ny][nx].m_idx)
+		{
+			if (tm_idx)
+			{
+#ifdef JP
+				msg_print("失敗！");
+#else
+				msg_print("Failed!");
+#endif
+			}
+			else
+			{
+#ifdef JP
+				msg_print("ここには入身では入れない。");
+#else
+				msg_print("You can't move to that place.");
+#endif
+			}
+
+			/* Exit loop */
+			break;
+		}
+
+		/* Move player before updating the monster */
+		if ((ty != py) || (tx != px)) teleport_player_to(ty, tx, FALSE);
+
+		/* Update the monster */
+		update_mon(cave[ny][nx].m_idx, TRUE);
+
+		/* Found a monster */
+		m_ptr = &m_list[cave[ny][nx].m_idx];
+
+		if (tm_idx != cave[ny][nx].m_idx)
+		{
+#ifdef JP
+			msg_format("%s%sが立ちふさがっている！", tm_idx ? "別の" : "",
+				   m_ptr->ml ? "モンスター" : "何か");
+#else
+			msg_format("There is %s in the way!", m_ptr->ml ? (tm_idx ? "another monster" : "a monster") : "someone");
+#endif
+		}
+		else if (((py != ty) || (px != tx)))
+		{
+			/* Hold the monster name */
+			char m_name[80];
+
+			/* Get the monster name (BEFORE polymorphing) */
+			monster_desc(m_name, m_ptr, 0);
+#ifdef JP
+			msg_format("素早く%sの懐に入り込んだ！", m_name);
+#else
+			msg_format("You quickly jump in and attack %s!", m_name);
+#endif
+		}
+
+		if ((py != ty) || (px != tx)) teleport_player_to(ty, tx, FALSE);
+		moved = TRUE;
+		tmp_mdeath = py_attack(ny, nx, HISSATSU_NYUSIN);
+
+		break;
+	}
+
+	if (!moved && ((py != ty) || (px != tx))) teleport_player_to(ty, tx, FALSE);
+
+	if (mdeath) *mdeath = tmp_mdeath;
+	return TRUE;
 }

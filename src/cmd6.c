@@ -418,10 +418,10 @@ msg_print("あなたの飢えは新鮮な血によってのみ満たされる！");
 #endif
 
 	}
-	else if ((p_ptr->prace == RACE_SKELETON ||
-		  p_ptr->prace == RACE_GOLEM ||
-		  p_ptr->prace == RACE_ZOMBIE ||
-		  p_ptr->prace == RACE_SPECTRE) &&
+	else if ((prace_is_(RACE_SKELETON) ||
+		  prace_is_(RACE_GOLEM) ||
+		  prace_is_(RACE_ZOMBIE) ||
+		  prace_is_(RACE_SPECTRE)) &&
 		 (o_ptr->tval == TV_STAFF || o_ptr->tval == TV_WAND))
 	{
 		cptr staff;
@@ -451,6 +451,13 @@ msg_print("あなたの飢えは新鮮な血によってのみ満たされる！");
 #else
 			msg_format("The %s has no charges left.", staff);
 #endif
+
+			o_ptr->ident |= (IDENT_EMPTY);
+
+			/* Combine / Reorder the pack (later) */
+			p_ptr->notice |= (PN_COMBINE | PN_REORDER);
+			p_ptr->window |= (PW_INVEN);
+
 			return;
 		}
 
@@ -513,7 +520,7 @@ msg_print("あなたの飢えは新鮮な血によってのみ満たされる！");
 		/* Don't eat a staff/wand itself */
 		return;
 	}
-	else if ((p_ptr->prace == RACE_DEMON ||
+	else if ((prace_is_(RACE_DEMON) ||
 		 (mimic_info[p_ptr->mimic_form].MIMIC_FLAGS & MIMIC_IS_DEMON)) &&
 		 (o_ptr->tval == TV_CORPSE && o_ptr->sval == SV_CORPSE &&
 		  strchr("pht", r_info[o_ptr->pval].d_char)))
@@ -526,11 +533,11 @@ msg_print("あなたの飢えは新鮮な血によってのみ満たされる！");
 #ifdef JP
 		msg_format("%sは燃え上り灰になった。精力を吸収した気がする。", o_name);
 #else
-		msg_format("%^s is burnt to ashes.  You absorb its vitality!");
+		msg_format("%^s is burnt to ashes.  You absorb its vitality!", o_name);
 #endif
 		(void)set_food(PY_FOOD_MAX - 1);
 	}
-	else if (p_ptr->prace == RACE_SKELETON)
+	else if (prace_is_(RACE_SKELETON))
 	{
 #if 0
 		if (o_ptr->tval == TV_SKELETON ||
@@ -575,12 +582,12 @@ msg_print("食べ物がアゴを素通りして落ち、消えた！");
 
 		}
 	}
-	else if ((p_ptr->prace == RACE_GOLEM) ||
-		 (p_ptr->prace == RACE_ZOMBIE) ||
-		 (p_ptr->prace == RACE_ENT) ||
-		 (p_ptr->prace == RACE_DEMON) ||
-		 (p_ptr->prace == RACE_ANDROID) ||
-		 (p_ptr->prace == RACE_SPECTRE) ||
+	else if (prace_is_(RACE_GOLEM) ||
+		 prace_is_(RACE_ZOMBIE) ||
+		 prace_is_(RACE_ENT) ||
+		 prace_is_(RACE_DEMON) ||
+		 prace_is_(RACE_ANDROID) ||
+		 prace_is_(RACE_SPECTRE) ||
 		 (mimic_info[p_ptr->mimic_form].MIMIC_FLAGS & MIMIC_IS_NONLIVING))
 	{
 #ifdef JP
@@ -591,8 +598,14 @@ msg_print("生者の食物はあなたにとってほとんど栄養にならない。");
 
 		set_food(p_ptr->food + ((o_ptr->pval) / 20));
 	}
+	else if (o_ptr->tval == TV_FOOD && o_ptr->sval == SV_FOOD_WAYBREAD)
+	{
+		/* Waybread is always fully satisfying. */
+		set_food(MAX(p_ptr->food, PY_FOOD_MAX - 1));
+	}
 	else
 	{
+		/* Food can feed the player */
 		(void)set_food(p_ptr->food + o_ptr->pval);
 	}
 
@@ -622,7 +635,7 @@ static bool item_tester_hook_eatable(object_type *o_ptr)
 	if (o_ptr->tval==TV_FOOD) return TRUE;
 
 #if 0
-	if (p_ptr->prace == RACE_SKELETON)
+	if (prace_is_(RACE_SKELETON))
 	{
 		if (o_ptr->tval == TV_SKELETON ||
 		    (o_ptr->tval == TV_CORPSE && o_ptr->sval == SV_SKELETON))
@@ -631,15 +644,15 @@ static bool item_tester_hook_eatable(object_type *o_ptr)
 	else 
 #endif
 
-	if (p_ptr->prace == RACE_SKELETON ||
-	    p_ptr->prace == RACE_GOLEM ||
-	    p_ptr->prace == RACE_ZOMBIE ||
-	    p_ptr->prace == RACE_SPECTRE)
+	if (prace_is_(RACE_SKELETON) ||
+	    prace_is_(RACE_GOLEM) ||
+	    prace_is_(RACE_ZOMBIE) ||
+	    prace_is_(RACE_SPECTRE))
 	{
 		if (o_ptr->tval == TV_STAFF || o_ptr->tval == TV_WAND)
 			return TRUE;
 	}
-	else if ((p_ptr->prace == RACE_DEMON) ||
+	else if (prace_is_(RACE_DEMON) ||
 		 (mimic_info[p_ptr->mimic_form].MIMIC_FLAGS & MIMIC_IS_DEMON))
 	{
 		if (o_ptr->tval == TV_CORPSE &&
@@ -810,7 +823,17 @@ static void do_cmd_quaff_potion_aux(int item)
 			msg_print("The potion makes you vomit!");
 #endif
 
-			(void)set_food(PY_FOOD_STARVE - 1);
+			if (!(prace_is_(RACE_GOLEM) ||
+			      prace_is_(RACE_ZOMBIE) ||
+			      prace_is_(RACE_DEMON) ||
+			      prace_is_(RACE_ANDROID) ||
+			      prace_is_(RACE_SPECTRE) ||
+			      (mimic_info[p_ptr->mimic_form].MIMIC_FLAGS & MIMIC_IS_NONLIVING)))
+			{
+				/* Only living creatures get thirsty */
+				(void)set_food(PY_FOOD_STARVE - 1);
+			}
+
 			(void)set_poisoned(0);
 			(void)set_paralyzed(p_ptr->paralyzed + 4);
 			ident = TRUE;
@@ -1396,7 +1419,7 @@ msg_print("全ての突然変異が治った。");
 		}
 	}
 
-	if (p_ptr->prace == RACE_SKELETON)
+	if (prace_is_(RACE_SKELETON))
 	{
 #ifdef JP
 msg_print("液体の一部はあなたのアゴを素通りして落ちた！");
@@ -1469,7 +1492,7 @@ msg_print("液体の一部はあなたのアゴを素通りして落ちた！");
 #else
 				msg_print("You are moistened.");
 #endif
-				set_food(MIN(p_ptr->food + o_ptr->pval + 1000, PY_FOOD_MAX - 1));
+				set_food(MIN(p_ptr->food + o_ptr->pval + MAX(0, o_ptr->pval * 10) + 2000, PY_FOOD_MAX - 1));
 				break;
 			default:
 				(void)set_food(p_ptr->food + o_ptr->pval);
@@ -1497,7 +1520,7 @@ static bool item_tester_hook_quaff(object_type *o_ptr)
 {
 	if (o_ptr->tval == TV_POTION) return TRUE;
 
-	if (p_ptr->prace == RACE_ANDROID)
+	if (prace_is_(RACE_ANDROID))
 	{
 		if (o_ptr->tval == TV_FLASK && o_ptr->sval == SV_FLASK_OIL)
 			return TRUE;
@@ -2139,7 +2162,7 @@ msg_print("巻物は煙を立てて消え去った！");
 #endif
 		used_up = FALSE;
 	}
-	else if (o_ptr->tval==TV_PARCHEMENT)
+	else if (o_ptr->tval == TV_PARCHMENT)
 	{
 		cptr q;
 		char o_name[MAX_NLEN];
@@ -2221,7 +2244,7 @@ msg_print("巻物は煙を立てて消え去った！");
  */
 static bool item_tester_hook_readable(object_type *o_ptr)
 {
-	if ((o_ptr->tval==TV_SCROLL) || (o_ptr->tval==TV_PARCHEMENT) || (o_ptr->name1 == ART_GHB) || (o_ptr->name1 == ART_POWER)) return (TRUE);
+	if ((o_ptr->tval==TV_SCROLL) || (o_ptr->tval==TV_PARCHMENT) || (o_ptr->name1 == ART_GHB) || (o_ptr->name1 == ART_POWER)) return (TRUE);
 
 	/* Assume not */
 	return (FALSE);
@@ -2635,10 +2658,15 @@ msg_print("ダンジョンが揺れた。");
 		{
 #ifdef JP
 			msg_print("何も起らなかった。");
-			msg_print("もったいない事をしたような気がする。食べ物は大切にしなくては。");
 #else
 			msg_print("Nothing happen.");
-			msg_print("What a waste.  It's your food!");
+#endif
+			if (prace_is_(RACE_SKELETON) || prace_is_(RACE_GOLEM) ||
+				prace_is_(RACE_ZOMBIE) || prace_is_(RACE_SPECTRE))
+#ifdef JP
+				msg_print("もったいない事をしたような気がする。食べ物は大切にしなくては。");
+#else
+				msg_print("What a waste.  It's your food!");
 #endif
 			break;
 		}
@@ -3375,7 +3403,7 @@ static int rod_effect(int sval, int dir, bool *use_charge, bool magic)
 	{
 		case SV_ROD_DETECT_TRAP:
 		{
-			if (detect_traps(DETECT_RAD_DEFAULT, dir ? FALSE : TRUE)) ident = TRUE;
+			if (detect_traps(DETECT_RAD_DEFAULT, (bool)(dir ? FALSE : TRUE))) ident = TRUE;
 			break;
 		}
 
@@ -5248,7 +5276,11 @@ msg_print("あなたの槍は電気でスパークしている...");
 
 			case ART_BOROMIR:
 			{
+#ifdef JP
+				msg_print("あなたは力強い突風を吹き鳴らした。周囲の敵が震え上っている!");
+#else
 				msg_print("You wind a mighty blast; your enemies tremble!");
+#endif
 				(void)turn_monsters((3 * p_ptr->lev / 2) + 10);
 				o_ptr->timeout = randint0(40) + 40;
 				break;
@@ -5400,7 +5432,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 #ifdef JP
 				msg_print("ムチを伸ばした。");
 #else
-				msg_print("You stretched your wip.");
+				msg_print("You stretched your whip.");
 #endif
 
 				fetch(dir, 500, TRUE);
@@ -5704,7 +5736,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 		return;
 	}
 
-	else if ((o_ptr->tval > TV_CAPTURE) && (o_ptr->xtra3))
+	if ((o_ptr->tval > TV_CAPTURE) && (o_ptr->xtra3))
 	{
 		switch (o_ptr->xtra3-1)
 		{
@@ -5741,7 +5773,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 	}
 
 
-	else if (o_ptr->name2 == EGO_TRUMP)
+	if (o_ptr->name2 == EGO_TRUMP)
 	{
 		teleport_player(100);
 		o_ptr->timeout = 50 + randint1(50);
@@ -5754,7 +5786,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 	}
 
 
-	else if (o_ptr->name2 == EGO_LITE_ILLUMINATION)
+	if (o_ptr->name2 == EGO_LITE_ILLUMINATION)
 	{
 		if (!o_ptr->xtra4 && ((o_ptr->sval == SV_LITE_TORCH) || (o_ptr->sval == SV_LITE_LANTERN)))
 		{
@@ -5776,7 +5808,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 	}
 
 
-	else if (o_ptr->name2 == EGO_EARTHQUAKES)
+	if (o_ptr->name2 == EGO_EARTHQUAKES)
 	{
 		earthquake(py, px, 5);
 		o_ptr->timeout = 100 + randint1(100);
@@ -5789,7 +5821,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 	}
 
 
-	else if (o_ptr->name2 == EGO_JUMP)
+	if (o_ptr->name2 == EGO_JUMP)
 	{
 		teleport_player(10);
 		o_ptr->timeout = 10 + randint1(10);
@@ -5803,7 +5835,7 @@ msg_print("あなたの槍は電気でスパークしている...");
 
 
 	/* Hack -- Dragon Scale Mail can be activated as well */
-	else if (o_ptr->tval == TV_DRAG_ARMOR)
+	if (o_ptr->tval == TV_DRAG_ARMOR)
 	{
 		/* Get a direction for breathing (or abort) */
 		if (!get_aim_dir(&dir)) return;
@@ -6727,7 +6759,7 @@ static bool select_magic_eater(bool only_browse)
 			prt(format(" %s staff", (menu_line == 1) ? "> " : "  "), 2, 14);
 			prt(format(" %s wand", (menu_line == 2) ? "> " : "  "), 3, 14);
 			prt(format(" %s rod", (menu_line == 3) ? "> " : "  "), 4, 14);
-			prt("Which type of magic do you usu?", 0, 0);
+			prt("Which type of magic do you use?", 0, 0);
 #endif
 			choice = inkey();
 			switch(choice)
@@ -6893,11 +6925,7 @@ static bool select_magic_eater(bool only_browse)
 				{
 					chance -= 3 * (p_ptr->lev - level);
 				}
-				chance += p_ptr->to_m_chance;
-				if (p_ptr->heavy_spell) chance += 20;
-				if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-				else if (p_ptr->easy_spell) chance-=3;
-				else if (p_ptr->dec_mana) chance-=2;
+				chance = mod_spell_chance_1(chance);
 				chance = MAX(chance, adj_mag_fail[p_ptr->stat_ind[mp_ptr->spell_stat]]);
 				/* Stunning makes spells harder */
 				if (p_ptr->stun > 50) chance += 25;
@@ -6905,8 +6933,7 @@ static bool select_magic_eater(bool only_browse)
 
 				if (chance > 95) chance = 95;
 
-				if(p_ptr->dec_mana) chance--;
-				if (p_ptr->heavy_spell) chance += 5;
+				chance = mod_spell_chance_2(chance);
 
 				col = TERM_WHITE;
 
@@ -7127,7 +7154,7 @@ static bool select_magic_eater(bool only_browse)
 			Term_erase(7, 21, 255);
 			Term_erase(7, 20, 255);
 
-			roff_to_buf(k_text + k_info[lookup_kind(tval, i)].text, 62, temp);
+			roff_to_buf(k_text + k_info[lookup_kind(tval, i)].text, 62, temp, sizeof(temp));
 			for (j = 0, line = 21; temp[j]; j += 1 + strlen(&temp[j]))
 			{
 				prt(&temp[j], line, 10);
@@ -7198,11 +7225,7 @@ msg_print("混乱していて唱えられない！");
 	{
 		chance -= 3 * (p_ptr->lev - level);
 	}
-	chance += p_ptr->to_m_chance;
-	if (p_ptr->heavy_spell) chance += 20;
-	if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-	else if (p_ptr->easy_spell) chance-=3;
-	else if (p_ptr->dec_mana) chance-=2;
+	chance = mod_spell_chance_1(chance);
 	chance = MAX(chance, adj_mag_fail[p_ptr->stat_ind[mp_ptr->spell_stat]]);
 	/* Stunning makes spells harder */
 	if (p_ptr->stun > 50) chance += 25;
@@ -7210,8 +7233,7 @@ msg_print("混乱していて唱えられない！");
 
 	if (chance > 95) chance = 95;
 
-	if(p_ptr->dec_mana) chance--;
-	if (p_ptr->heavy_spell) chance += 5;
+	chance = mod_spell_chance_2(chance);
 
 	if (randint0(100) < chance)
 	{

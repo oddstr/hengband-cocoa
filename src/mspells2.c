@@ -20,7 +20,7 @@
  */
 static void monst_breath_monst(int m_idx, int y, int x, int typ, int dam_hp, int rad, bool breath, int monspell, bool learnable)
 {
-	int flg = PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL | PROJECT_MONSTER;
+	int flg = PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL;
 
 	monster_type *m_ptr = &m_list[m_idx];
 	monster_race *r_ptr = &r_info[m_ptr->r_idx];
@@ -44,14 +44,14 @@ static void monst_breath_monst(int m_idx, int y, int x, int typ, int dam_hp, int
  */
 static void monst_bolt_monst(int m_idx, int y, int x, int typ, int dam_hp, int monspell, bool learnable)
 {
-	int flg = PROJECT_STOP | PROJECT_KILL | PROJECT_MONSTER | PROJECT_REFLECTABLE;
+	int flg = PROJECT_STOP | PROJECT_KILL | PROJECT_REFLECTABLE;
 
 	(void)project(m_idx, 0, y, x, dam_hp, typ, flg, (learnable ? monspell : -1));
 }
 
 static void monst_beam_monst(int m_idx, int y, int x, int typ, int dam_hp, int monspell, bool learnable)
 {
-	int flg = PROJECT_BEAM | PROJECT_KILL | PROJECT_THRU | PROJECT_MONSTER;
+	int flg = PROJECT_BEAM | PROJECT_KILL | PROJECT_THRU;
 
 	(void)project(m_idx, 0, y, x, dam_hp, typ, flg, (learnable ? monspell : -1));
 }
@@ -101,7 +101,11 @@ static bool breath_direct(int y1, int x1, int y2, int x2, int rad, bool disint_b
 {
 	/* Must be the same as projectable() */
 
-	int i, y, x;
+	int i;
+
+	/* Initial grid */
+	int y = y1;
+	int x = x1;
 
 	int grid_n = 0;
 	u16b grid_g[512];
@@ -116,24 +120,90 @@ static bool breath_direct(int y1, int x1, int y2, int x2, int rad, bool disint_b
 
 	/* Check the projection path */
 	grid_n = project_path(grid_g, MAX_RANGE, y1, x1, y2, x2, disint_ball ? PROJECT_DISI : 0);
-	breath_shape(grid_g, grid_n, &grids, gx, gy, gm, &gm_rad, rad, y1, x1, y2, x2, disint_ball, FALSE);
 
-	for (i = 0; i < grids; i++)
+	/* Project along the path */
+	for (i = 0; i < grid_n; ++i)
 	{
-		/* Extract the location */
-		y = gy[i];
-		x = gx[i];
+		int ny = GRID_Y(grid_g[i]);
+		int nx = GRID_X(grid_g[i]);
 
-		if (y == y2 && x == x2)
-			hit2 = TRUE;
-		if (y == py && x == px)
-			hityou = TRUE;
+		if (disint_ball)
+		{
+			/* Hack -- Balls explode before reaching walls */
+			if (cave_stop_disintegration(ny, nx)) break;
+		}
+		else
+		{
+			/* Hack -- Balls explode before reaching walls */
+			if (!cave_floor_bold(ny, nx)) break;
+		}
+
+		/* Save the "blast epicenter" */
+		y = ny;
+		x = nx;
 	}
-	if (!hit2)
-		return FALSE;
-	if (friend && hityou)
-		return FALSE;
+
+	grid_n = i;
+
+	if (!grid_n)
+	{
+		if (disint_ball)
+		{
+			if (in_disintegration_range(y1, x1, y2, x2) && (distance(y1, x1, y2, x2) <= rad)) hit2 = TRUE;
+			if (in_disintegration_range(y1, x1, py, px) && (distance(y1, x1, py, px) <= rad)) hityou = TRUE;
+		}
+		else
+		{
+			if (los(y1, x1, y2, x2) && (distance(y1, x1, y2, x2) <= rad)) hit2 = TRUE;
+			if (los(y1, x1, py, px) && (distance(y1, x1, py, px) <= rad)) hityou = TRUE;
+		}
+	}
+	else
+	{
+		breath_shape(grid_g, grid_n, &grids, gx, gy, gm, &gm_rad, rad, y1, x1, y, x, disint_ball, FALSE);
+
+		for (i = 0; i < grids; i++)
+		{
+			/* Extract the location */
+			y = gy[i];
+			x = gx[i];
+
+			if ((y == y2) && (x == x2)) hit2 = TRUE;
+			if ((y == py) && (x == px)) hityou = TRUE;
+		}
+	}
+
+	if (!hit2) return FALSE;
+	if (friend && hityou) return FALSE;
+
 	return TRUE;
+}
+
+/*
+ * Get the actual center point of ball spells (rad > 1) (originally from TOband)
+ */
+static void get_project_point(int sy, int sx, int *ty, int *tx, int flg)
+{
+	u16b path_g[128];
+	int  path_n, i;
+
+	path_n = project_path(path_g, MAX_RANGE, sy, sx, *ty, *tx, flg);
+
+	*ty = sy;
+	*tx = sx;
+
+	/* Project along the path */
+	for (i = 0; i < path_n; i++)
+	{
+		sy = GRID_Y(path_g[i]);
+		sx = GRID_X(path_g[i]);
+
+		/* Hack -- Balls explode before reaching walls */
+		if (!cave_floor_bold(sy, sx)) break;
+
+		*ty = sy;
+		*tx = sx;
+	}
 }
 
 /*
@@ -262,6 +332,16 @@ bool monst_spell_monst(int m_idx)
 		/* Extract the monster level */
 		rlev = ((r_ptr->level >= 1) ? r_ptr->level : 1);
 
+		/* Remove unimplemented spells */
+		f4 &= ~(RF4_DISPEL);
+		f6 &= ~(RF6_WORLD | RF6_FORGET);
+
+		/* Remove unimplemented special moves */
+		if (f6 & RF6_SPECIAL)
+		{
+			if (r_ptr->d_char != 'B') f6 &= ~(RF6_SPECIAL);
+		}
+
 		if (pet)
 		{
 			f4 &= ~(RF4_SHRIEK);
@@ -315,22 +395,42 @@ bool monst_spell_monst(int m_idx)
 		/* Prevent collateral damage */
 		if (!(p_ptr->pet_extra_flags & PF_BALL_SPELL) && pet && (m_idx != p_ptr->riding))
 		{
-			int dist = distance(py, px, y, x);
-
-			/* Expected breath radius */
-			int rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
-
-			if (dist <= 2)
+			if ((f4 & (RF4_BALL_MASK & ~(RF4_ROCKET))) ||
+			    (f5 & RF5_BALL_MASK) ||
+			    (f6 & RF6_BALL_MASK))
 			{
-				f4 &= ~(RF4_BALL_MASK);
-				f5 &= ~(RF5_BALL_MASK);
-				f6 &= ~(RF6_BALL_MASK);
+				int real_y = y;
+				int real_x = x;
+
+				get_project_point(m_ptr->fy, m_ptr->fx, &real_y, &real_x, 0L);
+
+				if (los(real_y, real_x, py, px))
+				{
+					int dist = distance(real_y, real_x, py, px);
+
+					if (dist <= 2)
+					{
+						f4 &= ~(RF4_BALL_MASK & ~(RF4_ROCKET));
+						f5 &= ~(RF5_BALL_MASK);
+						f6 &= ~(RF6_BALL_MASK);
+					}
+					else if (dist <= 4)
+					{
+						f4 &= ~(RF4_BIG_BALL_MASK);
+						f5 &= ~(RF5_BIG_BALL_MASK);
+						f6 &= ~(RF6_BIG_BALL_MASK);
+					}
+				}
 			}
-			else if(dist <= 4)
+
+			if (f4 & RF4_ROCKET)
 			{
-				f4 &= ~(RF4_BIG_BALL_MASK);
-				f5 &= ~(RF5_BIG_BALL_MASK);
-				f6 &= ~(RF6_BIG_BALL_MASK);
+				int real_y = y;
+				int real_x = x;
+
+				get_project_point(m_ptr->fy, m_ptr->fx, &real_y, &real_x, PROJECT_STOP);
+				if (los(real_y, real_x, py, px) && (distance(real_y, real_x, py, px) <= 2))
+					f4 &= ~(RF4_ROCKET);
 			}
 
 			if (((f4 & RF4_BEAM_MASK) ||
@@ -343,19 +443,24 @@ bool monst_spell_monst(int m_idx)
 				f6 &= ~(RF6_BEAM_MASK);
 			}
 
-			if (((f4 & RF4_BREATH_MASK) ||
-			  (f5 & RF5_BREATH_MASK) ||
-			  (f6 & RF6_BREATH_MASK)) &&
-			 !breath_direct(m_ptr->fy, m_ptr->fx, t_ptr->fy, t_ptr->fx, rad, FALSE, TRUE))
+			if ((f4 & RF4_BREATH_MASK) ||
+			    (f5 & RF5_BREATH_MASK) ||
+			    (f6 & RF6_BREATH_MASK))
 			{
-				f4 &= ~(RF4_BREATH_MASK);
-				f5 &= ~(RF5_BREATH_MASK);
-				f6 &= ~(RF6_BREATH_MASK);
-			}
-			else if ((f4 & RF4_BR_DISI) &&
-				 !breath_direct(m_ptr->fy, m_ptr->fx, t_ptr->fy, t_ptr->fx, rad, TRUE, TRUE))
-			{
-				f4 &= ~(RF4_BR_DISI);
+				/* Expected breath radius */
+				int rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
+
+				if (!breath_direct(m_ptr->fy, m_ptr->fx, t_ptr->fy, t_ptr->fx, rad, FALSE, TRUE))
+				{
+					f4 &= ~(RF4_BREATH_MASK);
+					f5 &= ~(RF5_BREATH_MASK);
+					f6 &= ~(RF6_BREATH_MASK);
+				}
+				else if ((f4 & RF4_BR_DISI) &&
+					 !breath_direct(m_ptr->fy, m_ptr->fx, t_ptr->fy, t_ptr->fx, rad, TRUE, TRUE))
+				{
+					f4 &= ~(RF4_BR_DISI);
+				}
 			}
 		}
 
@@ -509,7 +614,7 @@ msg_format("%^sが%sに向かって叫んだ。", m_name, t_name);
 				return FALSE;
 			}
 
-			/* RF4_XXX4X4 */
+			/* RF4_ROCKET */
 			case 96+3:
 			{
 				if (known)
@@ -1522,7 +1627,7 @@ msg_format("%^sが%sに放射能球を放った。", m_name, t_name);
 				break;
 			}
 
-			/* RF4_RF4_BR_NUKE */
+			/* RF4_BR_NUKE */
 			case 96+29:
 			{
 				if (known)
@@ -2096,7 +2201,7 @@ msg_format("%^sは気分が良さそうだ。", m_name);
 				if (see_m)
 				{
 #ifdef JP
-msg_format("%^sは%sをじっと睨んだ", m_name, t_name);
+					msg_format("%^sは%sをじっと睨んだ。", m_name, t_name);
 #else
 					msg_format("%^s gazes intently at %s.", m_name, t_name);
 #endif
@@ -2146,7 +2251,7 @@ msg_format("%^sは精神攻撃を食らった。", t_name);
 					t_ptr->confused += randint0(4) + 4;
 
 #ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "の精神は崩壊し、肉体は抜け空となった。", m_idx);
+mon_take_hit_mon(FALSE, t_idx, dam, &fear, "の精神は崩壊し、肉体は抜け殻となった。", m_idx);
 #else
 					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " collapses, a mindless husk.", m_idx);
 #endif
@@ -2164,7 +2269,7 @@ mon_take_hit_mon(FALSE, t_idx, dam, &fear, "の精神は崩壊し、肉体は抜け空となった
 				if (see_m)
 				{
 #ifdef JP
-msg_format("%^sは%sをじっと睨んだ", m_name, t_name);
+					msg_format("%^sは%sをじっと睨んだ。", m_name, t_name);
 #else
 					msg_format("%^s gazes intently at %s.", m_name, t_name);
 #endif
@@ -2216,7 +2321,7 @@ msg_format("%^sは精神攻撃を食らった。", t_name);
 					t_ptr->stunned += randint0(4) + 4;
 
 #ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "の精神は崩壊し、肉体は抜け空となった。", m_idx);
+mon_take_hit_mon(FALSE, t_idx, dam, &fear, "の精神は崩壊し、肉体は抜け殻となった。", m_idx);
 #else
 					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " collapses, a mindless husk.", m_idx);
 #endif
@@ -3231,59 +3336,16 @@ msg_format("%^sが瞬時に消えた。", m_name);
 			/* RF6_TPORT */
 			case 160+5:
 			{
-				int i, oldfy, oldfx;
-				u32b flgs[TR_FLAG_SIZE];
-				object_type *o_ptr;
-
-				oldfy = m_ptr->fy;
-				oldfx = m_ptr->fx;
-
 				if (see_m)
 				{
 #ifdef JP
-msg_format("%^sがテレポートした。", m_name);
+					msg_format("%^sがテレポートした。", m_name);
 #else
 					msg_format("%^s teleports away.", m_name);
 #endif
-
 				}
 
-				teleport_away(m_idx, MAX_SIGHT * 2 + 5, FALSE);
-
-				if (los(py, px, oldfy, oldfx) && !world_monster && see_m)
-				{
-					for (i=INVEN_RARM;i<INVEN_TOTAL;i++)
-					{
-						o_ptr = &inventory[i];
-						if(!cursed_p(o_ptr))
-						{
-							object_flags(o_ptr, flgs);
-
-							if((have_flag(flgs, TR_TELEPORT)) || (p_ptr->muta1 & MUT1_VTELEPORT) || (p_ptr->pclass == CLASS_IMITATOR))
-							{
-#ifdef JP
-								if(get_check_strict("ついていきますか？", CHECK_OKAY_CANCEL))
-#else
-								if(get_check_strict("Do you follow it? ", CHECK_OKAY_CANCEL))
-#endif
-								{
-									if (one_in_(3))
-									{
-										teleport_player(200);
-#ifdef JP
-										msg_print("失敗！");
-#else
-										msg_print("Failed!");
-#endif
-									}
-									else teleport_player_to(m_ptr->fy, m_ptr->fx, TRUE);
-									p_ptr->energy_need = ENERGY_NEED();
-								}
-								break;
-							}
-						}
-					}
-				}
+				teleport_away_followable(m_idx);
 				break;
 			}
 
@@ -3329,7 +3391,7 @@ msg_format("%^sがテレポートした。", m_name);
 #endif
 							}
 							teleport_away(m_idx, 10, FALSE);
-							p_ptr->update |= (PU_MONSTERS | PU_MON_LITE);
+							p_ptr->update |= (PU_MONSTERS);
 							break;
 						}
 						else
@@ -3412,7 +3474,7 @@ msg_format("%^sは耐性を持っている！", t_name);
 
 				if (!resists_tele)
 				{
-					if (t_idx == p_ptr->riding) teleport_player(MAX_SIGHT * 2 + 5);
+					if (t_idx == p_ptr->riding) teleport_player_away(m_idx, MAX_SIGHT * 2 + 5);
 					else teleport_away(t_idx, MAX_SIGHT * 2 + 5, FALSE);
 				}
 
@@ -3482,7 +3544,7 @@ msg_format("%^sは暗闇に包まれた。", t_name);
 					}
 				}
 
-				(void)project(m_idx, 3, y, x, 0, GF_DARK_WEAK, PROJECT_GRID | PROJECT_KILL | PROJECT_MONSTER, MS_DARKNESS);
+				(void)project(m_idx, 3, y, x, 0, GF_DARK_WEAK, PROJECT_GRID | PROJECT_KILL, MS_DARKNESS);
 
 				unlite_room(y, x);
 
@@ -4203,6 +4265,7 @@ msg_format("%^sが魔法で特別な強敵を召喚した！", m_name);
 		if (wake_up)
 		{
 			t_ptr->csleep = 0;
+			if (tr_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 		}
 
 		if (fear && see_t)

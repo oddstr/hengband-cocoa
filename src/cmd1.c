@@ -216,7 +216,7 @@ s16b critical_norm(int weight, int plus, int dam, s16b meichuu, int mode)
  * Note that most brands and slays are x3, except Slay Animal (x2),
  * Slay Evil (x2), and Kill dragon (x5).
  */
-s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
+s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode, bool thrown)
 {
 	int mult = 10;
 
@@ -416,8 +416,6 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 				}
 
 				if (mult < 30) mult = 30;
-				if (o_ptr->name1 == ART_HRUNTING)
-					mult *= 3;
 			}
 
 			/* Execute Giant */
@@ -460,7 +458,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 			}
 
 			/* Brand (Acid) */
-			if ((have_flag(flgs, TR_BRAND_ACID)) || (p_ptr->special_attack & (ATTACK_ACID)))
+			if (have_flag(flgs, TR_BRAND_ACID) || ((p_ptr->special_attack & (ATTACK_ACID)) && !thrown))
 			{
 				/* Notice immunity */
 				if (r_ptr->flags3 & RF3_IM_ACID)
@@ -479,7 +477,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 			}
 
 			/* Brand (Elec) */
-			if ((have_flag(flgs, TR_BRAND_ELEC)) || (p_ptr->special_attack & (ATTACK_ELEC)) || (mode == HISSATSU_ELEC))
+			if (have_flag(flgs, TR_BRAND_ELEC) || ((p_ptr->special_attack & (ATTACK_ELEC)) && !thrown) || (mode == HISSATSU_ELEC))
 			{
 				/* Notice immunity */
 				if (r_ptr->flags3 & RF3_IM_ELEC)
@@ -491,7 +489,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 				}
 
 				/* Otherwise, take the damage */
-				else if (((have_flag(flgs, TR_BRAND_ELEC)) || (p_ptr->special_attack & (ATTACK_ELEC))) && (mode == HISSATSU_ELEC))
+				else if ((have_flag(flgs, TR_BRAND_ELEC) || ((p_ptr->special_attack & (ATTACK_ELEC)) && !thrown)) && (mode == HISSATSU_ELEC))
 				{
 					if (mult < 70) mult = 70;
 				}
@@ -507,7 +505,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 			}
 
 			/* Brand (Fire) */
-			if ((have_flag(flgs, TR_BRAND_FIRE)) || (p_ptr->special_attack & (ATTACK_FIRE)) || (mode == HISSATSU_FIRE))
+			if (have_flag(flgs, TR_BRAND_FIRE) || ((p_ptr->special_attack & (ATTACK_FIRE)) && !thrown) || (mode == HISSATSU_FIRE))
 			{
 				/* Notice immunity */
 				if (r_ptr->flags3 & RF3_IM_FIRE)
@@ -519,7 +517,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 				}
 
 				/* Otherwise, take the damage */
-				else if (((have_flag(flgs, TR_BRAND_FIRE)) || (p_ptr->special_attack & (ATTACK_FIRE))) && (mode == HISSATSU_FIRE))
+				else if ((have_flag(flgs, TR_BRAND_FIRE) || ((p_ptr->special_attack & (ATTACK_FIRE)) && !thrown)) && (mode == HISSATSU_FIRE))
 				{
 					if (r_ptr->flags3 & RF3_HURT_FIRE)
 					{
@@ -546,7 +544,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 			}
 
 			/* Brand (Cold) */
-			if ((have_flag(flgs, TR_BRAND_COLD)) || (p_ptr->special_attack & (ATTACK_COLD)) || (mode == HISSATSU_COLD))
+			if (have_flag(flgs, TR_BRAND_COLD) || ((p_ptr->special_attack & (ATTACK_COLD)) && !thrown) || (mode == HISSATSU_COLD))
 			{
 				/* Notice immunity */
 				if (r_ptr->flags3 & RF3_IM_COLD)
@@ -557,7 +555,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 					}
 				}
 				/* Otherwise, take the damage */
-				else if (((have_flag(flgs, TR_BRAND_COLD)) || (p_ptr->special_attack & (ATTACK_COLD))) && (mode == HISSATSU_COLD))
+				else if ((have_flag(flgs, TR_BRAND_COLD) || ((p_ptr->special_attack & (ATTACK_COLD)) && !thrown)) && (mode == HISSATSU_COLD))
 				{
 					if (r_ptr->flags3 & RF3_HURT_COLD)
 					{
@@ -584,7 +582,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 			}
 
 			/* Brand (Poison) */
-			if ((have_flag(flgs, TR_BRAND_POIS)) || (p_ptr->special_attack & (ATTACK_POIS)) || (mode == HISSATSU_POISON))
+			if (have_flag(flgs, TR_BRAND_POIS) || ((p_ptr->special_attack & (ATTACK_POIS)) && !thrown) || (mode == HISSATSU_POISON))
 			{
 				/* Notice immunity */
 				if (r_ptr->flags3 & RF3_IM_POIS)
@@ -596,7 +594,7 @@ s16b tot_dam_aux(object_type *o_ptr, int tdam, monster_type *m_ptr, int mode)
 				}
 
 				/* Otherwise, take the damage */
-				else if (((have_flag(flgs, TR_BRAND_POIS)) || (p_ptr->special_attack & (ATTACK_POIS))) && (mode == HISSATSU_POISON))
+				else if ((have_flag(flgs, TR_BRAND_POIS) || ((p_ptr->special_attack & (ATTACK_POIS)) && !thrown)) && (mode == HISSATSU_POISON))
 				{
 					if (mult < 35) mult = 35;
 				}
@@ -1092,7 +1090,7 @@ static void hit_trap(bool break_trap)
 			if (p_ptr->ffall)
 			{
 #ifdef JP
-				msg_print("落し戸を飛び越えた。");
+				msg_print("落とし戸を飛び越えた。");
 #else
 				msg_print("You fly over a trap door.");
 #endif
@@ -1101,7 +1099,7 @@ static void hit_trap(bool break_trap)
 			else
 			{
 #ifdef JP
-				msg_print("落し戸に落ちた！");
+				msg_print("落とし戸に落ちた！");
 				if ((p_ptr->pseikaku == SEIKAKU_COMBAT) || (inventory[INVEN_BOW].name1 == ART_CRIMSON))
 					msg_print("くっそ〜！");
 #else
@@ -1111,7 +1109,7 @@ static void hit_trap(bool break_trap)
 				sound(SOUND_FALL);
 				dam = damroll(2, 8);
 #ifdef JP
-				name = "落し戸";
+				name = "落とし戸";
 #else
 				name = "a trap door";
 #endif
@@ -1123,7 +1121,7 @@ static void hit_trap(bool break_trap)
 					do_cmd_save_game(TRUE);
 
 #ifdef JP
-				do_cmd_write_nikki(NIKKI_STAIR, 1, "落し戸に落ちた");
+				do_cmd_write_nikki(NIKKI_STAIR, 1, "落とし戸に落ちた");
 #else
 				do_cmd_write_nikki(NIKKI_STAIR, 1, "You have fallen through a trap door!");
 #endif
@@ -1140,7 +1138,7 @@ static void hit_trap(bool break_trap)
 			if (p_ptr->ffall)
 			{
 #ifdef JP
-				msg_print("落し穴を飛び越えた。");
+				msg_print("落とし穴を飛び越えた。");
 #else
 				msg_print("You fly over a pit trap.");
 #endif
@@ -1149,14 +1147,14 @@ static void hit_trap(bool break_trap)
 			else
 			{
 #ifdef JP
-				msg_print("落し穴に落ちてしまった！");
+				msg_print("落とし穴に落ちてしまった！");
 #else
 				msg_print("You have fallen into a pit!");
 #endif
 
 				dam = damroll(2, 6);
 #ifdef JP
-				name = "落し穴";
+				name = "落とし穴";
 #else
 				name = "a pit trap";
 #endif
@@ -1171,7 +1169,7 @@ static void hit_trap(bool break_trap)
 			if (p_ptr->ffall)
 			{
 #ifdef JP
-				msg_print("トゲのある落し穴を飛び越えた。");
+				msg_print("トゲのある落とし穴を飛び越えた。");
 #else
 				msg_print("You fly over a spiked pit.");
 #endif
@@ -1180,7 +1178,7 @@ static void hit_trap(bool break_trap)
 			else
 			{
 #ifdef JP
-			msg_print("スパイクが敷かれた落し穴に落ちてしまった！");
+			msg_print("スパイクが敷かれた落とし穴に落ちてしまった！");
 #else
 				msg_print("You fall into a spiked pit!");
 #endif
@@ -1188,7 +1186,7 @@ static void hit_trap(bool break_trap)
 
 				/* Base damage */
 #ifdef JP
-				name = "落し穴";
+				name = "落とし穴";
 #else
 				name = "a pit trap";
 #endif
@@ -1206,7 +1204,7 @@ static void hit_trap(bool break_trap)
 
 
 #ifdef JP
-					name = "トゲのある落し穴";
+					name = "トゲのある落とし穴";
 #else
 					name = "a spiked pit";
 #endif
@@ -1226,7 +1224,7 @@ static void hit_trap(bool break_trap)
 			if (p_ptr->ffall)
 			{
 #ifdef JP
-				msg_print("トゲのある落し穴を飛び越えた。");
+				msg_print("トゲのある落とし穴を飛び越えた。");
 #else
 				msg_print("You fly over a spiked pit.");
 #endif
@@ -1235,7 +1233,7 @@ static void hit_trap(bool break_trap)
 			else
 			{
 #ifdef JP
-			msg_print("スパイクが敷かれた落し穴に落ちてしまった！");
+			msg_print("スパイクが敷かれた落とし穴に落ちてしまった！");
 #else
 				msg_print("You fall into a spiked pit!");
 #endif
@@ -1245,7 +1243,7 @@ static void hit_trap(bool break_trap)
 				dam = damroll(2, 6);
 
 #ifdef JP
-				name = "落し穴";
+				name = "落とし穴";
 #else
 				name = "a pit trap";
 #endif
@@ -1262,7 +1260,7 @@ static void hit_trap(bool break_trap)
 
 
 #ifdef JP
-					name = "トゲのある落し穴";
+					name = "トゲのある落とし穴";
 #else
 					name = "a spiked pit";
 #endif
@@ -1717,11 +1715,12 @@ static void touch_zap_player(monster_type *m_ptr)
 #endif
 
 
+			if (prace_is_(RACE_ENT)) aura_damage += aura_damage / 3;
 			if (p_ptr->oppose_fire) aura_damage = (aura_damage + 2) / 3;
 			if (p_ptr->resist_fire) aura_damage = (aura_damage + 2) / 3;
 
 			take_hit(DAMAGE_NOESCAPE, aura_damage, aura_dam, -1);
-			r_ptr->r_flags2 |= RF2_AURA_FIRE;
+			if (m_ptr->ml) r_ptr->r_flags2 |= RF2_AURA_FIRE;
 			handle_stuff();
 		}
 	}
@@ -1748,7 +1747,7 @@ static void touch_zap_player(monster_type *m_ptr)
 			if (p_ptr->resist_cold) aura_damage = (aura_damage + 2) / 3;
 
 			take_hit(DAMAGE_NOESCAPE, aura_damage, aura_dam, -1);
-			r_ptr->r_flags3 |= RF3_AURA_COLD;
+			if (m_ptr->ml) r_ptr->r_flags3 |= RF3_AURA_COLD;
 			handle_stuff();
 		}
 	}
@@ -1764,6 +1763,7 @@ static void touch_zap_player(monster_type *m_ptr)
 			/* Hack -- Get the "died from" name */
 			monster_desc(aura_dam, m_ptr, 0x288);
 
+			if (prace_is_(RACE_ANDROID)) aura_damage += aura_damage / 3;
 			if (p_ptr->oppose_elec) aura_damage = (aura_damage + 2) / 3;
 			if (p_ptr->resist_elec) aura_damage = (aura_damage + 2) / 3;
 
@@ -1774,7 +1774,7 @@ static void touch_zap_player(monster_type *m_ptr)
 #endif
 
 			take_hit(DAMAGE_NOESCAPE, aura_damage, aura_dam, -1);
-			r_ptr->r_flags2 |= RF2_AURA_ELEC;
+			if (m_ptr->ml) r_ptr->r_flags2 |= RF2_AURA_ELEC;
 			handle_stuff();
 		}
 	}
@@ -1990,7 +1990,7 @@ static void py_attack_aux(int y, int x, bool *fear, bool *mdeath, s16b hand, int
 
 
 
-	if (((p_ptr->pclass == CLASS_ROGUE) || (p_ptr->pclass == CLASS_NINJA)) && inventory[INVEN_RARM+hand].tval)
+	if (((p_ptr->pclass == CLASS_ROGUE) || (p_ptr->pclass == CLASS_NINJA)) && buki_motteruka(INVEN_RARM + hand) && !p_ptr->icky_wield[hand])
 	{
 		int tmp = p_ptr->lev*6+(p_ptr->skill_stl+10)*4;
 		if (p_ptr->monlite && (mode != HISSATSU_NYUSIN)) tmp /= 3;
@@ -2378,7 +2378,7 @@ static void py_attack_aux(int y, int x, bool *fear, bool *mdeath, s16b hand, int
 					}
 				}
 
-				k = tot_dam_aux(o_ptr, k, m_ptr, mode);
+				k = tot_dam_aux(o_ptr, k, m_ptr, mode, FALSE);
 
 				if (backstab)
 				{
@@ -2425,7 +2425,7 @@ static void py_attack_aux(int y, int x, bool *fear, bool *mdeath, s16b hand, int
 					if (o_ptr->name1 == ART_VORPAL_BLADE)
 					{
 #ifdef JP
-						msg_print("目にも止まらぬボーパル・ブレード、手錬の早業！");
+						msg_print("目にも止まらぬヴォーパルブレード、手錬の早業！");
 #else
 						msg_print("Your Vorpal Blade goes snicker-snack!");
 #endif
@@ -2607,7 +2607,7 @@ msg_format("%sの急所を突き刺した！", m_name);
 				}
 				else k = 1;
 			}
-			else if ((p_ptr->pclass == CLASS_NINJA) && (!p_ptr->icky_wield[hand]) && ((p_ptr->cur_lite <= 0) || one_in_(7)))
+			else if ((p_ptr->pclass == CLASS_NINJA) && buki_motteruka(INVEN_RARM + hand) && !p_ptr->icky_wield[hand] && ((p_ptr->cur_lite <= 0) || one_in_(7)))
 			{
 				int maxhp = maxroll(r_ptr->hdice, r_ptr->hside);
 				if (one_in_(backstab ? 13 : (stab_fleeing || fuiuchi) ? 15 : 27))
@@ -2680,7 +2680,7 @@ msg_format("刃が%sの急所を貫いた！", m_name);
 #ifdef JP
 					msg_print("またつまらぬものを斬ってしまった．．．");
 #else
-					msg_print("Sign..Another trifling thing I've cut....");
+					msg_print("Sigh... Another trifling thing I've cut....");
 #endif
 				break;
 			}
@@ -2867,7 +2867,7 @@ msg_format("刃が%sの急所を貫いた！", m_name);
 #endif
 
 					teleport_away(c_ptr->m_idx, 50, FALSE);
-					num = p_ptr->num_blow[hand] + 1; /* Can't hit it anymore! */
+					num = num_blow + 1; /* Can't hit it anymore! */
 					*mdeath = TRUE;
 				}
 			}
@@ -3006,13 +3006,13 @@ msg_format("刃が%sの急所を貫いた！", m_name);
 
 					if (p_ptr->align < 0 && mult < 20)
 						mult = 20;
-					if (!(p_ptr->resist_acid || p_ptr->oppose_acid) && (mult < 25))
+					if (!(p_ptr->resist_acid || p_ptr->oppose_acid || p_ptr->immune_acid) && (mult < 25))
 						mult = 25;
-					if (!(p_ptr->resist_elec || p_ptr->oppose_elec) && (mult < 25))
+					if (!(p_ptr->resist_elec || p_ptr->oppose_elec || p_ptr->immune_elec) && (mult < 25))
 						mult = 25;
-					if (!(p_ptr->resist_fire || p_ptr->oppose_fire) && (mult < 25))
+					if (!(p_ptr->resist_fire || p_ptr->oppose_fire || p_ptr->immune_fire) && (mult < 25))
 						mult = 25;
-					if (!(p_ptr->resist_cold || p_ptr->oppose_cold) && (mult < 25))
+					if (!(p_ptr->resist_cold || p_ptr->oppose_cold || p_ptr->immune_cold) && (mult < 25))
 						mult = 25;
 					if (!(p_ptr->resist_pois || p_ptr->oppose_pois) && (mult < 25))
 						mult = 25;
@@ -3105,6 +3105,7 @@ bool py_attack(int y, int x, int mode)
 
 	cave_type       *c_ptr = &cave[y][x];
 	monster_type    *m_ptr = &m_list[c_ptr->m_idx];
+	monster_race    *r_ptr = &r_info[m_ptr->r_idx];
 	char            m_name[80];
 
 	/* Disturb the player */
@@ -3114,8 +3115,8 @@ bool py_attack(int y, int x, int mode)
 
 	if (m_ptr->csleep) /* It is not honorable etc to attack helpless victims */
 	{
-		if (!(r_info[m_ptr->r_idx].flags3 & RF3_EVIL) || one_in_(5)) chg_virtue(V_COMPASSION, -1);
-		if (!(r_info[m_ptr->r_idx].flags3 & RF3_EVIL) || one_in_(5)) chg_virtue(V_HONOUR, -1);
+		if (!(r_ptr->flags3 & RF3_EVIL) || one_in_(5)) chg_virtue(V_COMPASSION, -1);
+		if (!(r_ptr->flags3 & RF3_EVIL) || one_in_(5)) chg_virtue(V_HONOUR, -1);
 	}
 
 	/* Extract monster name (or "it") */
@@ -3127,7 +3128,7 @@ bool py_attack(int y, int x, int mode)
 	/* Track a new monster */
 	if (m_ptr->ml) health_track(c_ptr->m_idx);
 
-	if ((r_info[m_ptr->r_idx].flags1 & RF1_FEMALE) &&
+	if ((r_ptr->flags1 & RF1_FEMALE) &&
 	    !(p_ptr->stun || p_ptr->confused || p_ptr->image || !m_ptr->ml))
 	{
 		if ((inventory[INVEN_RARM].name1 == ART_ZANTETSU) || (inventory[INVEN_LARM].name1 == ART_ZANTETSU))
@@ -3190,7 +3191,7 @@ bool py_attack(int y, int x, int mode)
 #else
 				msg_format("You stop to avoid hitting %s.", m_name);
 #endif
-			return FALSE;
+				return FALSE;
 			}
 		}
 	}
@@ -3216,7 +3217,7 @@ bool py_attack(int y, int x, int mode)
 
 		/* Disturb the monster */
 		m_ptr->csleep = 0;
-		p_ptr->update |= (PU_MON_LITE);
+		if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 
 		/* Done */
 		return FALSE;
@@ -3224,7 +3225,7 @@ bool py_attack(int y, int x, int mode)
 
 	if (p_ptr->migite && p_ptr->hidarite)
 	{
-		if ((p_ptr->skill_exp[GINOU_NITOURYU] < s_info[p_ptr->pclass].s_max[GINOU_NITOURYU]) && ((p_ptr->skill_exp[GINOU_NITOURYU] - 1000) / 200 < r_info[m_ptr->r_idx].level))
+		if ((p_ptr->skill_exp[GINOU_NITOURYU] < s_info[p_ptr->pclass].s_max[GINOU_NITOURYU]) && ((p_ptr->skill_exp[GINOU_NITOURYU] - 1000) / 200 < r_ptr->level))
 		{
 			if (p_ptr->skill_exp[GINOU_NITOURYU] < 4000)
 				p_ptr->skill_exp[GINOU_NITOURYU]+=80;
@@ -3238,18 +3239,34 @@ bool py_attack(int y, int x, int mode)
 		}
 	}
 
+	/* Gain riding experience */
 	if (p_ptr->riding)
 	{
-		int ridinglevel = r_info[m_list[p_ptr->riding].r_idx].level;
-		if ((p_ptr->skill_exp[GINOU_RIDING] < s_info[p_ptr->pclass].s_max[GINOU_RIDING]) && ((p_ptr->skill_exp[GINOU_RIDING] - 1000) / 200 < r_info[m_ptr->r_idx].level) && (p_ptr->skill_exp[GINOU_RIDING]/100 - 2000 < ridinglevel))
-			p_ptr->skill_exp[GINOU_RIDING]++;
-		if ((p_ptr->skill_exp[GINOU_RIDING] < s_info[p_ptr->pclass].s_max[GINOU_RIDING]) && (p_ptr->skill_exp[GINOU_RIDING]/100 < ridinglevel))
+		int cur = p_ptr->skill_exp[GINOU_RIDING];
+		int max = s_info[p_ptr->pclass].s_max[GINOU_RIDING];
+
+		if (cur < max)
 		{
-			if (ridinglevel*100 > (p_ptr->skill_exp[GINOU_RIDING] + 1500))
-				p_ptr->skill_exp[GINOU_RIDING] += (1+(ridinglevel - p_ptr->skill_exp[GINOU_RIDING]/100 - 15));
-			else p_ptr->skill_exp[GINOU_RIDING]++;
+			int ridinglevel = r_info[m_list[p_ptr->riding].r_idx].level;
+			int targetlevel = r_ptr->level;
+			int inc = 0;
+
+			if ((cur / 200 - 5) < targetlevel)
+				inc += 1;
+
+			/* Extra experience */
+			if ((cur / 100) < ridinglevel)
+			{
+				if ((cur / 100 + 15) < ridinglevel)
+					inc += 1 + (ridinglevel - (cur / 100 + 15));
+				else
+					inc += 1;
+			}
+
+			p_ptr->skill_exp[GINOU_RIDING] = MIN(max, cur + inc);
+
+			p_ptr->update |= (PU_BONUS);
 		}
-		p_ptr->update |= (PU_BONUS);
 	}
 
 	riding_t_m_idx = c_ptr->m_idx;
@@ -3295,7 +3312,7 @@ bool py_attack(int y, int x, int mode)
 }
 
 
-static bool pattern_seq(int c_y, int c_x, int n_y, int n_x)
+bool pattern_seq(int c_y, int c_x, int n_y, int n_x)
 {
 	if (!pattern_tile(c_y, c_x) && !pattern_tile(n_y, n_x))
 		return TRUE;
@@ -3531,6 +3548,9 @@ void move_player(int dir, int do_pickup, bool break_trap)
 	cave_type *c_ptr;
 	monster_type *m_ptr;
 
+	monster_type *riding_m_ptr = &m_list[p_ptr->riding];
+	monster_race *riding_r_ptr = &r_info[p_ptr->riding ? riding_m_ptr->r_idx : 0]; /* Paranoia */
+
 	char m_name[80];
 
 	bool p_can_pass_walls = FALSE;
@@ -3650,14 +3670,10 @@ void move_player(int dir, int do_pickup, bool break_trap)
 		p_can_pass_walls = FALSE;
 	}
 
-	if (p_ptr->riding)
-	{
-		cave[py][px].m_idx = 0;
-	}
-
 	/* Hack -- attack monsters */
 	if (c_ptr->m_idx && (m_ptr->ml || cave_floor_bold(y, x) || p_can_pass_walls))
 	{
+		monster_race *r_ptr = &r_info[m_ptr->r_idx];
 
 		/* Attack -- only if we can see it OR it is not in a wall */
 		if (!is_hostile(m_ptr) &&
@@ -3667,7 +3683,7 @@ void move_player(int dir, int do_pickup, bool break_trap)
 		    ((cave_floor_bold(y, x)) || (c_ptr->feat == FEAT_TREES) || (p_can_pass_walls)))
 		{
 			m_ptr->csleep = 0;
-			p_ptr->update |= (PU_MON_LITE);
+			if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 
 			/* Extract monster name (or "it") */
 			monster_desc(m_name, m_ptr, 0);
@@ -3684,9 +3700,9 @@ void move_player(int dir, int do_pickup, bool break_trap)
 				py_attack(y, x, 0);
 				oktomove = FALSE;
 			}
-			else if (monster_can_cross_terrain(cave[py][px].feat, &r_info[m_ptr->r_idx]) &&
+			else if (monster_can_cross_terrain(cave[py][px].feat, r_ptr) &&
 				 (cave_floor_bold(py, px) || cave[py][px].feat == FEAT_TREES ||
-				  (r_info[m_ptr->r_idx].flags2 & RF2_PASS_WALL)))
+				  (r_ptr->flags2 & RF2_PASS_WALL)))
 			{
 				do_past = TRUE;
 			}
@@ -3805,7 +3821,7 @@ void move_player(int dir, int do_pickup, bool break_trap)
 	}
 
 #endif /* ALLOW_EASY_DISARM -- TNB */
-	else if (p_ptr->riding && (r_info[m_list[p_ptr->riding].r_idx].flags1 & RF1_NEVER_MOVE))
+	else if (p_ptr->riding && (riding_r_ptr->flags1 & RF1_NEVER_MOVE))
 	{
 #ifdef JP
 		msg_print("動けない！");
@@ -3817,16 +3833,16 @@ void move_player(int dir, int do_pickup, bool break_trap)
 		disturb(0, 0);
 	}
 
-	else if (p_ptr->riding && m_list[p_ptr->riding].monfear)
+	else if (p_ptr->riding && riding_m_ptr->monfear)
 	{
 		char m_name[80];
 
 		/* Acquire the monster name */
-		monster_desc(m_name, &m_list[p_ptr->riding], 0);
+		monster_desc(m_name, riding_m_ptr, 0);
 
 		/* Dump a message */
 #ifdef JP
-msg_format("%sが恐怖していて制御できない。", m_name);
+		msg_format("%sが恐怖していて制御できない。", m_name);
 #else
 		msg_format("%^s is too scared to control.", m_name);
 #endif
@@ -3840,7 +3856,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		disturb(0, 0);
 	}
 
-	else if ((p_ptr->riding && (r_info[m_list[p_ptr->riding].r_idx].flags7 & RF7_AQUATIC)) && (c_ptr->feat != FEAT_SHAL_WATER) && (c_ptr->feat != FEAT_DEEP_WATER))
+	else if ((p_ptr->riding && (riding_r_ptr->flags7 & RF7_AQUATIC)) && (c_ptr->feat != FEAT_SHAL_WATER) && (c_ptr->feat != FEAT_DEEP_WATER))
 	{
 #ifdef JP
 		msg_print("陸上に上がれない。");
@@ -3852,7 +3868,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		disturb(0, 0);
 	}
 
-	else if ((p_ptr->riding && !(r_info[m_list[p_ptr->riding].r_idx].flags7 & (RF7_AQUATIC | RF7_CAN_SWIM | RF7_CAN_FLY))) && (c_ptr->feat == FEAT_DEEP_WATER))
+	else if ((p_ptr->riding && !(riding_r_ptr->flags7 & (RF7_AQUATIC | RF7_CAN_SWIM | RF7_CAN_FLY))) && (c_ptr->feat == FEAT_DEEP_WATER))
 	{
 #ifdef JP
 		msg_print("水上に行けない。");
@@ -3864,7 +3880,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		disturb(0, 0);
 	}
 
-	else if ((p_ptr->riding && (r_info[m_list[p_ptr->riding].r_idx].flags2 & (RF2_AURA_FIRE)) && !(r_info[m_list[p_ptr->riding].r_idx].flags7 & (RF7_CAN_FLY))) && (c_ptr->feat == FEAT_SHAL_WATER))
+	else if ((p_ptr->riding && (riding_r_ptr->flags2 & RF2_AURA_FIRE) && !(riding_r_ptr->flags7 & RF7_CAN_FLY)) && (c_ptr->feat == FEAT_SHAL_WATER))
 	{
 #ifdef JP
 		msg_print("水上に行けない。");
@@ -3876,7 +3892,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		disturb(0, 0);
 	}
 
-	else if ((p_ptr->riding && !(r_info[m_list[p_ptr->riding].r_idx].flags7 & (RF7_CAN_FLY)) && !(r_info[m_list[p_ptr->riding].r_idx].flags3 & (RF3_IM_FIRE))) && ((c_ptr->feat == FEAT_SHAL_LAVA) || (c_ptr->feat == FEAT_DEEP_LAVA)))
+	else if ((p_ptr->riding && !(riding_r_ptr->flags7 & RF7_CAN_FLY) && !(riding_r_ptr->flags3 & RF3_IM_FIRE)) && ((c_ptr->feat == FEAT_SHAL_LAVA) || (c_ptr->feat == FEAT_DEEP_LAVA)))
 	{
 #ifdef JP
 		msg_print("溶岩の上に行けない。");
@@ -3888,10 +3904,10 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		disturb(0, 0);
 	}
 
-	else if (p_ptr->riding && m_list[p_ptr->riding].stunned && one_in_(2))
+	else if (p_ptr->riding && riding_m_ptr->stunned && one_in_(2))
 	{
 		char m_name[80];
-		monster_desc(m_name, &m_list[p_ptr->riding], 0);
+		monster_desc(m_name, riding_m_ptr, 0);
 #ifdef JP
 		msg_format("%sが朦朧としていてうまく動けない！",m_name);
 #else
@@ -3910,7 +3926,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		oktomove = FALSE;
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Disturb the player */
 		disturb(0, 0);
@@ -4048,6 +4064,8 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 			}
 		}
 
+		if (p_ptr->riding) cave[py][px].m_idx = 0;
+
 		if (do_past)
 		{
 #ifdef JP
@@ -4082,36 +4100,29 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 		py = y;
 		px = x;
 
-		if (p_ptr->riding && (r_info[m_list[p_ptr->riding].r_idx].flags2 & RF2_KILL_WALL))
-		{
-			if (cave[py][px].feat >= FEAT_RUBBLE && cave[py][px].feat < FEAT_PERM_SOLID)
-			{
-				/* Forget the wall */
-				cave[py][px].info &= ~(CAVE_MARK);
-
-				/* Notice */
-				cave_set_feat(py, px, floor_type[randint0(100)]);
-			}
-		}
 		if (music_singing(MUSIC_WALL))
 		{
 			project(0, 0, py, px,
 				(60 + p_ptr->lev), GF_DISINTEGRATE, PROJECT_KILL | PROJECT_ITEM, -1);
 		}
-		else if (p_ptr->kill_wall)
+		else if (p_ptr->kill_wall || (p_ptr->riding && (r_info[m_list[p_ptr->riding].r_idx].flags2 & RF2_KILL_WALL)))
 		{
-			if (cave_valid_bold(py, px) &&
+			if (!cave_floor_bold(py, px) && !cave_perma_bold(py, px) &&
 				(cave[py][px].feat < FEAT_PATTERN_START ||
 				 cave[py][px].feat > FEAT_PATTERN_XTRA2) &&
 				(cave[py][px].feat < FEAT_DEEP_WATER ||
 				 cave[py][px].feat > FEAT_GRASS))
 			{
+				/* Forget the wall */
+				cave[py][px].info &= ~(CAVE_MARK);
+
 				if (cave[py][px].feat == FEAT_TREES)
 					cave_set_feat(py, px, FEAT_GRASS);
 				else
 					cave_set_feat(py, px, floor_type[randint0(100)]);
 			}
-				/* Update some things -- similar to GF_KILL_WALL */
+
+			/* Update some things -- similar to GF_KILL_WALL */
 			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTERS | PU_MON_LITE);
 		}
 
@@ -4285,7 +4296,7 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 					msg_print("*Leaving trap detect region!*");
 #endif
 				}
-				
+
 				if (disturb_trap_detect)
 				{
 					disturb(0, 0);
@@ -4296,11 +4307,12 @@ msg_format("%sが恐怖していて制御できない。", m_name);
 
 	if (p_ptr->riding)
 	{
-		m_list[p_ptr->riding].fy = py;
-		m_list[p_ptr->riding].fx = px;
+		riding_m_ptr->fy = py;
+		riding_m_ptr->fx = px;
 		cave[py][px].m_idx = p_ptr->riding;
 		update_mon(cave[py][px].m_idx, TRUE);
-		p_ptr->update |= (PU_MON_LITE);
+		if (riding_r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+			p_ptr->update |= (PU_MON_LITE);
 	}
 }
 
@@ -4324,7 +4336,7 @@ static int see_wall(int dir, int y, int x)
 	c_ptr = &cave[y][x];
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 	/* Must be known to the player */
 	if (c_ptr->info & (CAVE_MARK))
@@ -4709,7 +4721,7 @@ static bool run_test(void)
 		c_ptr = &cave[row][col];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Visible monsters abort running */
 		if (c_ptr->m_idx)
@@ -4934,7 +4946,7 @@ static bool run_test(void)
 			c_ptr = &cave[row][col];
 
 			/* Feature code (applying "mimic" field) */
-			feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+			feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 			/* Unknown grid or non-wall XXX XXX XXX cave_floor_grid(c_ptr)) */
 			if (!(c_ptr->info & (CAVE_MARK)) ||
@@ -4975,7 +4987,7 @@ static bool run_test(void)
 			c_ptr = &cave[row][col];
 
 			/* Feature code (applying "mimic" field) */
-			feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+			feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 			/* Unknown grid or non-wall XXX XXX XXX cave_floor_grid(c_ptr)) */
 			if (!(c_ptr->info & (CAVE_MARK)) ||
@@ -5105,12 +5117,12 @@ void run_step(int dir)
 	{
 		cave_type   *c_ptr;
 		byte feat;
-	
+
 		/* Access grid */
 		c_ptr = &cave[py+ddy[dir]][px+ddx[dir]];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Hack -- do not start silly run */
 		if (see_wall(dir, py, px) &&

@@ -528,7 +528,7 @@ static bool cast_hissatsu_spell(int spell)
 			verify_panel();
 
 			/* Update stuff */
-			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
+			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 			/* Update the monsters */
 			p_ptr->update |= (PU_DISTANCE);
@@ -637,6 +637,9 @@ static bool cast_hissatsu_spell(int spell)
 				update_mon(m_idx, TRUE);
 				lite_spot(oy, ox);
 				lite_spot(ty, tx);
+
+				if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+					p_ptr->update |= (PU_MON_LITE);
 			}
 		}
 		break;
@@ -778,11 +781,7 @@ static bool cast_hissatsu_spell(int spell)
 		break;
 	}
 	case 18:
-		project_length = 5;
-		if (!get_aim_dir(&dir)) return FALSE;
-		project_hook(GF_ATTACK, dir, HISSATSU_NYUSIN, PROJECT_STOP | PROJECT_KILL);
-
-		break;
+		return rush_attack(NULL);
 	case 19: /* Whirlwind Attack */
 	{
 		int y = 0, x = 0;
@@ -862,7 +861,7 @@ static bool cast_hissatsu_spell(int spell)
 				basedam *= 5;
 				basedam /= 3;
 			}
-			else if (object_known_p(o_ptr) && (have_flag(flgs, TR_VORPAL)))
+			else if (have_flag(flgs, TR_VORPAL))
 			{
 				/* vorpal flag only */
 				basedam *= 11;
@@ -928,7 +927,12 @@ static bool cast_hissatsu_spell(int spell)
 			m_ptr = &m_list[m_idx];
 
 			/* Monster cannot move back? */
-			if (!monster_can_enter(ny, nx, &r_info[m_ptr->r_idx])) continue;
+			if (!monster_can_enter(ny, nx, &r_info[m_ptr->r_idx]))
+			{
+				/* -more- */
+				if (i < 2) msg_print(NULL);
+				continue;
+			}
 
 			cave[y][x].m_idx = 0;
 			cave[ny][nx].m_idx = m_idx;
@@ -978,7 +982,7 @@ static bool cast_hissatsu_spell(int spell)
 			verify_panel();
 
 			/* Update stuff */
-			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
+			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 			/* Update the monsters */
 			p_ptr->update |= (PU_DISTANCE);
@@ -1027,30 +1031,35 @@ static bool cast_hissatsu_spell(int spell)
 	}
 	case 26:
 	{
+#define NEED_MANA_PER_MONSTER 8
 		bool new = TRUE;
-		int count = 0;
+		bool mdeath;
+		/* int count = 0; currently unused */
 		do
 		{
-			project_length = 5;
-			if (!get_aim_dir(&dir)) break;
+			if (!rush_attack(&mdeath)) break;
 			if (new)
+			{
 				/* Reserve needed mana point */
 				p_ptr->csp -= technic_info[TECHNIC_HISSATSU][26].smana;
+				new = FALSE;
+			}
 			else
-				p_ptr->csp -= 8;
-			new = FALSE;
-			if (!project_hook(GF_ATTACK, dir, HISSATSU_NYUSIN, PROJECT_STOP | PROJECT_KILL)) break;
-			count++;
+				p_ptr->csp -= NEED_MANA_PER_MONSTER;
+			if (!mdeath) break;
+			/* count++; currently unused */
 			command_dir = 0;
 			p_ptr->redraw |= PR_MANA;
 			handle_stuff();
-		} while (p_ptr->csp > 8);
+		}
+		while (p_ptr->csp > NEED_MANA_PER_MONSTER);
 		if (new) return FALSE;
 
 		/* Restore reserved mana */
 		p_ptr->csp += technic_info[TECHNIC_HISSATSU][26].smana;
-
 		break;
+
+#undef NEED_MANA_PER_MONSTER
 	}
 	case 27:
 	{
@@ -1146,7 +1155,7 @@ msg_print("その方向にはモンスターはいません。");
 				basedam *= 5;
 				basedam /= 3;
 			}
-			else if (object_known_p(o_ptr) && (have_flag(flgs, TR_VORPAL)))
+			else if (have_flag(flgs, TR_VORPAL))
 			{
 				/* vorpal flag only */
 				basedam *= 11;
@@ -1212,11 +1221,10 @@ prt("確認のため '@' を押して下さい。", 0, 0);
 		{
 #ifdef JP
 			msg_print("武士道とは、死ぬことと見つけたり。");
-			take_hit(DAMAGE_FORCE, 9999, "切腹", -1);
 #else
 			msg_print("Meaning of Bushi-do is found in the death.");
-			take_hit(DAMAGE_FORCE, 9999, "Seppuku", -1);
 #endif
+			take_hit(DAMAGE_FORCE, 9999, "Seppuku", -1);
 		}
 		break;
 	}
@@ -1271,7 +1279,7 @@ msg_print("武器を持たないと必殺技は使えない！");
 #ifdef JP
 msg_print("何も技を知らない。");
 #else
-		msg_print("You don't know any martial arts.");
+		msg_print("You don't know any special attacks.");
 #endif
 
 		return;

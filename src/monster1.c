@@ -161,8 +161,8 @@ static void roff_aux(int r_idx, int mode)
 	byte drop_gold, drop_item;
 
 	int		vn = 0;
-	byte		color[64];
-	cptr		vp[64];
+	byte		color[96];
+	cptr		vp[96];
 
 	bool know_everything = FALSE;
 
@@ -719,36 +719,36 @@ path_build(buf, sizeof(buf), ANGBAND_DIR_DATA, "r_info_j.raw");
 #ifdef JP
 if (flags2 & RF2_ELDRITCH_HORROR) hook_c_roff(TERM_VIOLET, "狂気を誘う");/*nuke me*/
 #else
-		if (flags2 & RF2_ELDRITCH_HORROR) hooked_roff(" sanity-blasting");
+		if (flags2 & RF2_ELDRITCH_HORROR) hook_c_roff(TERM_VIOLET, " sanity-blasting");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_ANIMAL)          hook_c_roff(TERM_L_GREEN, "自然界の");
 #else
-		if (flags3 & RF3_ANIMAL)          hooked_roff(" natural");
+		if (flags3 & RF3_ANIMAL)          hook_c_roff(TERM_L_GREEN, " natural");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_EVIL)            hook_c_roff(TERM_L_DARK, "邪悪なる");
 #else
-		if (flags3 & RF3_EVIL)            hooked_roff(" evil");
+		if (flags3 & RF3_EVIL)            hook_c_roff(TERM_L_DARK, " evil");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_GOOD)            hook_c_roff(TERM_YELLOW, "善良な");
 #else
-		if (flags3 & RF3_GOOD)            hooked_roff(" good");
+		if (flags3 & RF3_GOOD)            hook_c_roff(TERM_YELLOW, " good");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_UNDEAD)          hook_c_roff(TERM_VIOLET, "アンデッドの");
 #else
-		if (flags3 & RF3_UNDEAD)          hooked_roff(" undead");
+		if (flags3 & RF3_UNDEAD)          hook_c_roff(TERM_VIOLET, " undead");
 #endif
 #ifdef JP
 if (flags3 & RF3_AMBERITE)        hook_c_roff(TERM_VIOLET, "アンバーの王族の");
 #else
-		if (flags3 & RF3_AMBERITE)        hooked_roff(" Amberite");
+		if (flags3 & RF3_AMBERITE)        hook_c_roff(TERM_VIOLET, " Amberite");
 #endif
 
 
@@ -758,43 +758,43 @@ if (flags3 & RF3_AMBERITE)        hook_c_roff(TERM_VIOLET, "アンバーの王族の");
 #ifdef JP
      if (flags3 & RF3_DRAGON)   hook_c_roff(TERM_ORANGE, "ドラゴン");
 #else
-		     if (flags3 & RF3_DRAGON)   hooked_roff(" dragon");
+		     if (flags3 & RF3_DRAGON)   hook_c_roff(TERM_ORANGE, " dragon");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_DEMON)    hook_c_roff(TERM_VIOLET, "デーモン");
 #else
-		if (flags3 & RF3_DEMON)    hooked_roff(" demon");
+		if (flags3 & RF3_DEMON)    hook_c_roff(TERM_VIOLET, " demon");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_GIANT)    hook_c_roff(TERM_L_UMBER, "ジャイアント");
 #else
-		if (flags3 & RF3_GIANT)    hooked_roff(" giant");
+		if (flags3 & RF3_GIANT)    hook_c_roff(TERM_L_UMBER, " giant");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_TROLL)    hook_c_roff(TERM_BLUE, "トロル");
 #else
-		if (flags3 & RF3_TROLL)    hooked_roff(" troll");
+		if (flags3 & RF3_TROLL)    hook_c_roff(TERM_BLUE, " troll");
 #endif
 
 #ifdef JP
 if (flags3 & RF3_ORC)      hook_c_roff(TERM_UMBER, "オーク");
 #else
-		if (flags3 & RF3_ORC)      hooked_roff(" orc");
+		if (flags3 & RF3_ORC)      hook_c_roff(TERM_UMBER, " orc");
 #endif
 
 #ifdef JP
 if (flags2 & RF2_HUMAN) hook_c_roff(TERM_L_WHITE, "人間");
 #else
-		if (flags2 & RF2_HUMAN) hooked_roff(" Human");
+		if (flags2 & RF2_HUMAN) hook_c_roff(TERM_L_WHITE, " human");
 #endif
 
 #ifdef JP
 if (flags2 & RF2_QUANTUM)  hook_c_roff(TERM_VIOLET, "量子生物");
 #else
-		if (flags2 & RF2_QUANTUM)  hooked_roff(" quantum creature");
+		if (flags2 & RF2_QUANTUM)  hook_c_roff(TERM_VIOLET, " quantum creature");
 #endif
 
 	}
@@ -861,75 +861,67 @@ else                            hooked_roff("モンスター");
 	if ((flags2 & RF2_AURA_FIRE) && (flags2 & RF2_AURA_ELEC) && (flags3 & RF3_AURA_COLD))
 	{
 #ifdef JP
-hook_c_roff(TERM_VIOLET, format("%^sは炎と氷とスパークに包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_VIOLET, format("%^sは炎と氷とスパークに包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by flames and electricity.  ", wd_he[msex]));
+		hook_c_roff(TERM_VIOLET, format("%^s is surrounded by flames, ice and electricity.  ", wd_he[msex]));
 #endif
-
 	}
 	else if ((flags2 & RF2_AURA_FIRE) && (flags2 & RF2_AURA_ELEC))
 	{
 #ifdef JP
-hook_c_roff(TERM_L_RED, format("%^sは炎とスパークに包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_L_RED, format("%^sは炎とスパークに包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by flames and electricity.  ", wd_he[msex]));
+		hook_c_roff(TERM_L_RED, format("%^s is surrounded by flames and electricity.  ", wd_he[msex]));
 #endif
-
 	}
 	else if ((flags2 & RF2_AURA_FIRE) && (flags3 & RF3_AURA_COLD))
 	{
 #ifdef JP
-hook_c_roff(TERM_BLUE, format("%^sは炎と氷に包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_BLUE, format("%^sは炎と氷に包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by flames and electricity.  ", wd_he[msex]));
+		hook_c_roff(TERM_BLUE, format("%^s is surrounded by flames and ice.  ", wd_he[msex]));
 #endif
-
 	}
 	else if ((flags3 & RF3_AURA_COLD) && (flags2 & RF2_AURA_ELEC))
 	{
 #ifdef JP
-hook_c_roff(TERM_L_GREEN, format("%^sは氷とスパークに包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_L_GREEN, format("%^sは氷とスパークに包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by ice and electricity.  ", wd_he[msex]));
+		hook_c_roff(TERM_L_GREEN, format("%^s is surrounded by ice and electricity.  ", wd_he[msex]));
 #endif
-
 	}
 	else if (flags2 & RF2_AURA_FIRE)
 	{
 #ifdef JP
-hook_c_roff(TERM_RED, format("%^sは炎に包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_RED, format("%^sは炎に包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by flames.  ", wd_he[msex]));
+		hook_c_roff(TERM_RED, format("%^s is surrounded by flames.  ", wd_he[msex]));
 #endif
-
 	}
 	else if (flags3 & RF3_AURA_COLD)
 	{
 #ifdef JP
-hook_c_roff(TERM_BLUE, format("%^sは氷に包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_BLUE, format("%^sは氷に包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by ice.  ", wd_he[msex]));
+		hook_c_roff(TERM_BLUE, format("%^s is surrounded by ice.  ", wd_he[msex]));
 #endif
-
 	}
 	else if (flags2 & RF2_AURA_ELEC)
 	{
 #ifdef JP
-hook_c_roff(TERM_L_BLUE, format("%^sはスパークに包まれている。", wd_he[msex]));
+		hook_c_roff(TERM_L_BLUE, format("%^sはスパークに包まれている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s is surrounded by electricity.  ", wd_he[msex]));
+		hook_c_roff(TERM_L_BLUE, format("%^s is surrounded by electricity.  ", wd_he[msex]));
 #endif
-
 	}
 
 	if (flags2 & RF2_REFLECTING)
 	{
 #ifdef JP
-hooked_roff(format("%^sは矢の呪文を跳ね返す。", wd_he[msex]));
+		hooked_roff(format("%^sは矢の呪文を跳ね返す。", wd_he[msex]));
 #else
 		hooked_roff(format("%^s reflects bolt spells.  ", wd_he[msex]));
 #endif
-
 	}
 
 	/* Describe escorts */
@@ -998,20 +990,22 @@ hooked_roff(format("%^sは矢の呪文を跳ね返す。", wd_he[msex]));
 		for (n = 0; n < vn; n++)
 		{
 #ifdef JP
-			if(n!=vn-1){
-			  jverb(vp[n],jverb_buf,JVERB_OR);
-			  hook_c_roff(color[n], jverb_buf);
-			  hook_c_roff(color[n], "り、");
+			if (n != vn - 1)
+			{
+				jverb(vp[n], jverb_buf, JVERB_OR);
+				hook_c_roff(color[n], jverb_buf);
+				hook_c_roff(color[n], "り");
+				hooked_roff("、");
 			}
-			else  hook_c_roff(color[n], vp[n]);
+			else hook_c_roff(color[n], vp[n]);
 #else
 			/* Intro */
 			if (n == 0) hooked_roff(" may ");
-			else if (n < vn-1) hooked_roff(", ");
+			else if (n < vn - 1) hooked_roff(", ");
 			else hooked_roff(" or ");
 
 			/* Dump */
-			hooked_roff(vp[n]);
+			hook_c_roff(color[n], vp[n]);
 #endif
 
 		}
@@ -1475,11 +1469,25 @@ if (flags6 & (RF6_TELE_LEVEL))      {vp[vn] = "テレポート・レベル";color[vn++] =
 	if (flags6 & (RF6_TELE_LEVEL))      {vp[vn] = "teleport level";color[vn++] = TERM_ORANGE;}
 #endif
 
+	if (flags6 & (RF6_DARKNESS))
+	{
+		if ((p_ptr->pclass != CLASS_NINJA) || (r_ptr->flags3 & (RF3_UNDEAD | RF3_HURT_LITE)))
+		{
 #ifdef JP
-if (flags6 & (RF6_DARKNESS))        {if ((p_ptr->pclass != CLASS_NINJA) || (flags3 & (RF3_UNDEAD | RF3_HURT_LITE))) {vp[vn] =  "暗闇";color[vn++] = TERM_L_DARK;} else { vp[vn] = "閃光";color[vn++] = TERM_YELLOW;}}
+			vp[vn] =  "暗闇"; color[vn++] = TERM_L_DARK;
 #else
-if (flags6 & (RF6_DARKNESS))        {vp[vn] = ((p_ptr->pclass != CLASS_NINJA) || (flags3 & (RF3_UNDEAD | RF3_HURT_LITE))) ? "create darkness" : "create light";color[vn++] = TERM_L_DARK;}
+			vp[vn] = "create darkness"; color[vn++] = TERM_L_DARK;
 #endif
+		}
+		else
+		{
+#ifdef JP
+			vp[vn] = "閃光"; color[vn++] = TERM_YELLOW;
+#else
+			vp[vn] = "create light"; color[vn++] = TERM_YELLOW;
+#endif
+		}
+	}
 
 #ifdef JP
 if (flags6 & (RF6_TRAPS))           {vp[vn] = "トラップ";color[vn++] = TERM_BLUE;}
@@ -1633,7 +1641,7 @@ if (flags6 & (RF6_S_UNIQUE))        {vp[vn] = "ユニーク・モンスター召喚";color[v
 		hooked_roff(" magical, casting spells");
 
 		/* Adverb */
-		if (flags2 & RF2_SMART) hooked_roff(" intelligently");
+		if (flags2 & RF2_SMART) hook_c_roff(TERM_YELLOW, " intelligently");
 #endif
 
 
@@ -1845,7 +1853,7 @@ if (flags2 & RF2_KILL_ITEM) vp[vn++] = "アイテムを壊す";
 #ifdef JP
 		hooked_roff(format("%^sは光っている。", wd_he[msex]));
 #else
-		hooked_roff(format("%^s illuminate the dungeon.  ", wd_he[msex]));
+		hooked_roff(format("%^s is shining.  ", wd_he[msex]));
 #endif
 
 	}
@@ -2121,7 +2129,7 @@ if (flags3 & RF3_RES_DISE) {vp[vn] = "劣化";color[vn++] = TERM_VIOLET;}
 #ifdef JP
 if (flags4 & RF4_BR_WALL) {vp[vn] = "フォース";color[vn++] = TERM_UMBER;}
 #else
- if (flags4 & RF4_BR_WALL) {vp[vn] = "sound";color[vn++] = TERM_UMBER;}
+ if (flags4 & RF4_BR_WALL) {vp[vn] = "force";color[vn++] = TERM_UMBER;}
 #endif
 
 #ifdef JP
@@ -3204,27 +3212,7 @@ void output_monster_spoiler(int r_idx, void (*roff_func)(byte attr, cptr str))
 }
 
 
-bool monster_quest(int r_idx)
-{
-	monster_race *r_ptr = &r_info[r_idx];
-
-	/* Random quests are in the dungeon */
-	if (r_ptr->flags8 & RF8_WILD_ONLY) return FALSE;
-
-	/* No random quests for aquatic monsters */
-	if (r_ptr->flags7 & RF7_AQUATIC) return FALSE;
-
-	/* No random quests for multiplying monsters */
-	if (r_ptr->flags2 & RF2_MULTIPLY) return FALSE;
-
-	/* No quests to kill friendly monsters */
-	if (r_ptr->flags7 & RF7_FRIENDLY) return FALSE;
-
-	return TRUE;
-}
-
-
-bool monster_dungeon(int r_idx)
+bool mon_hook_dungeon(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3240,7 +3228,7 @@ bool monster_dungeon(int r_idx)
 }
 
 
-bool monster_ocean(int r_idx)
+static bool mon_hook_ocean(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3251,7 +3239,7 @@ bool monster_ocean(int r_idx)
 }
 
 
-bool monster_shore(int r_idx)
+static bool mon_hook_shore(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3262,7 +3250,7 @@ bool monster_shore(int r_idx)
 }
 
 
-static bool monster_waste(int r_idx)
+static bool mon_hook_waste(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3273,7 +3261,7 @@ static bool monster_waste(int r_idx)
 }
 
 
-bool monster_town(int r_idx)
+static bool mon_hook_town(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3284,7 +3272,7 @@ bool monster_town(int r_idx)
 }
 
 
-bool monster_wood(int r_idx)
+static bool mon_hook_wood(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3295,7 +3283,7 @@ bool monster_wood(int r_idx)
 }
 
 
-bool monster_volcano(int r_idx)
+static bool mon_hook_volcano(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3306,7 +3294,7 @@ bool monster_volcano(int r_idx)
 }
 
 
-bool monster_mountain(int r_idx)
+static bool mon_hook_mountain(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3317,7 +3305,7 @@ bool monster_mountain(int r_idx)
 }
 
 
-bool monster_grass(int r_idx)
+static bool mon_hook_grass(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
@@ -3328,11 +3316,11 @@ bool monster_grass(int r_idx)
 }
 
 
-bool monster_deep_water(int r_idx)
+static bool mon_hook_deep_water(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
-	if (!monster_dungeon(r_idx)) return FALSE;
+	if (!mon_hook_dungeon(r_idx)) return FALSE;
 
 	if (r_ptr->flags7 & RF7_AQUATIC)
 		return TRUE;
@@ -3341,11 +3329,11 @@ bool monster_deep_water(int r_idx)
 }
 
 
-bool monster_shallow_water(int r_idx)
+static bool mon_hook_shallow_water(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
-	if (!monster_dungeon(r_idx)) return FALSE;
+	if (!mon_hook_dungeon(r_idx)) return FALSE;
 
 	if (r_ptr->flags2 & RF2_AURA_FIRE)
 		return FALSE;
@@ -3354,15 +3342,27 @@ bool monster_shallow_water(int r_idx)
 }
 
 
-bool monster_lava(int r_idx)
+static bool mon_hook_lava(int r_idx)
 {
 	monster_race *r_ptr = &r_info[r_idx];
 
-	if (!monster_dungeon(r_idx)) return FALSE;
+	if (!mon_hook_dungeon(r_idx)) return FALSE;
 
 	if (((r_ptr->flags3 & RF3_IM_FIRE) ||
 	     (r_ptr->flags7 & RF7_CAN_FLY)) &&
 	    !(r_ptr->flags3 & RF3_AURA_COLD))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+
+static bool mon_hook_floor(int r_idx)
+{
+	monster_race *r_ptr = &r_info[r_idx];
+
+	if (!(r_ptr->flags7 & RF7_AQUATIC) ||
+	    (r_ptr->flags7 & RF7_CAN_FLY))
 		return TRUE;
 	else
 		return FALSE;
@@ -3376,31 +3376,31 @@ monster_hook_type get_monster_hook(void)
 		switch (wilderness[p_ptr->wilderness_y][p_ptr->wilderness_x].terrain)
 		{
 		case TERRAIN_TOWN:
-			return (monster_hook_type)monster_town;
+			return (monster_hook_type)mon_hook_town;
 		case TERRAIN_DEEP_WATER:
-			return (monster_hook_type)monster_ocean;
+			return (monster_hook_type)mon_hook_ocean;
 		case TERRAIN_SHALLOW_WATER:
 		case TERRAIN_SWAMP:
-			return (monster_hook_type)monster_shore;
+			return (monster_hook_type)mon_hook_shore;
 		case TERRAIN_DIRT:
 		case TERRAIN_DESERT:
-			return (monster_hook_type)monster_waste;
+			return (monster_hook_type)mon_hook_waste;
 		case TERRAIN_GRASS:
-			return (monster_hook_type)monster_grass;
+			return (monster_hook_type)mon_hook_grass;
 		case TERRAIN_TREES:
-			return (monster_hook_type)monster_wood;
+			return (monster_hook_type)mon_hook_wood;
 		case TERRAIN_SHALLOW_LAVA:
 		case TERRAIN_DEEP_LAVA:
-			return (monster_hook_type)monster_volcano;
+			return (monster_hook_type)mon_hook_volcano;
 		case TERRAIN_MOUNTAIN:
-			return (monster_hook_type)monster_mountain;
+			return (monster_hook_type)mon_hook_mountain;
 		default:
-			return (monster_hook_type)monster_dungeon;
+			return (monster_hook_type)mon_hook_dungeon;
 		}
 	}
 	else
 	{
-		return (monster_hook_type)monster_dungeon;
+		return (monster_hook_type)mon_hook_dungeon;
 	}
 }
 
@@ -3411,14 +3411,14 @@ monster_hook_type get_monster_hook2(int y, int x)
 	switch (cave[y][x].feat)
 	{
 	case FEAT_SHAL_WATER:
-		return (monster_hook_type)monster_shallow_water;
+		return (monster_hook_type)mon_hook_shallow_water;
 	case FEAT_DEEP_WATER:
-		return (monster_hook_type)monster_deep_water;
+		return (monster_hook_type)mon_hook_deep_water;
 	case FEAT_DEEP_LAVA:
 	case FEAT_SHAL_LAVA:
-		return (monster_hook_type)monster_lava;
+		return (monster_hook_type)mon_hook_lava;
 	default:
-		return NULL;
+		return (monster_hook_type)mon_hook_floor;
 	}
 }
 

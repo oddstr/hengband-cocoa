@@ -574,15 +574,10 @@ put_str("MP 失率 効果", y, x + 33);
 					if (plev > spell.level) chance -= 3 * (plev - spell.level);
 					else chance += (spell.level - plev);
 
-					chance += p_ptr->to_m_chance;
-
 					/* Reduce failure rate by INT/WIS adjustment */
 					chance -= 3 * (adj_mag_stat[p_ptr->stat_ind[A_INT]] - 1);
 
-					if (p_ptr->heavy_spell) chance += 20;
-					if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-					else if (p_ptr->easy_spell) chance-=3;
-					else if (p_ptr->dec_mana) chance-=2;
+					chance = mod_spell_chance_1(chance);
 
 					shouhimana = monster_powers[spellnum[i]].smana;
 					if (p_ptr->dec_mana)
@@ -609,9 +604,7 @@ put_str("MP 失率 効果", y, x + 33);
 					/* Always a 5 percent chance of working */
 					if (chance > 95) chance = 95;
 
-					if(p_ptr->dec_mana) chance--;
-					if (p_ptr->heavy_spell) chance += 5;
-					chance = MAX(chance,0);
+					chance = mod_spell_chance_2(chance);
 
 					/* Get info */
 					learned_info(comment, spellnum[i]);
@@ -1487,24 +1480,24 @@ msg_format("%sを引き戻した。", m_name);
 		r_ptr = &r_info[m_ptr->r_idx];
 		monster_desc(m_name, m_ptr, 0);
 #ifdef JP
-msg_format("%sの足を指さした。", m_name);
+			msg_format("%sの足を指さした。", m_name);
 #else
 			msg_format("You gesture at %s's feet.", m_name);
 #endif
 
-		if ((r_ptr->flags3 & RF3_RES_TELE) || (r_ptr->flags1 & RF1_QUESTOR) || (r_ptr->level + randint1(50) > plev + randint1(60)))
+		if ((r_ptr->flags3 & RF3_RES_NEXU) || (r_ptr->flags3 & RF3_RES_TELE) ||
+			(r_ptr->flags1 & RF1_QUESTOR) || (r_ptr->level + randint1(50) > plev + randint1(60)))
 		{
 #ifdef JP
-msg_print("しかし効果がなかった！");
+			msg_print("しかし効果がなかった！");
 #else
 			msg_format("%s are unaffected!", m_name);
 #endif
-
 		}
-		else if (one_in_(2))
+		else if (!dun_level || one_in_(2))
 		{
 #ifdef JP
-msg_format("%sは床を突き破って沈んでいった。", m_name);
+			msg_format("%sは床を突き破って沈んでいった。", m_name);
 #else
 			msg_format("%s sinks through the floor.", m_name);
 #endif
@@ -1513,7 +1506,7 @@ msg_format("%sは床を突き破って沈んでいった。", m_name);
 		else
 		{
 #ifdef JP
-msg_format("%sは天井を突き破って宙へ浮いていった。",m_name);
+			msg_format("%sは天井を突き破って宙へ浮いていった。",m_name);
 #else
 			msg_format("%s rises up through the ceiling.", m_name);
 #endif
@@ -1578,7 +1571,7 @@ msg_print("援軍を召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還された仲間は怒っている！");
+msg_print("召喚された仲間は怒っている！");
 #else
 msg_print("Summoned fellows are angry!");
 #endif
@@ -1603,7 +1596,7 @@ msg_print("サイバーデーモンを召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたサイバーデーモンは怒っている！");
+msg_print("召喚されたサイバーデーモンは怒っている！");
 #else
 msg_print("The summoned Cyberdemon are angry!");
 #endif
@@ -1627,7 +1620,7 @@ msg_print("仲間を召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたモンスターは怒っている！");
+msg_print("召喚されたモンスターは怒っている！");
 #else
 msg_print("The summoned monster is angry!");
 #endif
@@ -1651,7 +1644,7 @@ msg_print("モンスターを召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたモンスターは怒っている！");
+msg_print("召喚されたモンスターは怒っている！");
 #else
 msg_print("Summoned monsters are angry!");
 #endif
@@ -1675,7 +1668,7 @@ msg_print("アリを召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたアリは怒っている！");
+msg_print("召喚されたアリは怒っている！");
 #else
 msg_print("Summoned ants are angry!");
 #endif
@@ -1699,7 +1692,7 @@ msg_print("蜘蛛を召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還された蜘蛛は怒っている！");
+msg_print("召喚された蜘蛛は怒っている！");
 #else
 msg_print("Summoned spiders are angry!");
 #endif
@@ -1723,7 +1716,7 @@ msg_print("ハウンドを召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたハウンドは怒っている！");
+msg_print("召喚されたハウンドは怒っている！");
 #else
 msg_print("Summoned hounds are angry!");
 #endif
@@ -1747,7 +1740,7 @@ msg_print("ヒドラを召喚した。");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたヒドラは怒っている！");
+msg_print("召喚されたヒドラは怒っている！");
 #else
 msg_print("Summoned hydras are angry!");
 #endif
@@ -1771,7 +1764,7 @@ msg_print("天使を召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還された天使は怒っている！");
+msg_print("召喚された天使は怒っている！");
 #else
 msg_print("Summoned angels are angry!");
 #endif
@@ -1795,7 +1788,7 @@ msg_print("混沌の宮廷から悪魔を召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたデーモンは怒っている！");
+msg_print("召喚されたデーモンは怒っている！");
 #else
 msg_print("Summoned demons are angry!");
 #endif
@@ -1819,7 +1812,7 @@ msg_print("アンデッドの強敵を召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたアンデッドは怒っている！");
+msg_print("召喚されたアンデッドは怒っている！");
 #else
 msg_print("Summoned undeads are angry!");
 #endif
@@ -1843,7 +1836,7 @@ msg_print("ドラゴンを召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたドラゴンは怒っている！");
+msg_print("召喚されたドラゴンは怒っている！");
 #else
 msg_print("Summoned dragons are angry!");
 #endif
@@ -1867,7 +1860,7 @@ msg_print("強力なアンデッドを召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還された上級アンデッドは怒っている！");
+msg_print("召喚された上級アンデッドは怒っている！");
 #else
 msg_print("Summoned greater undeads are angry!");
 #endif
@@ -1891,7 +1884,7 @@ msg_print("古代ドラゴンを召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還された古代ドラゴンは怒っている！");
+msg_print("召喚された古代ドラゴンは怒っている！");
 #else
 msg_print("Summoned ancient dragons are angry!");
 #endif
@@ -1915,7 +1908,7 @@ msg_print("アンバーの王族を召喚した！");
 			{
 				if (!pet)
 #ifdef JP
-msg_print("召還されたアンバーの王族は怒っている！");
+msg_print("召喚されたアンバーの王族は怒っている！");
 #else
 msg_print("Summoned Lords of Amber are angry!");
 #endif
@@ -1940,7 +1933,7 @@ msg_print("特別な強敵を召喚した！");
 				count++;
 				if (!pet)
 #ifdef JP
-msg_print("召還されたユニーク・モンスターは怒っている！");
+msg_print("召喚されたユニーク・モンスターは怒っている！");
 #else
 msg_print("Summoned special opponents are angry!");
 #endif
@@ -1951,7 +1944,7 @@ msg_print("Summoned special opponents are angry!");
 				count++;
 				if (!pet)
 #ifdef JP
-msg_print("召還された上級アンデッドは怒っている！");
+msg_print("召喚された上級アンデッドは怒っている！");
 #else
 msg_print("Summoned greater undeads are angry!");
 #endif
@@ -2046,15 +2039,10 @@ if (!get_check("それでも挑戦しますか? ")) return FALSE;
 	if (plev > spell.level) chance -= 3 * (plev - spell.level);
 	else chance += (spell.level - plev);
 
-	chance += p_ptr->to_m_chance;
-
 	/* Reduce failure rate by INT/WIS adjustment */
 	chance -= 3 * (adj_mag_stat[p_ptr->stat_ind[A_INT]] - 1);
 
-	if (p_ptr->heavy_spell) chance += 20;
-	if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-	else if (p_ptr->easy_spell) chance-=3;
-	else if (p_ptr->dec_mana) chance-=2;
+	chance = mod_spell_chance_1(chance);
 
 	/* Not enough mana to cast */
 	if (shouhimana > p_ptr->csp)
@@ -2075,9 +2063,7 @@ if (!get_check("それでも挑戦しますか? ")) return FALSE;
 	/* Always a 5 percent chance of working */
 	if (chance > 95) chance = 95;
 
-	if(p_ptr->dec_mana) chance--;
-	if (p_ptr->heavy_spell) chance += 5;
-	chance = MAX(chance,0);
+	chance = mod_spell_chance_2(chance);
 
 	/* Failed spell */
 	if (randint0(100) < chance)

@@ -263,7 +263,7 @@ Weapon of Poisoning
 
 Weapon of Force
     This weapon will attack monsters with your mana power and will
-    inflict damage with six times the normal dice.
+    inflict damage with 3.5 times the normal dice.
 
 --- Weapons of Slay {Monster-Type} ---
 
@@ -317,7 +317,7 @@ Weapon of Slay Dragon
 Weapon of *Slay* Animal
     This weapon is especially effective against natural creatures and
     will inflict damage with four times the normal dice against such
-    creatures, and allows wielder to sense the presence of natutal
+    creatures, and allows wielder to sense the presence of natural
     creatures.  It will also increase your intelligence and allow you
     to regenerate hit-points and mana faster.
 

@@ -388,8 +388,8 @@ s16b lite_x[LITE_MAX];
  * Array of grids lit by player lite (see "cave.c")
  */
 s16b mon_lite_n;
-s16b mon_lite_y[LITE_MAX];
-s16b mon_lite_x[LITE_MAX];
+s16b mon_lite_y[MON_LITE_MAX];
+s16b mon_lite_x[MON_LITE_MAX];
 
 /*
  * Array of grids viewable to the player (see "cave.c")
@@ -728,22 +728,17 @@ char *v_text;
  * The skill table
  */
 skill_table *s_info;
-char *s_name;
-char *s_text;
 
 /*
  * The magic info
  */
 player_magic *m_info;
-char *m_name;
-char *m_text;
 
 /*
  * The terrain feature arrays
  */
 feature_type *f_info;
 char *f_name;
-char *f_text;
 
 /*
  * The object kind arrays
@@ -971,7 +966,7 @@ bool record_rand_art;
 bool record_destroy_uniq;
 bool record_fix_quest;
 bool record_rand_quest;
-bool record_maxdeapth;
+bool record_maxdepth;
 bool record_stair;
 bool record_buy;
 bool record_sell;
@@ -1104,7 +1099,7 @@ bool autochara;
 
 bool can_save = FALSE;        /* Game can be saved */
 
-bool world_monster;
+s16b world_monster;
 bool world_player;
 
 int cap_mon;
@@ -1125,7 +1120,7 @@ int riding_t_m_idx;
 s16b kubi_r_idx[MAX_KUBI];
 s16b today_mon;
 
-monster_type party_mon[21];
+monster_type party_mon[MAX_PARTY_MON];
 
 bool write_level;
 

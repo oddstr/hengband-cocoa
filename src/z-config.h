@@ -398,27 +398,6 @@
 
 #endif /* USE_SPECIAL */
 
-/*
- * OPTION: Hack -- Macintosh stuff
- */
-#ifdef MACINTOSH
-
-/* Do not handle signals */
-# undef HANDLE_SIGNALS
-
-#endif
-
-
-/*
- * OPTION: Hack -- Windows stuff
- */
-#ifdef WINDOWS
-
-/* Do not handle signals */
-# undef HANDLE_SIGNALS
-
-#endif
-
 
 /*
  * OPTION: Hack -- EMX stuff
@@ -511,7 +490,7 @@
  * OPTION: Person to bother if something goes wrong.
  */
 /* #define MAINTAINER	"rr9@angband.org" */
-#define MAINTAINER	"echizen@s5.xrea.com"
+#define MAINTAINER	"echizen@users.sourceforge.jp"
 
 
 #ifdef JP

@@ -157,6 +157,8 @@ void place_random_door(int y, int x)
 
 	/* Closed, locked, or stuck doors (400/1000) */
 	else place_closed_door(y, x);
+
+	delete_monster(y, x);
 }
 
 
@@ -196,6 +198,9 @@ void place_closed_door(int y, int x)
 		/* Create jammed door */
 		cave_set_feat(y, x, FEAT_DOOR_HEAD + 0x08 + randint0(8));
 	}
+
+	/* Now it is not floor */
+	cave[y][x].info &= ~(CAVE_MASK);
 }
 
 
@@ -788,6 +793,10 @@ static bool set_tunnel(int *x, int *y, bool affectwall)
 				}
 			}
 		}
+
+		/* Clear mimic type */
+		cave[*y][*x].mimic = 0;
+
 		place_floor_bold(*y, *x);
 
 		return TRUE;

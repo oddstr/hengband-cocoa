@@ -65,7 +65,14 @@ static u32b	v_check = 0L;
  */
 static u32b	x_check = 0L;
 
-
+/*
+ * Hack -- Japanese Kanji code
+ * 0: Unknown
+ * 1: ASCII
+ * 2: EUC
+ * 3: SJIS
+ */
+static byte kanji_code = 0;
 
 /*
  * This function determines if the version of the savefile
@@ -212,8 +219,40 @@ static void rd_string(char *str, int max)
 
 	/* Terminate */
 	str[max-1] = '\0';
+
+
 #ifdef JP
-	codeconv(str);
+	/* Convert Kanji code */
+	switch (kanji_code)
+	{
+#ifdef SJIS
+	case 2:
+		/* EUC to SJIS */
+		euc2sjis(str);
+		break;
+#endif
+
+#ifdef EUC
+	case 3:
+		/* SJIS to EUC */
+		sjis2euc(str);
+		break;
+#endif
+
+	case 0:
+	{
+		/* 不明の漢字コードからシステムの漢字コードに変換 */
+		byte code = codeconv(str);
+
+		/* 漢字コードが判明したら、それを記録 */
+		if (code) kanji_code = code;
+
+		break;
+	}
+	default:
+		/* No conversion needed */
+		break;
+	}
 #endif
 }
 
@@ -1031,6 +1070,9 @@ static void rd_options(void)
 		if (option_flag[5] & (0x00000001 << 3)) option_flag[1] &= ~(0x00000001 << 3);
 		else option_flag[5] |= (0x00000001 << 3);
 	}
+
+	/* Extract the options */
+	extract_option_vars();
 
 
 	/*** Window Options ***/
@@ -2119,7 +2161,7 @@ static errr rd_dungeon(void)
 	rd_u16b(&limit);
 
 	/* Verify maximum */
-	if (limit >= max_o_idx)
+	if (limit > max_o_idx)
 	{
 #ifdef JP
 note(format("アイテムの配列が大きすぎる(%d)！", limit));
@@ -2199,7 +2241,7 @@ note(format("アイテム配置エラー (%d <> %d)", i, o_idx));
 	rd_u16b(&limit);
 
 	/* Hack -- verify */
-	if (limit >= max_m_idx)
+	if (limit > max_m_idx)
 	{
 #ifdef JP
 note(format("モンスターの配列が大きすぎる(%d)！", limit));
@@ -2250,8 +2292,16 @@ note(format("モンスター配置エラー (%d <> %d)", i, m_idx));
 		c_ptr->m_idx = m_idx;
 
 
-		/* Access race */
+		/* Access real race */
 		r_ptr = &r_info[m_ptr->r_idx];
+
+		if (m_ptr->mflag2 & MFLAG_CHAMELEON)
+		{
+			if (r_ptr->flags1 & RF1_UNIQUE)
+				r_ptr = &r_info[MON_CHAMELEON_K];
+			else
+				r_ptr = &r_info[MON_CHAMELEON];
+		}
 
 		/* Count XXX XXX XXX */
 		r_ptr->cur_num++;
@@ -2337,8 +2387,13 @@ static errr rd_savefile_new_aux(void)
 	rd_u32b(&tmp32u);
 
 	/* Later use (always zero) */
-	rd_u32b(&tmp32u);
+	rd_u16b(&tmp16u);
 
+	/* Later use (always zero) */
+	rd_byte(&tmp8u);
+
+	/* Kanji code */
+	rd_byte(&kanji_code);
 
 	/* Read RNG state */
 	rd_randomizer();
@@ -2980,8 +3035,14 @@ errr rd_savefile_new(void)
 {
 	errr err;
 
+	/* Grab permissions */
+	safe_setuid_grab();
+
 	/* The savefile is a binary file */
 	fff = my_fopen(savefile, "rb");
+
+	/* Drop permissions */
+	safe_setuid_drop();
 
 	/* Paranoia */
 	if (!fff) return (-1);

@@ -1831,8 +1831,6 @@ static cptr *read_text_lines(cptr filename, bool user)
 
 	if (user)
 	{
-		/* Hack -- drop permissions */
-		safe_setuid_drop();
 		path_build(buf, sizeof(buf), ANGBAND_DIR_USER, filename);
 	}
 	else
@@ -1859,9 +1857,6 @@ static cptr *read_text_lines(cptr filename, bool user)
 
 		my_fclose(fff);
 	}
-
-	/* Grab priv's */
-	safe_setuid_grab();
 
 	if (!fff) return NULL;
 	return lines_list;
@@ -1923,9 +1918,6 @@ static bool write_text_lines(cptr filename, cptr *lines_list)
 	int lines = 0;
 	char buf[1024];
 
-	/* Hack -- drop permissions */
-	safe_setuid_drop();
-
 	/* Build the filename */
 	path_build(buf, sizeof(buf), ANGBAND_DIR_USER, filename);
 	
@@ -1938,9 +1930,6 @@ static bool write_text_lines(cptr filename, cptr *lines_list)
 
 		my_fclose(fff);
 	}
-
-	/* Grab priv's */
-	safe_setuid_grab();
 
 	if (!fff) return FALSE;
 	return TRUE;
@@ -2166,8 +2155,8 @@ static bool entry_from_choosed_object(autopick_type *entry)
 	q = "どのアイテムを登録しますか? ";
 	s = "アイテムを持っていない。";
 #else
-	q = "Entry which item? ";
-	s = "You have nothing to entry.";
+	q = "Enter which item? ";
+	s = "You have nothing to enter.";
 #endif
 	o_ptr = choose_object(q, s);
 	if (!o_ptr) return FALSE;
@@ -2240,8 +2229,8 @@ static bool get_string_for_search(object_type **o_handle, cptr *search_strp)
 			q = "どのアイテムを検索しますか? ";
 			s = "アイテムを持っていない。";
 #else
-			q = "Entry which item? ";
-			s = "You have nothing to entry.";
+			q = "Enter which item? ";
+			s = "You have nothing to enter.";
 #endif
 			o_ptr = choose_object(q, s);
 			if (!o_ptr) return FALSE;
@@ -2894,7 +2883,7 @@ void do_cmd_edit_autopick(void)
 #ifdef JP
 				prt("この行はコメントです。", hgt - 3 + 1, 0);
 #else
-				prt("This line is comment.", hgt - 3 + 1, 0);
+				prt("This line is a comment.", hgt - 3 + 1, 0);
 #endif
 			}
 			else if (lines_list[cy][1] == ':')
@@ -2905,28 +2894,28 @@ void do_cmd_edit_autopick(void)
 #ifdef JP
 					prt("この行は条件分岐式です。", hgt - 3 + 1, 0);
 #else
-					prt("This line is Conditional Expression.", hgt - 3 + 1, 0);
+					prt("This line is a Conditional Expression.", hgt - 3 + 1, 0);
 #endif
 					break;
 				case 'A':
 #ifdef JP
 					prt("この行はマクロの実行内容を定義します。", hgt - 3 + 1, 0);
 #else
-					prt("This line defines Macro action.", hgt - 3 + 1, 0);
+					prt("This line defines a Macro action.", hgt - 3 + 1, 0);
 #endif
 					break;
 				case 'P':
 #ifdef JP
 					prt("この行はマクロのトリガー・キーを定義します。", hgt - 3 + 1, 0);
 #else
-					prt("This line defines Macro trigger key.", hgt - 3 + 1, 0);
+					prt("This line defines a Macro trigger key.", hgt - 3 + 1, 0);
 #endif
 					break;
 				case 'C':
 #ifdef JP
 					prt("この行はキー配置を定義します。", hgt - 3 + 1, 0);
 #else
-					prt("This line defines Keymap.", hgt - 3 + 1, 0);
+					prt("This line defines a Keymap.", hgt - 3 + 1, 0);
 #endif
 					break;
 				}
@@ -2940,7 +2929,7 @@ void do_cmd_edit_autopick(void)
 
 				describe_autopick(buf, entry);
 
-				roff_to_buf(buf, 81, temp);
+				roff_to_buf(buf, 81, temp, sizeof(temp));
 				t = temp;
 				for (i = 0; i< 2; i++)
 				{
@@ -3489,7 +3478,7 @@ void do_cmd_edit_autopick(void)
 #ifdef JP
 			if (!get_check("全ての変更を破棄して元の状態に戻します。よろしいですか？ "))
 #else
-			if (!get_check("Discard all change and revert to original file. Are you sure? "))
+			if (!get_check("Discard all changes and revert to original file. Are you sure? "))
 #endif
 				break;
 

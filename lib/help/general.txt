@@ -16,7 +16,7 @@ give you a decent chance against the great Serpent of Chaos, who lurks
 somewhere in the depths of the dungeon.
 
 ***** <First>
---- First Place to Go
+--- First Place to Go ---
 
 The player will begin his adventure on the town level where he may
 acquire supplies, weapons, armor, and magical devices by bartering
@@ -31,7 +31,9 @@ safe.  Once you complete this dungeon, you will be strong enough to
 leave Outpost in search of greater adventures.  Carry lots of food and
 fuel, for the journey can be a long one.
 
---- The Global Map  ( Press the '<' key, And you see all of the world! )
+--- The Global Map ---
+
+[[[[[GPress the '<' key, and you see all of the world!]
 
 Since this world is very large, it is convenient to go into global map
 mode by pressing the '<' key, and then return to local map mode by '>'
@@ -104,15 +106,15 @@ memory containing all the experience of past incarnations.
 
 
 --- The official Hengband website ---
-(http://echizen.s5.xrea.com/heng/eng-hengband/score.html)
+(http://hengband.sourceforge.jp/en/)
 
-http://echizen.s5.xrea.com/heng/ is the official Hengband website.  It
-includes information on where to download the Hengband source code and
-current executables for most popular operating systems as well as
+http://hengband.sourceforge.jp/en/ is the official Hengband website.
+It includes information on where to download the Hengband source code
+and current executables for most popular operating systems as well as
 information on current development issues.
 
 --- Hengband World Score Board ---
-(http://echizen.s5.xrea.com/heng/eng-hengband/score.html)
+(http://hengband.sourceforge.jp/en/score.html)
 
 The official Hengband website includes this score board. You can see
 hundreds of character records at here. And there is translated version
@@ -145,7 +147,7 @@ is about Hengband.
 Original   : (??)
 Updated    : (??)
 Updated    : Zangband DevTeam
-Updated    : Hengband 1.1.0
+Updated    : Hengband 1.5.4
 
 
 ***** Begin Hyperlinks

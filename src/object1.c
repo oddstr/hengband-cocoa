@@ -461,7 +461,7 @@ return "ファイア・ボルト(9d8) : 8+d8 ターン毎";
 			case ACT_BA_COLD_1:
 			{
 #ifdef JP
-return "コールド・ボール (48) : 400 ターン毎";
+return "アイス・ボール (48) : 400 ターン毎";
 #else
 				return "ball of cold (48) every 400 turns";
 #endif
@@ -479,7 +479,7 @@ return "ファイア・ボール (72) : 400 ターン毎";
 			case ACT_DRAIN_1:
 			{
 #ifdef JP
-return "ヒットポイント吸収 (100) : 100+d100 ターン毎";
+return "生命力吸収 (100) : 100+d100 ターン毎";
 #else
 				return "drain life (100) every 100+d100 turns";
 #endif
@@ -488,7 +488,7 @@ return "ヒットポイント吸収 (100) : 100+d100 ターン毎";
 			case ACT_BA_COLD_2:
 			{
 #ifdef JP
-return "コールド・ボール (100) : 300 ターン毎";
+return "アイス・ボール (100) : 300 ターン毎";
 #else
 				return "ball of cold (100) every 300 turns";
 #endif
@@ -506,7 +506,7 @@ return "サンダー・ボール (100) : 500 ターン毎";
 			case ACT_DRAIN_2:
 			{
 #ifdef JP
-return "ヒットポイント吸収(120) : 400 ターン毎";
+return "生命力吸収(120) : 400 ターン毎";
 #else
 				return "drain life (120) every 400 turns";
 #endif
@@ -542,7 +542,7 @@ return "ファイア・ボール (120) : 225+d225 ターン毎";
 			case ACT_BA_COLD_3:
 			{
 #ifdef JP
-return "コールド・ボール (200) : 325+d325 ターン毎";
+return "アイス・ボール (200) : 325+d325 ターン毎";
 #else
 				return "ball of cold (200) every 325+d325 turns";
 #endif
@@ -578,7 +578,7 @@ return "吸血ドレイン (3*100) : 400 ターン毎";
 			case ACT_CALL_CHAOS:
 			{
 #ifdef JP
-return "call chaos : 350 ターン毎"; /*nuke me*/
+return "混沌召来 : 350 ターン毎"; /*nuke me*/
 #else
 				return "call chaos every 350 turns";
 #endif
@@ -704,7 +704,7 @@ return "動物魅了 : 300 ターン毎";
 			case ACT_CHARM_UNDEAD:
 			{
 #ifdef JP
-return "不死従属 : 333 ターン毎";
+return "アンデッド従属 : 333 ターン毎";
 #else
 				return "enslave undead every 333 turns";
 #endif
@@ -749,7 +749,7 @@ return "動物召喚 : 200+d300 ターン毎";
 			case ACT_SUMMON_PHANTOM:
 			{
 #ifdef JP
-return "使い霊召喚 : 200+d200 ターン毎";
+return "幻霊召喚 : 200+d200 ターン毎";
 #else
 				return "summon phantasmal servant every 200+d200 turns";
 #endif
@@ -776,7 +776,7 @@ return "悪魔召喚 : 666+d333 ターン毎";
 			case ACT_SUMMON_UNDEAD:
 			{
 #ifdef JP
-return "不死召喚 : 666+d333 ターン毎";
+return "アンデッド召喚 : 666+d333 ターン毎";
 #else
 				return "summon undead every 666+d333 turns";
 #endif
@@ -785,7 +785,7 @@ return "不死召喚 : 666+d333 ターン毎";
 			case ACT_CURE_LW:
 			{
 #ifdef JP
-return "勇気回復 & 30 hp 回復 : 10 ターン毎";
+return "恐怖除去 & 30 hp 回復 : 10 ターン毎";
 #else
 				return "remove fear & heal 30 hp every 10 turns";
 #endif
@@ -803,7 +803,7 @@ return "4d8 hp & 傷回復 : 3+d3 ターン毎";
 			case ACT_CURE_POISON:
 			{
 #ifdef JP
-return "勇気回復/毒消し : 5 ターン毎";
+return "恐怖除去/毒消し : 5 ターン毎";
 #else
 				return "remove fear and cure poison every 5 turns";
 #endif
@@ -821,7 +821,7 @@ return "経験値復活 : 450 ターン毎";
 			case ACT_REST_ALL:
 			{
 #ifdef JP
-return "全ステータスと経験値回復 : 750 ターン毎";
+return "全ステータスと経験値復活 : 750 ターン毎";
 #else
 				return "restore stats and life levels every 750 turns";
 #endif
@@ -848,9 +848,9 @@ return "1000 hp 回復 : 888 ターン毎";
 			case ACT_ESP:
 			{
 #ifdef JP
-return "一時的な ESP (期間 25+d30) : 200 ターン毎";
+return "テレパシー (期間 25+d30) : 200 ターン毎";
 #else
-				return "temporary ESP (dur 25+d30) every 200 turns";
+				return "telepathy (dur 25+d30) every 200 turns";
 #endif
 
 			}
@@ -875,7 +875,7 @@ return "対邪悪結界 (期間 level*3 + d25) : 225+d225 ターン毎";
 			case ACT_RESIST_ALL:
 			{
 #ifdef JP
-return "炎冷酸電毒への耐性 (期間 40+d40) : 200 ターン毎";
+return "全耐性 (期間 40+d40) : 200 ターン毎";
 #else
 				return "resist elements (dur 40+d40) every 200 turns";
 #endif
@@ -902,16 +902,16 @@ return "加速 (期間 75+d75) : 200+d200 ターン毎";
 			case ACT_WRAITH:
 			{
 #ifdef JP
-return "レイス化 (level/2 + d(level/2)) : 1000 ターン毎";
+return "幽体化 (期間 level/2 + d(level/2)) : 1000 ターン毎";
 #else
-				return "wraith form (level/2 + d(level/2)) every 1000 turns";
+				return "wraith form (dur level/2 + d(level/2)) every 1000 turns";
 #endif
 
 			}
 			case ACT_INVULN:
 			{
 #ifdef JP
-return "無敵 (期間 8+d8) : 1000 ターン毎";
+return "無敵化 (期間 8+d8) : 1000 ターン毎";
 #else
 				return "invulnerability (dur 8+d8) every 1000 turns";
 #endif
@@ -974,7 +974,7 @@ return "鑑定 : 10 ターン毎";
 			case ACT_RUNE_EXPLO:
 			{
 #ifdef JP
-return "爆発ルーン : 200 ターン毎";
+return "爆発のルーン : 200 ターン毎";
 #else
 				return "explosive rune every 200 turns";
 #endif
@@ -1019,7 +1019,7 @@ return "岩石溶解 : 5 ターン毎";
 			case ACT_RECHARGE:
 			{
 #ifdef JP
-return "再充填 : 70 ターン毎";
+return "魔力充填 : 70 ターン毎";
 #else
 				return "recharging every 70 turns";
 #endif
@@ -1260,9 +1260,9 @@ return "周辺抹殺 : 1000 ターン毎";
 		case ART_LOTHARANG:
 		{
 #ifdef JP
-return "傷の治癒(4d7) : 3+d3 ターン毎";
+return "傷の治癒(4d8) : 3+d3 ターン毎";
 #else
-			return "cure wounds (4d7) every 3+d3 turns";
+			return "cure wounds (4d8) every 3+d3 turns";
 #endif
 
 		}
@@ -1317,7 +1317,7 @@ return "サンダー・ボール (100) : 200 ターン毎";
 #ifdef JP
 return "アイス・ボール (100) : 200 ターン毎";
 #else
-			return "Frost ball (100) every 200 turns";
+			return "frost ball (100) every 200 turns";
 #endif
 
 		}
@@ -1399,7 +1399,7 @@ return "全耐性(20+d20ターン) : 111 ターン毎";
 #ifdef JP
 return "スリープ(II) : 55 ターン毎";
 #else
-			return "Sleep II every 55 turns";
+			return "sleep II every 55 turns";
 #endif
 
 		}
@@ -1496,7 +1496,7 @@ return "全感知 : 55+d55 ターン毎";
 		case ART_AMBER:
 		{
 #ifdef JP
-return "体力回復(500) : 500 ターン毎";
+return "体力回復(700) : 250 ターン毎";
 #else
 			return "heal (700) every 250 turns";
 #endif
@@ -1710,15 +1710,15 @@ return "眩しい光 : 250 ターン毎";
 #ifdef JP
 return "魔力充填 : 200 ターン毎";
 #else
-			return "Recharge item every 200 turns";
+			return "recharge item every 200 turns";
 #endif
 		}
 		case ART_MURAMASA:
 		{
 #ifdef JP
-return "腕力の上昇 : 確率50%で壊れる。";
+return "腕力の上昇 : 確率50%で壊れる";
 #else
-			return "Increase STR (destroyed 50%)";
+			return "increase STR (destroyed 50%)";
 #endif
 		}
 		case ART_FLY_STONE:
@@ -2018,7 +2018,7 @@ return "ファイア・ボール (100) : 80+d80 ターン毎";
 #endif
 			case EGO_RING_COLD_BALL:
 #ifdef JP
-return "コールド・ボール (100) : 80+d80 ターン毎";
+return "アイス・ボール (100) : 80+d80 ターン毎";
 #else
 				return "cold ball (100) every 80+d80 turns";
 #endif
@@ -2109,7 +2109,7 @@ return "ファイア・ボール (100) と火への耐性 : 50+d50 ターン毎";
 
 			case SV_RING_ICE:
 #ifdef JP
-return "コールド・ボール (100) と冷気への耐性 : 50+d50 ターン毎";
+return "アイス・ボール (100) と冷気への耐性 : 50+d50 ターン毎";
 #else
 				return "ball of cold (100) and resist cold every 50+d50 turns";
 #endif
@@ -2374,7 +2374,7 @@ return "空気の息";
 /*
  * Describe a "fully identified" item
  */
-bool identify_fully_aux(object_type *o_ptr)
+bool screen_object(object_type *o_ptr, u32b mode)
 {
 	int                     i = 0, j, k;
 
@@ -2384,6 +2384,8 @@ bool identify_fully_aux(object_type *o_ptr)
 	char o_name[MAX_NLEN];
 	int wid, hgt;
 
+	int trivial_info = 0;
+
 	/* Extract the flags */
 	object_flags(o_ptr, flgs);
 
@@ -2392,10 +2394,16 @@ bool identify_fully_aux(object_type *o_ptr)
 		char temp[70 * 20];
 
 		roff_to_buf(o_ptr->name1 ? (a_text + a_info[o_ptr->name1].text) :
-			    (k_text + k_info[lookup_kind(o_ptr->tval, o_ptr->sval)].text),
-			    77 - 15, temp);
+			    (k_text + k_info[o_ptr->k_idx].text),
+			    77 - 15, temp, sizeof(temp));
 		for (j = 0; temp[j]; j += 1 + strlen(&temp[j]))
 		{ info[i] = &temp[j]; i++;}
+	}
+
+	if (TV_SHOT <= o_ptr->tval && o_ptr->tval <= TV_CARD)
+	{
+		/* Descriptions of a basic equipment is just a flavor */
+		trivial_info = i;
 	}
 
 	/* Mega-Hack -- describe activation */
@@ -2453,13 +2461,13 @@ info[i++] = "それは相手を一撃で倒すことがある。";
 #ifdef JP
 info[i++] = "それは自分自身に攻撃が返ってくることがある。";
 #else
-		info[i++] = "It strikes yourself sometimes.";
+		info[i++] = "It causes you to strike yourself sometimes.";
 #endif
 
 #ifdef JP
 info[i++] = "それは無敵のバリアを切り裂く。";
 #else
-		info[i++] = "It will always penetrates invulnerability barrier.";
+		info[i++] = "It always penetrates invulnerability barriers.";
 #endif
 	}
 
@@ -2541,7 +2549,7 @@ info[i++] = "それは魔法抵抗力を下げる。";
 #ifdef JP
 			info[i++] = "それは全く光らない。";
 #else
-			info[i++] = "It provides no light..";
+			info[i++] = "It provides no light.";
 #endif
 
 			if (o_ptr->sval == SV_LITE_FEANOR ||
@@ -2653,17 +2661,20 @@ info[i++] = "それは乗馬中は非常に使いやすい。";
 			info[i++] = "It is made for use while riding.";
 #endif
 		else
+		{
 #ifdef JP
-info[i++] = "それは乗馬中でも使いやすい。";
+			info[i++] = "それは乗馬中でも使いやすい。";
 #else
 			info[i++] = "It is suitable for use while riding.";
 #endif
-
+			/* This information is not important enough */
+			trivial_info++;
+		}
 	}
 	if (have_flag(flgs, TR_STR))
 	{
 #ifdef JP
-info[i++] = "それは腕力に影響を及ぼす";
+info[i++] = "それは腕力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your strength.";
 #endif
@@ -2672,7 +2683,7 @@ info[i++] = "それは腕力に影響を及ぼす";
 	if (have_flag(flgs, TR_INT))
 	{
 #ifdef JP
-info[i++] = "それは知能に影響を及ぼす";
+info[i++] = "それは知能に影響を及ぼす。";
 #else
 		info[i++] = "It affects your intelligence.";
 #endif
@@ -2681,7 +2692,7 @@ info[i++] = "それは知能に影響を及ぼす";
 	if (have_flag(flgs, TR_WIS))
 	{
 #ifdef JP
-info[i++] = "それは賢さに影響を及ぼす";
+info[i++] = "それは賢さに影響を及ぼす。";
 #else
 		info[i++] = "It affects your wisdom.";
 #endif
@@ -2690,7 +2701,7 @@ info[i++] = "それは賢さに影響を及ぼす";
 	if (have_flag(flgs, TR_DEX))
 	{
 #ifdef JP
-info[i++] = "それは器用さに影響を及ぼす";
+info[i++] = "それは器用さに影響を及ぼす。";
 #else
 		info[i++] = "It affects your dexterity.";
 #endif
@@ -2699,7 +2710,7 @@ info[i++] = "それは器用さに影響を及ぼす";
 	if (have_flag(flgs, TR_CON))
 	{
 #ifdef JP
-info[i++] = "それは耐久力に影響を及ぼす";
+info[i++] = "それは耐久力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your constitution.";
 #endif
@@ -2708,7 +2719,7 @@ info[i++] = "それは耐久力に影響を及ぼす";
 	if (have_flag(flgs, TR_CHR))
 	{
 #ifdef JP
-info[i++] = "それは魅力に影響を及ぼす";
+info[i++] = "それは魅力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your charisma.";
 #endif
@@ -2718,7 +2729,7 @@ info[i++] = "それは魅力に影響を及ぼす";
 	if (have_flag(flgs, TR_MAGIC_MASTERY))
 	{
 #ifdef JP
-info[i++] = "それは魔法道具使用能力に影響を及ぼす";
+info[i++] = "それは魔法道具使用能力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your ability to use magic devices.";
 #endif
@@ -2727,7 +2738,7 @@ info[i++] = "それは魔法道具使用能力に影響を及ぼす";
 	if (have_flag(flgs, TR_STEALTH))
 	{
 #ifdef JP
-info[i++] = "それは隠密行動能力に影響を及ぼす";
+info[i++] = "それは隠密行動能力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your stealth.";
 #endif
@@ -2736,7 +2747,7 @@ info[i++] = "それは隠密行動能力に影響を及ぼす";
 	if (have_flag(flgs, TR_SEARCH))
 	{
 #ifdef JP
-info[i++] = "それは探索能力に影響を及ぼす";
+info[i++] = "それは探索能力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your searching.";
 #endif
@@ -2745,7 +2756,7 @@ info[i++] = "それは探索能力に影響を及ぼす";
 	if (have_flag(flgs, TR_INFRA))
 	{
 #ifdef JP
-info[i++] = "それは赤外線視力に影響を及ぼす";
+info[i++] = "それは赤外線視力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your infravision.";
 #endif
@@ -2754,7 +2765,7 @@ info[i++] = "それは赤外線視力に影響を及ぼす";
 	if (have_flag(flgs, TR_TUNNEL))
 	{
 #ifdef JP
-info[i++] = "それは採掘能力に影響を及ぼす";
+info[i++] = "それは採掘能力に影響を及ぼす。";
 #else
 		info[i++] = "It affects your ability to tunnel.";
 #endif
@@ -2763,7 +2774,7 @@ info[i++] = "それは採掘能力に影響を及ぼす";
 	if (have_flag(flgs, TR_SPEED))
 	{
 #ifdef JP
-info[i++] = "それはスピードに影響を及ぼす";
+info[i++] = "それはスピードに影響を及ぼす。";
 #else
 		info[i++] = "It affects your speed.";
 #endif
@@ -2772,7 +2783,7 @@ info[i++] = "それはスピードに影響を及ぼす";
 	if (have_flag(flgs, TR_BLOWS))
 	{
 #ifdef JP
-info[i++] = "それは打撃回数に影響を及ぼす";
+info[i++] = "それは打撃回数に影響を及ぼす。";
 #else
 		info[i++] = "It affects your attack speed.";
 #endif
@@ -2782,7 +2793,7 @@ info[i++] = "それは打撃回数に影響を及ぼす";
 	if (have_flag(flgs, TR_BRAND_ACID))
 	{
 #ifdef JP
-info[i++] = "それは酸によって大きなダメージを与える";
+info[i++] = "それは酸によって大きなダメージを与える。";
 #else
 		info[i++] = "It does extra damage from acid.";
 #endif
@@ -2791,7 +2802,7 @@ info[i++] = "それは酸によって大きなダメージを与える";
 	if (have_flag(flgs, TR_BRAND_ELEC))
 	{
 #ifdef JP
-info[i++] = "それは電撃によって大きなダメージを与える";
+info[i++] = "それは電撃によって大きなダメージを与える。";
 #else
 		info[i++] = "It does extra damage from electricity.";
 #endif
@@ -2800,7 +2811,7 @@ info[i++] = "それは電撃によって大きなダメージを与える";
 	if (have_flag(flgs, TR_BRAND_FIRE))
 	{
 #ifdef JP
-info[i++] = "それは火炎によって大きなダメージを与える";
+info[i++] = "それは火炎によって大きなダメージを与える。";
 #else
 		info[i++] = "It does extra damage from fire.";
 #endif
@@ -2809,7 +2820,7 @@ info[i++] = "それは火炎によって大きなダメージを与える";
 	if (have_flag(flgs, TR_BRAND_COLD))
 	{
 #ifdef JP
-info[i++] = "それは冷気によって大きなダメージを与える";
+info[i++] = "それは冷気によって大きなダメージを与える。";
 #else
 		info[i++] = "It does extra damage from frost.";
 #endif
@@ -3610,6 +3621,11 @@ info[i++] = "それは呪われている。";
 			info[i++] = "It is cursed.";
 #endif
 
+			/*
+			 * It's a trivial infomation since there is
+			 * fake inscription {cursed}
+			 */
+			trivial_info++;
 		}
 	}
 
@@ -3717,7 +3733,7 @@ info[i++] = "それはランダムなテレポートを引き起こす。";
 #ifdef JP
 info[i++] = "それは攻撃を外しやすい。";
 #else
-		info[i++] = "It causes you miss blows.";
+		info[i++] = "It causes you to miss blows.";
 #endif
 
 	}
@@ -3726,7 +3742,7 @@ info[i++] = "それは攻撃を外しやすい。";
 #ifdef JP
 info[i++] = "それは攻撃を受けやすい。";
 #else
-		info[i++] = "It helps your enemys' blows.";
+		info[i++] = "It helps your enemies' blows.";
 #endif
 
 	}
@@ -3767,60 +3783,109 @@ info[i++] = "それはあなたの魔力を吸い取る。";
 
 	}
 
-	/* XTRA HACK ARTDESC */
+	/* Describe about this kind of object instead of THIS fake object */
+	if (mode & SCROBJ_FAKE_OBJECT)
+	{
+		switch (o_ptr->tval)
+		{
+		case TV_RING:
+			switch (o_ptr->sval)
+			{
+			case SV_RING_LORDLY:
+#ifdef JP
+				info[i++] = "それは幾つかのランダムな耐性を授ける。";
+#else
+				info[i++] = "It provides some random resistances.";
+#endif
+				break;
+			case SV_RING_WARNING:
+#ifdef JP
+				info[i++] = "それはひとつの低級なESPを授ける事がある。";
+#else
+				info[i++] = "It may provide a low rank ESP.";
+#endif
+				break;
+			}
+			break;
+
+		case TV_AMULET:
+			switch (o_ptr->sval)
+			{
+			case SV_AMULET_RESISTANCE:
+#ifdef JP
+				info[i++] = "それは毒への耐性を授ける事がある。";
+#else
+				info[i++] = "It may provides resistance to poison.";
+#endif
+#ifdef JP
+				info[i++] = "それはランダムな耐性を授ける事がある。";
+#else
+				info[i++] = "It may provide a random resistances.";
+#endif
+				break;
+			case SV_AMULET_THE_MAGI:
+#ifdef JP
+				info[i++] = "それは最大で３つまでの低級なESPを授ける。";
+#else
+				info[i++] = "It provides up to three low rank ESPs.";
+#endif
+				break;
+			}
+			break;
+		}
+	}
+
 	if (have_flag(flgs, TR_IGNORE_ACID) &&
 	    have_flag(flgs, TR_IGNORE_ELEC) &&
 	    have_flag(flgs, TR_IGNORE_FIRE) &&
 	    have_flag(flgs, TR_IGNORE_COLD))
 	{
 #ifdef JP
-	  info[i++] = "それは酸・電撃・火炎・冷気では傷つかない。";
+		info[i++] = "それは酸・電撃・火炎・冷気では傷つかない。";
 #else
-	  info[i++] = "It cannot be harmed by the elements.";
+		info[i++] = "It cannot be harmed by the elements.";
 #endif
-	} else {
-	if (have_flag(flgs, TR_IGNORE_ACID))
+	}
+	else
 	{
+		if (have_flag(flgs, TR_IGNORE_ACID))
+		{
 #ifdef JP
-info[i++] = "それは酸では傷つかない。";
+			info[i++] = "それは酸では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by acid.";
+			info[i++] = "It cannot be harmed by acid.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_ELEC))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_ELEC))
+		{
 #ifdef JP
-info[i++] = "それは電撃では傷つかない。";
+			info[i++] = "それは電撃では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by electricity.";
+			info[i++] = "It cannot be harmed by electricity.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_FIRE))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_FIRE))
+		{
 #ifdef JP
-info[i++] = "それは火炎では傷つかない。";
+			info[i++] = "それは火炎では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by fire.";
+			info[i++] = "It cannot be harmed by fire.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_COLD))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_COLD))
+		{
 #ifdef JP
-info[i++] = "それは冷気では傷つかない。";
+			info[i++] = "それは冷気では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by cold.";
+			info[i++] = "It cannot be harmed by cold.";
 #endif
-
+		}
 	}
 
-	/* XTRA HACK ARTDESC */
-	}
+	if (mode & SCROBJ_FORCE_DETAIL) trivial_info = 0;
 
-	/* No special effects */
-	if (!i) return (FALSE);
+	/* No relevant informations */
+	if (i <= trivial_info) return (FALSE);
 
 	/* Save the screen */
 	screen_save();
@@ -3829,8 +3894,12 @@ info[i++] = "それは冷気では傷つかない。";
 	Term_get_size(&wid, &hgt);
 
 	/* Display Item name */
-	object_desc(o_name, o_ptr, TRUE, 3);
-	prt(format("%s", o_name), 0, 0);
+	if (!(mode & SCROBJ_FAKE_OBJECT))
+		object_desc(o_name, o_ptr, TRUE, 3);
+	else
+		object_desc_store(o_name, o_ptr, TRUE, 0);
+
+	prt(o_name, 0, 0);
 
 	/* Erase the screen */
 	for (k = 1; k < hgt; k++) prt("", k, 13);
@@ -4044,131 +4113,86 @@ cptr mention_use(int i)
 	switch (i)
 	{
 #ifdef JP
-case INVEN_RARM: p = p_ptr->ryoute ? " 両手" : (left_hander ? " 左手" : " 右手"); break;
+		case INVEN_RARM:  p = p_ptr->heavy_wield[0] ? "運搬中" : ((p_ptr->ryoute && p_ptr->migite) ? " 両手" : (left_hander ? " 左手" : " 右手")); break;
 #else
-		case INVEN_RARM: p = "Wielding"; break;
+		case INVEN_RARM:  p = p_ptr->heavy_wield[0] ? "Just lifting" : (p_ptr->migite ? "Wielding" : "On arm"); break;
 #endif
 
 #ifdef JP
-case INVEN_LARM:   p = (left_hander ? " 右手" : " 左手"); break;
+		case INVEN_LARM:  p = p_ptr->heavy_wield[1] ? "運搬中" : (left_hander ? " 右手" : " 左手"); break;
 #else
-		case INVEN_LARM:   p = "On arm"; break;
+		case INVEN_LARM:  p = p_ptr->heavy_wield[1] ? "Just lifting" : (p_ptr->hidarite ? "Wielding" : "On arm"); break;
 #endif
 
 #ifdef JP
-case INVEN_BOW:   p = "射撃用"; break;
+		case INVEN_BOW:   p = (adj_str_hold[p_ptr->stat_ind[A_STR]] < inventory[i].weight / 10) ? "運搬中" : "射撃用"; break;
 #else
-		case INVEN_BOW:   p = "Shooting"; break;
+		case INVEN_BOW:   p = (adj_str_hold[p_ptr->stat_ind[A_STR]] < inventory[i].weight / 10) ? "Just holding" : "Shooting"; break;
 #endif
 
 #ifdef JP
-case INVEN_LEFT:  p = (left_hander ? "右手指" : "左手指"); break;
+		case INVEN_RIGHT: p = (left_hander ? "左手指" : "右手指"); break;
 #else
-		case INVEN_LEFT:  p = "On left hand"; break;
+		case INVEN_RIGHT: p = (left_hander ? "On left hand" : "On right hand"); break;
 #endif
 
 #ifdef JP
-case INVEN_RIGHT: p = (left_hander ? "左手指" : "右手指"); break;
+		case INVEN_LEFT:  p = (left_hander ? "右手指" : "左手指"); break;
 #else
-		case INVEN_RIGHT: p = "On right hand"; break;
+		case INVEN_LEFT:  p = (left_hander ? "On right hand" : "On left hand"); break;
 #endif
 
 #ifdef JP
-case INVEN_NECK:  p = "  首"; break;
+		case INVEN_NECK:  p = "  首"; break;
 #else
 		case INVEN_NECK:  p = "Around neck"; break;
 #endif
 
 #ifdef JP
-case INVEN_LITE:  p = " 光源"; break;
+		case INVEN_LITE:  p = " 光源"; break;
 #else
 		case INVEN_LITE:  p = "Light source"; break;
 #endif
 
 #ifdef JP
-case INVEN_BODY:  p = "  体"; break;
+		case INVEN_BODY:  p = "  体"; break;
 #else
 		case INVEN_BODY:  p = "On body"; break;
 #endif
 
 #ifdef JP
-case INVEN_OUTER: p = "体の上"; break;
+		case INVEN_OUTER: p = "体の上"; break;
 #else
 		case INVEN_OUTER: p = "About body"; break;
 #endif
 
 #ifdef JP
-case INVEN_HEAD:  p = "  頭"; break;
+		case INVEN_HEAD:  p = "  頭"; break;
 #else
 		case INVEN_HEAD:  p = "On head"; break;
 #endif
 
 #ifdef JP
-case INVEN_HANDS: p = "  手"; break;
+		case INVEN_HANDS: p = "  手"; break;
 #else
 		case INVEN_HANDS: p = "On hands"; break;
 #endif
 
 #ifdef JP
-case INVEN_FEET:  p = "  足"; break;
+		case INVEN_FEET:  p = "  足"; break;
 #else
 		case INVEN_FEET:  p = "On feet"; break;
 #endif
 
 #ifdef JP
-default:          p = "ザック"; break;
+		default:          p = "ザック"; break;
 #else
 		default:          p = "In pack"; break;
 #endif
-
-	}
-
-	/* Hack -- Heavy weapon */
-	if (i == INVEN_RARM)
-	{
-		if (p_ptr->heavy_wield[0])
-		{
-#ifdef JP
-p = "運搬中";
-#else
-			p = "Just lifting";
-#endif
-
-		}
-	}
-
-	/* Hack -- Heavy weapon */
-	if (i == INVEN_LARM)
-	{
-		if (p_ptr->heavy_wield[1])
-		{
-#ifdef JP
-p = "運搬中";
-#else
-			p = "Just lifting";
-#endif
-
-		}
-	}
-
-	/* Hack -- Heavy bow */
-	if (i == INVEN_BOW)
-	{
-		object_type *o_ptr;
-		o_ptr = &inventory[i];
-		if (adj_str_hold[p_ptr->stat_ind[A_STR]] < o_ptr->weight / 10)
-		{
-#ifdef JP
-p = "運搬中";
-#else
-			p = "Just holding";
-#endif
-
-		}
 	}
 
 	/* Return the result */
-	return (p);
+	return p;
 }
 
 
@@ -4183,118 +4207,82 @@ cptr describe_use(int i)
 	switch (i)
 	{
 #ifdef JP
-case INVEN_RARM: p = p_ptr->ryoute ? " 両手に装備している" : (left_hander ? " 左手に装備している" : " 右手に装備している"); break;
+		case INVEN_RARM:  p = p_ptr->heavy_wield[0] ? "運搬中の" : ((p_ptr->ryoute && p_ptr->migite) ? "両手に装備している" : (left_hander ? "左手に装備している" : "右手に装備している")); break;
 #else
-		case INVEN_RARM: p = "attacking monsters with"; break;
+		case INVEN_RARM:  p = p_ptr->heavy_wield[0] ? "just lifting" : (p_ptr->migite ? "attacking monsters with" : "wearing on your arm"); break;
 #endif
 
 #ifdef JP
-case INVEN_LARM:   p = (left_hander ? " 右手に装備している" : " 左手に装備している"); break;
+		case INVEN_LARM:  p = p_ptr->heavy_wield[1] ? "運搬中の" : (left_hander ? "右手に装備している" : "左手に装備している"); break;
 #else
-		case INVEN_LARM:   p = "wearing on your arm"; break;
+		case INVEN_LARM:  p = p_ptr->heavy_wield[1] ? "just lifting" : (p_ptr->hidarite ? "attacking monsters with" : "wearing on your arm"); break;
 #endif
 
 #ifdef JP
-case INVEN_BOW:   p = "射撃用に装備している"; break;
+		case INVEN_BOW:   p = (adj_str_hold[p_ptr->stat_ind[A_STR]] < inventory[i].weight / 10) ? "持つだけで精一杯の" : "射撃用に装備している"; break;
 #else
-		case INVEN_BOW:   p = "shooting missiles with"; break;
+		case INVEN_BOW:   p = (adj_str_hold[p_ptr->stat_ind[A_STR]] < inventory[i].weight / 10) ? "just holding" : "shooting missiles with"; break;
 #endif
 
 #ifdef JP
-case INVEN_LEFT:  p = (left_hander ? "右手の指にはめている" : "左手の指にはめている"); break;
+		case INVEN_RIGHT: p = (left_hander ? "左手の指にはめている" : "右手の指にはめている"); break;
 #else
-		case INVEN_LEFT:  p = "wearing on your left hand"; break;
+		case INVEN_RIGHT: p = (left_hander ? "wearing on your left hand" : "wearing on your right hand"); break;
 #endif
 
 #ifdef JP
-case INVEN_RIGHT: p = (left_hander ? "左手の指にはめている" : "右手の指にはめている"); break;
+		case INVEN_LEFT:  p = (left_hander ? "右手の指にはめている" : "左手の指にはめている"); break;
 #else
-		case INVEN_RIGHT: p = "wearing on your right hand"; break;
+		case INVEN_LEFT:  p = (left_hander ? "wearing on your right hand" : "wearing on your left hand"); break;
 #endif
 
 #ifdef JP
-case INVEN_NECK:  p = "首にかけている"; break;
+		case INVEN_NECK:  p = "首にかけている"; break;
 #else
 		case INVEN_NECK:  p = "wearing around your neck"; break;
 #endif
 
 #ifdef JP
-case INVEN_LITE:  p = "光源にしている"; break;
+		case INVEN_LITE:  p = "光源にしている"; break;
 #else
 		case INVEN_LITE:  p = "using to light the way"; break;
 #endif
 
 #ifdef JP
-case INVEN_BODY:  p = "体に着ている"; break;
+		case INVEN_BODY:  p = "体に着ている"; break;
 #else
 		case INVEN_BODY:  p = "wearing on your body"; break;
 #endif
 
 #ifdef JP
-case INVEN_OUTER: p = "身にまとっている"; break;
+		case INVEN_OUTER: p = "身にまとっている"; break;
 #else
 		case INVEN_OUTER: p = "wearing on your back"; break;
 #endif
 
 #ifdef JP
-case INVEN_HEAD:  p = "頭にかぶっている"; break;
+		case INVEN_HEAD:  p = "頭にかぶっている"; break;
 #else
 		case INVEN_HEAD:  p = "wearing on your head"; break;
 #endif
 
 #ifdef JP
-case INVEN_HANDS: p = "手につけている"; break;
+		case INVEN_HANDS: p = "手につけている"; break;
 #else
 		case INVEN_HANDS: p = "wearing on your hands"; break;
 #endif
 
 #ifdef JP
-case INVEN_FEET:  p = "足にはいている"; break;
+		case INVEN_FEET:  p = "足にはいている"; break;
 #else
 		case INVEN_FEET:  p = "wearing on your feet"; break;
 #endif
 
 #ifdef JP
-default:          p = "ザックに入っている"; break;
+		default:          p = "ザックに入っている"; break;
 #else
 		default:          p = "carrying in your pack"; break;
 #endif
-
-	}
-
-	/* Hack -- Heavy weapon */
-	if (i == INVEN_RARM)
-	{
-		object_type *o_ptr;
-		int hold = adj_str_hold[p_ptr->stat_ind[A_STR]];
-
-		if (p_ptr->ryoute) hold *= 2;
-		o_ptr = &inventory[i];
-		if (hold < o_ptr->weight / 10)
-		{
-#ifdef JP
-p = "運搬中の";
-#else
-			p = "just lifting";
-#endif
-
-		}
-	}
-
-	/* Hack -- Heavy bow */
-	if (i == INVEN_BOW)
-	{
-		object_type *o_ptr;
-		o_ptr = &inventory[i];
-		if (adj_str_hold[p_ptr->stat_ind[A_STR]] < o_ptr->weight / 10)
-		{
-#ifdef JP
-p = "持つだけで精一杯の";
-#else
-			p = "just holding";
-#endif
-
-		}
 	}
 
 	/* Return the result */
@@ -4368,7 +4356,10 @@ void display_inven(void)
 	byte            attr = TERM_WHITE;
 	char            tmp_val[80];
 	char            o_name[MAX_NLEN];
+	int             wid, hgt;
 
+	/* Get size */
+	Term_get_size(&wid, &hgt);
 
 	/* Find the "final" slot */
 	for (i = 0; i < INVEN_PACK; i++)
@@ -4435,12 +4426,12 @@ void display_inven(void)
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			Term_putstr(71, i, -1, TERM_WHITE, tmp_val);
+			prt(tmp_val, i, wid - 9);
 		}
 	}
 
 	/* Erase the rest of the window */
-	for (i = z; i < Term->hgt; i++)
+	for (i = z; i < hgt; i++)
 	{
 		/* Erase the line */
 		Term_erase(0, i, 255);
@@ -4459,7 +4450,10 @@ void display_equip(void)
 	byte            attr = TERM_WHITE;
 	char            tmp_val[80];
 	char            o_name[MAX_NLEN];
+	int             wid, hgt;
 
+	/* Get size */
+	Term_get_size(&wid, &hgt);
 
 	/* Display the equipment */
 	for (i = INVEN_RARM; i < INVEN_TOTAL; i++)
@@ -4514,30 +4508,29 @@ void display_equip(void)
 		/* Erase the rest of the line */
 		Term_erase(3+n, i - INVEN_RARM, 255);
 
-		/* Display the slot description (if needed) */
-		if (show_labels)
-		{
-			Term_putstr(61, i - INVEN_RARM, -1, TERM_WHITE, "<--");
-			Term_putstr(65, i - INVEN_RARM, -1, TERM_WHITE, mention_use(i));
-		}
-
 		/* Display the weight (if needed) */
 		if (show_weights && o_ptr->weight)
 		{
 			int wgt = o_ptr->weight * o_ptr->number;
-			int col = (show_labels ? 52 : 71);
 #ifdef JP
 			sprintf(tmp_val, "%3d.%1d kg", lbtokg1(wgt) , lbtokg2(wgt));
 #else
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			Term_putstr(col, i - INVEN_RARM, -1, TERM_WHITE, tmp_val);
+			prt(tmp_val, i - INVEN_RARM, wid - (show_labels ? 28 : 9));
+		}
+
+		/* Display the slot description (if needed) */
+		if (show_labels)
+		{
+			Term_putstr(wid - 20, i - INVEN_RARM, -1, TERM_WHITE, " <-- ");
+			prt(mention_use(i), i - INVEN_RARM, wid - 15);
 		}
 	}
 
 	/* Erase the rest of the window */
-	for (i = INVEN_TOTAL - INVEN_RARM; i < Term->hgt; i++)
+	for (i = INVEN_TOTAL - INVEN_RARM; i < hgt; i++)
 	{
 		/* Clear that line */
 		Term_erase(0, i, 255);
@@ -4733,7 +4726,7 @@ int show_inven(int target_item)
 			(void)sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j + 1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 
@@ -4935,7 +4928,7 @@ int show_equip(int target_item)
 			(void)sprintf(tmp_val, "%3d.%d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j+1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 
@@ -5028,6 +5021,12 @@ static bool verify(cptr prompt, int item)
 	/* Query */
 	return (get_check(out_val));
 }
+
+
+#ifdef JP
+#undef strchr
+#define strchr strchr_j
+#endif
 
 
 /*
@@ -5548,22 +5547,20 @@ bool get_item(int *cp, cptr pmt, cptr str, int mode)
 		{
 			/* Begin the prompt */
 #ifdef JP
-sprintf(out_val, "持ち物:");
+			sprintf(out_val, "持ち物:");
 #else
 			sprintf(out_val, "Inven:");
 #endif
-
 
 			/* Some legal items */
 			if ((i1 <= i2) && !use_menu)
 			{
 				/* Build the prompt */
 #ifdef JP
-sprintf(tmp_val, "%c-%c,'(',')',",
+				sprintf(tmp_val, "%c-%c,'(',')',",
 #else
 				sprintf(tmp_val, " %c-%c,'(',')',",
 #endif
-
 					index_to_label(i1), index_to_label(i2));
 
 				/* Append */
@@ -5572,23 +5569,17 @@ sprintf(tmp_val, "%c-%c,'(',')',",
 
 			/* Indicate ability to "view" */
 #ifdef JP
-if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
+			if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 			if (!command_see && !use_menu) strcat(out_val, " * to see,");
 #endif
 
-
 			/* Append */
 #ifdef JP
-if (equip) strcat(out_val, format(" %s 装備品,", use_menu ? "'4'or'6'" : "'/'"));
-else if (select_the_force)
-	strcat(out_val, " 'w'練気術,");
+			if (equip) strcat(out_val, format(" %s 装備品,", use_menu ? "'4'or'6'" : "'/'"));
 #else
-if (equip) strcat(out_val, format(" %s for Equip,", use_menu ? "4 or 6" : "/"));
-else if (select_the_force)
-	strcat(out_val, " w for the Force,");
+			if (equip) strcat(out_val, format(" %s for Equip,", use_menu ? "4 or 6" : "/"));
 #endif
-
 		}
 
 		/* Viewing equipment */
@@ -5596,22 +5587,20 @@ else if (select_the_force)
 		{
 			/* Begin the prompt */
 #ifdef JP
-sprintf(out_val, "装備品:");
+			sprintf(out_val, "装備品:");
 #else
 			sprintf(out_val, "Equip:");
 #endif
-
 
 			/* Some legal items */
 			if ((e1 <= e2) && !use_menu)
 			{
 				/* Build the prompt */
 #ifdef JP
-sprintf(tmp_val, "%c-%c,'(',')',",
+				sprintf(tmp_val, "%c-%c,'(',')',",
 #else
 				sprintf(tmp_val, " %c-%c,'(',')',",
 #endif
-
 					index_to_label(e1), index_to_label(e2));
 
 				/* Append */
@@ -5620,28 +5609,27 @@ sprintf(tmp_val, "%c-%c,'(',')',",
 
 			/* Indicate ability to "view" */
 #ifdef JP
-if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
+			if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 			if (!command_see) strcat(out_val, " * to see,");
 #endif
 
-
 			/* Append */
 #ifdef JP
-if (inven) strcat(out_val, format(" %s 持ち物,", use_menu ? "'4'or'6'" : "'/'"));
+			if (inven) strcat(out_val, format(" %s 持ち物,", use_menu ? "'4'or'6'" : "'/'"));
 #else
-if (inven) strcat(out_val, format(" %s for Inven,", use_menu ? "4 or 6" : "'/'"));
+			if (inven) strcat(out_val, format(" %s for Inven,", use_menu ? "4 or 6" : "'/'"));
 #endif
-
 		}
 
 		/* Indicate legality of the "floor" item */
 #ifdef JP
-if (allow_floor) strcat(out_val, " '-'床上,");
+		if (allow_floor) strcat(out_val, " '-'床上,");
+		if (select_the_force) strcat(out_val, " 'w'練気術,");
 #else
 		if (allow_floor) strcat(out_val, " - for floor,");
+		if (select_the_force) strcat(out_val, " w for the Force,");
 #endif
-
 
 		/* Finish the prompt */
 		strcat(out_val, " ESC");
@@ -5651,7 +5639,6 @@ if (allow_floor) strcat(out_val, " '-'床上,");
 
 		/* Show the prompt */
 		prt(tmp_val, 0, 0);
-
 
 		/* Get a key */
 		which = inkey();
@@ -6269,7 +6256,7 @@ int show_floor(int target_item, int y, int x, int *min_width)
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j + 1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 
@@ -6580,7 +6567,7 @@ bool get_item_floor(int *cp, cptr pmt, cptr str, int mode)
 		{
 			/* Begin the prompt */
 #ifdef JP
-sprintf(out_val, "持ち物:");
+			sprintf(out_val, "持ち物:");
 #else
 			sprintf(out_val, "Inven:");
 #endif
@@ -6589,11 +6576,10 @@ sprintf(out_val, "持ち物:");
 			{
 				/* Build the prompt */
 #ifdef JP
-sprintf(tmp_val, "%c-%c,'(',')',",
+				sprintf(tmp_val, "%c-%c,'(',')',",
 #else
 				sprintf(tmp_val, " %c-%c,'(',')',",
 #endif
-
 					index_to_label(i1), index_to_label(i2));
 
 				/* Append */
@@ -6602,38 +6588,30 @@ sprintf(tmp_val, "%c-%c,'(',')',",
 
 			/* Indicate ability to "view" */
 #ifdef JP
-if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
+			if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 			if (!command_see && !use_menu) strcat(out_val, " * to see,");
 #endif
 
-
 			/* Append */
-#ifdef JP
 			if (allow_equip)
 			{
+#ifdef JP
 				if (!use_menu)
 					strcat(out_val, " '/' 装備品,");
 				else if (allow_floor)
 					strcat(out_val, " '6' 装備品,");
 				else
 					strcat(out_val, " '4'or'6' 装備品,");
-			}
-			else if (select_the_force)
-				strcat(out_val, " 'w'練気術,");
 #else
-			if (allow_equip)
-			{
 				if (!use_menu)
 					strcat(out_val, " / for Equip,");
 				else if (allow_floor)
 					strcat(out_val, " 6 for Equip,");
 				else
 					strcat(out_val, " 4 or 6 for Equip,");
-			}
-			else if (select_the_force)
-				strcat(out_val, " w for the Force,");
 #endif
+			}
 
 			/* Append */
 			if (allow_floor)
@@ -6654,7 +6632,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 					strcat(out_val, " 4 or 6 for floor,");
 #endif
 			}
-
 		}
 
 		/* Viewing equipment */
@@ -6662,21 +6639,19 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 		{
 			/* Begin the prompt */
 #ifdef JP
-sprintf(out_val, "装備品:");
+			sprintf(out_val, "装備品:");
 #else
 			sprintf(out_val, "Equip:");
 #endif
-
 
 			if (!use_menu)
 			{
 				/* Build the prompt */
 #ifdef JP
-sprintf(tmp_val, "%c-%c,'(',')',",
+				sprintf(tmp_val, "%c-%c,'(',')',",
 #else
 				sprintf(tmp_val, " %c-%c,'(',')',",
 #endif
-
 					index_to_label(e1), index_to_label(e2));
 
 				/* Append */
@@ -6685,11 +6660,10 @@ sprintf(tmp_val, "%c-%c,'(',')',",
 
 			/* Indicate ability to "view" */
 #ifdef JP
-if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
+			if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 			if (!command_see && !use_menu) strcat(out_val, " * to see,");
 #endif
-
 
 			/* Append */
 			if (allow_inven)
@@ -6702,7 +6676,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 				else
 					strcat(out_val, " '4'or'6' 持ち物,");
 #else
-
 				if (!use_menu)
 					strcat(out_val, " / for Inven,");
 				else if (allow_floor)
@@ -6743,16 +6716,14 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 			sprintf(out_val, "Floor:");
 #endif
 
-
 			if (!use_menu)
 			{
 				/* Build the prompt */
 #ifdef JP
-sprintf(tmp_val, "%c-%c,'(',')',", n1, n2);
+				sprintf(tmp_val, "%c-%c,'(',')',", n1, n2);
 #else
 				sprintf(tmp_val, " %c-%c,'(',')',", n1, n2);
 #endif
-
 
 				/* Append */
 				strcat(out_val, tmp_val);
@@ -6760,11 +6731,10 @@ sprintf(tmp_val, "%c-%c,'(',')',", n1, n2);
 
 			/* Indicate ability to "view" */
 #ifdef JP
-if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
+			if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 			if (!command_see && !use_menu) strcat(out_val, " * to see,");
 #endif
-
 
 			if (use_menu)
 			{
@@ -6775,7 +6745,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 					strcat(out_val, " 4 for Equip, 6 for Inven,");
 #endif
-
 				}
 				else if (allow_inven)
 				{
@@ -6784,7 +6753,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 					strcat(out_val, " 4 or 6 for Inven,");
 #endif
-
 				}
 				else if (allow_equip)
 				{
@@ -6793,7 +6761,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 					strcat(out_val, " 4 or 6 for Equip,");
 #endif
-
 				}
 			}
 			/* Append */
@@ -6804,7 +6771,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 				strcat(out_val, " / for Inven,");
 #endif
-
 			}
 			else if (allow_equip)
 			{
@@ -6813,7 +6779,6 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #else
 				strcat(out_val, " / for Equip,");
 #endif
-
 			}
 
 			/* Append */
@@ -6826,6 +6791,13 @@ if (!command_see && !use_menu) strcat(out_val, " '*'一覧,");
 #endif
 			}
 		}
+
+		/* Append */
+#ifdef JP
+		if (select_the_force) strcat(out_val, " 'w'練気術,");
+#else
+		if (select_the_force) strcat(out_val, " w for the Force,");
+#endif
 
 		/* Finish the prompt */
 		strcat(out_val, " ESC");
