@@ -167,18 +167,22 @@ void object_flags(object_type *o_ptr, u32b *f1, u32b *f2, u32b *f3)
 		else if (o_ptr->xtra3 == ESSENCE_TMP_RES_ACID)
 		{
 			(*f2) |= TR2_RES_ACID;
+                        (*f3) |= TR3_ACTIVATE;
 		}
 		else if (o_ptr->xtra3 == ESSENCE_TMP_RES_ELEC)
 		{
 			(*f2) |= TR2_RES_ELEC;
+                        (*f3) |= TR3_ACTIVATE;
 		}
 		else if (o_ptr->xtra3 == ESSENCE_TMP_RES_FIRE)
 		{
 			(*f2) |= TR2_RES_FIRE;
+                        (*f3) |= TR3_ACTIVATE;
 		}
 		else if (o_ptr->xtra3 == ESSENCE_TMP_RES_COLD)
 		{
 			(*f2) |= TR2_RES_COLD;
+                        (*f3) |= TR3_ACTIVATE;
 		}
 		else if (o_ptr->xtra3 == ESSENCE_SH_FIRE)
 		{
@@ -198,6 +202,10 @@ void object_flags(object_type *o_ptr, u32b *f1, u32b *f2, u32b *f3)
 		else if (o_ptr->xtra3 == ESSENCE_RESISTANCE)
 		{
 			(*f2) |= (TR2_RES_ACID | TR2_RES_ELEC | TR2_RES_FIRE | TR2_RES_COLD);;
+		}
+		else if (o_ptr->xtra3 == ESSENCE_EARTHQUAKE)
+		{
+                        (*f3) |= TR3_ACTIVATE;
 		}
 	}
 }
@@ -4366,7 +4374,7 @@ void display_equip(void)
 int show_inven(int target_item)
 {
 	int             i, j, k, l, z = 0;
-	int             col, cur_col, len, lim;
+	int             col, cur_col, len;
 	object_type     *o_ptr;
 	char            o_name[MAX_NLEN];
 	char            tmp_val[80];
@@ -4389,18 +4397,6 @@ int show_inven(int target_item)
 	/* Default "max-length" */
 	len = wid - col - 1;
 
-	/* Maximum space allowed for descriptions */
-	lim = wid - 4;
-
-	/* Require space for weight (if needed) */
-	if (show_weights) lim -= 9;
-
-	/* Require space for icon */
-	if (show_item_graph)
-	{
-		lim -= 2;
-		if (use_bigtile) lim--;
-	}
 
 	/* Find the "final" slot */
 	for (i = 0; i < INVEN_PACK; i++)
@@ -4427,7 +4423,8 @@ int show_inven(int target_item)
 
 			if (get_tag(&index, c))
 			{
-				inven_spellbook_label[i] = ' ';
+				if (inven_spellbook_label[i] == c)
+                                        inven_spellbook_label[i] = ' ';
 				inven_spellbook_label[index] = c;
 			}
 		}
@@ -4443,9 +4440,6 @@ int show_inven(int target_item)
 
 		/* Describe the object */
 		object_desc(o_name, o_ptr, TRUE, 3);
-
-		/* Hack -- enforce max length */
-		o_name[lim] = '\0';
 
 		/* Save the object index, color, and description */
 		out_index[k] = i;
@@ -4577,7 +4571,7 @@ int show_inven(int target_item)
 int show_equip(int target_item)
 {
 	int             i, j, k, l;
-	int             col, cur_col, len, lim;
+	int             col, cur_col, len;
 	object_type     *o_ptr;
 	char            tmp_val[80];
 	char            o_name[MAX_NLEN];
@@ -4597,26 +4591,6 @@ int show_equip(int target_item)
 	/* Maximal length */
 	len = wid - col - 1;
 
-	/* Maximum space allowed for descriptions */
-	lim = wid - 4;
-
-	/* Require space for labels (if needed) */
-#ifdef JP
-        if (show_labels) lim -= (7 + 2);
-#else
-	if (show_labels) lim -= (14 + 2);
-#endif
-
-
-	/* Require space for weight (if needed) */
-#ifdef JP
-        if (show_weights) lim -= 10;
-#else
-	if (show_weights) lim -= 9;
-#endif
-
-
-	if (show_item_graph) lim -= 2;
 
 	/* Scan the equipment list */
 	for (k = 0, i = INVEN_RARM; i < INVEN_TOTAL; i++)
@@ -4628,9 +4602,6 @@ int show_equip(int target_item)
 
 		/* Description */
 		object_desc(o_name, o_ptr, TRUE, 3);
-
-		/* Truncate the description */
-		o_name[lim] = 0;
 
 		if ((i == INVEN_LARM) && p_ptr->ryoute)
 		{
@@ -6008,7 +5979,7 @@ int scan_floor(int *items, int y, int x, int mode)
 int show_floor(int target_item, int y, int x, int *min_width)
 {
 	int i, j, k, l;
-	int col, len, lim;
+	int col, len;
 
 	object_type *o_ptr;
 
@@ -6030,11 +6001,6 @@ int show_floor(int target_item, int y, int x, int *min_width)
 	/* Default length */
 	len = MAX((*min_width), 20);
 
-	/* Maximum space allowed for descriptions */
-	lim = wid - 4;
-
-	/* Require space for weight (if needed) */
-	if (show_weights) lim -= 9;
 
 	/* Scan for objects in the grid, using item_tester_okay() */
 	floor_num = scan_floor(floor_list, y, x, 0x01);
@@ -6046,9 +6012,6 @@ int show_floor(int target_item, int y, int x, int *min_width)
 
 		/* Describe the object */
 		object_desc(o_name, o_ptr, TRUE, 3);
-
-		/* Hack -- enforce max length */
-		o_name[lim] = '\0';
 
 		/* Save the index */
 		out_index[k] = i;
