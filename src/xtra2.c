@@ -753,11 +753,6 @@ void monster_death(int m_idx, bool drop_item)
 	/* Handle the possibility of player vanquishing arena combatant -KMW- */
 	if (p_ptr->inside_arena && !is_pet(m_ptr))
 	{
-		char m_name[80];
-
-		/* Extract monster name */
-		monster_desc(m_name, m_ptr, 0);
-
 		p_ptr->exit_bldg = TRUE;
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS)
@@ -793,7 +788,15 @@ msg_print("勝利！チャンピオンへの道を進んでいる。");
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS) p_ptr->arena_number++;
 		p_ptr->arena_number++;
-		if (record_arena) do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		if (record_arena)
+		{
+			char m_name[80];
+
+			/* Extract monster name */
+			monster_desc(m_name, m_ptr, 0x288);
+
+			do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		}
 	}
 
 	if (m_idx == p_ptr->riding)
@@ -2006,11 +2009,6 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			}
 		}
 
-		if (r_ptr->flags7 & RF7_KILL_EXP)
-			get_exp_from_mon((long)m_ptr->max_maxhp*2, &exp_mon);
-		else
-			get_exp_from_mon(((long)m_ptr->max_maxhp+1L) * 9L / 10L, &exp_mon);
-
 		/* Generate treasure */
 		monster_death(m_idx, TRUE);
 		if ((m_ptr->r_idx == MON_BANOR) || (m_ptr->r_idx == MON_LUPART))
@@ -2057,6 +2055,12 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			/* Delete the monster */
 			delete_monster_idx(m_idx);
 		}
+
+		/* Prevent bug of chaos patron's reward */
+		if (r_ptr->flags7 & RF7_KILL_EXP)
+			get_exp_from_mon((long)exp_mon.max_maxhp*2, &exp_mon);
+		else
+			get_exp_from_mon(((long)exp_mon.max_maxhp+1L) * 9L / 10L, &exp_mon);
 
 		/* Not afraid */
 		(*fear) = FALSE;
@@ -2860,7 +2864,7 @@ static bool target_set_accept(int y, int x)
 		byte feat;
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Notice glyphs */
 		if (c_ptr->info & CAVE_OBJECT) return (TRUE);
@@ -3150,6 +3154,7 @@ static int target_set_aux(int y, int x, int mode, cptr info)
 	{
 		monster_type *m_ptr = &m_list[c_ptr->m_idx];
 		monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
+		char m_name[80];
 		bool recall = FALSE;
 
 		/* Not boring */
@@ -3512,7 +3517,7 @@ static int target_set_aux(int y, int x, int mode, cptr info)
 
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 	/* Require knowledge about grid, or ability to see grid */
 	if (!(c_ptr->info & CAVE_MARK) && !player_can_see_bold(y, x))

@@ -652,7 +652,7 @@ static errr init_f_info(void)
 #endif /* ALLOW_TEMPLATES */
 
 	return init_info("f_info", &f_head,
-			 (void*)&f_info, (void*)&f_name, (void*)&f_text);
+			 (void*)&f_info, (void*)&f_name, NULL);
 }
 
 
@@ -799,7 +799,7 @@ static errr init_s_info(void)
 #endif /* ALLOW_TEMPLATES */
 
 	return init_info("s_info", &s_head,
-			 (void*)&s_info, (void*)&s_name, (void*)&s_text);
+			 (void*)&s_info, NULL, NULL);
 }
 
 
@@ -819,7 +819,7 @@ static errr init_m_info(void)
 #endif /* ALLOW_TEMPLATES */
 
 	return init_info("m_info", &m_head,
-			 (void*)&m_info, (void*)&m_name, (void*)&m_text);
+			 (void*)&m_info, NULL, NULL);
 }
 
 
@@ -879,16 +879,14 @@ static byte store_table[MAX_STORES][STORE_CHOICES][2] =
 		{ TV_FOOD, SV_FOOD_RATION },
 		{ TV_FOOD, SV_FOOD_RATION },
 
-		{ TV_LITE, SV_LITE_TORCH },
-		{ TV_LITE, SV_LITE_TORCH },
+		{ TV_POTION, SV_POTION_WATER },
+		{ TV_POTION, SV_POTION_WATER },
 		{ TV_LITE, SV_LITE_LANTERN },
 		{ TV_LITE, SV_LITE_LANTERN },
 
-		{ TV_FLASK, 0 },
-		{ TV_FLASK, 0 },
-
+		{ TV_FOOD, SV_FOOD_WAYBREAD },
+		{ TV_FOOD, SV_FOOD_WAYBREAD },
 		{ TV_CAPTURE, 0 },
-
 		{ TV_FIGURINE, 0 },
 
 		{ TV_SHOT, SV_AMMO_NORMAL },
@@ -2245,6 +2243,14 @@ note("[配列を初期化しています... (クエスト)]");
 if (init_quests()) quit("クエストを初期化できません");
 #else
 	if (init_quests()) quit("Cannot initialize quests");
+#endif
+
+
+	/* Initialize vault info */
+#ifdef JP
+	if (init_v_info()) quit("vault 初期化不能");
+#else
+	if (init_v_info()) quit("Cannot initialize vaults");
 #endif
 
 

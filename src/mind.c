@@ -524,15 +524,18 @@ void mindcraft_info(char *p, int use_mind, int power)
 
 #ifdef ALLOW_REPEAT /* TNB */
 
-      /* Get the spell, if available */
-      if (repeat_pull(sn))
+	/* Get the spell, if available */
+	if (repeat_pull(sn))
 	{
-	  /* Verify the spell */
-	  if (mind_ptr->info[*sn].min_lev <= plev)
-	    {
-	      /* Success */
-	      return (TRUE);
-	    }
+		/* Hack -- If requested 1111, pull again */
+		if (*sn == 1111) repeat_pull(sn);
+
+		/* Verify the spell */
+		if (mind_ptr->info[*sn].min_lev <= plev)
+		{
+			/* Success */
+			return (TRUE);
+		}
 	}
 
 #endif /* ALLOW_REPEAT -- TNB */
@@ -1688,11 +1691,7 @@ msg_print("その方向にはモンスターはいません。");
 		set_oppose_fire(plev, FALSE);
 		break;
 	case 10:
-		project_length = 5;
-		if (!get_aim_dir(&dir)) return FALSE;
-		project_hook(GF_ATTACK, dir, HISSATSU_NYUSIN, PROJECT_STOP | PROJECT_KILL);
-
-		break;
+		return rush_attack(NULL);
 	case 11:
 	{
 		int i;
@@ -2282,7 +2281,7 @@ void do_cmd_mind_browse(void)
 		Term_erase(12, 17, 255);
 		Term_erase(12, 16, 255);
 
-		roff_to_buf( mind_tips[use_mind][n],62,temp);
+		roff_to_buf(mind_tips[use_mind][n], 62, temp, sizeof(temp));
 		for(j=0, line = 17;temp[j];j+=(1+strlen(&temp[j])))
 		{
 			prt(&temp[j], line, 15);

@@ -981,8 +981,8 @@ static int count_dt(int *y, int *x, bool (*test)(int feat), bool under)
 		if (!(c_ptr->info & (CAVE_MARK))) continue;
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
-		
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
+
 		/* Not looking for this feature */
 		if (!((*test)(feat))) continue;
 
@@ -1253,8 +1253,8 @@ void do_cmd_open(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
-		
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
+
 		/* Check for chest */
 		o_idx = chest_check(y, x);
 
@@ -1416,8 +1416,8 @@ void do_cmd_close(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
-		
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
+
 		/* Require open/broken door */
 		if ((feat != FEAT_OPEN) && (feat != FEAT_BROKEN))
 		{
@@ -1560,7 +1560,7 @@ static bool do_cmd_tunnel_aux(int y, int x)
 	c_ptr = &cave[y][x];
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 	/* Sound */
 	sound(SOUND_DIG);
@@ -1882,7 +1882,7 @@ void do_cmd_tunnel(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* No tunnelling through doors */
 		if (((feat >= FEAT_DOOR_HEAD) && (feat <= FEAT_DOOR_TAIL)) ||
@@ -2396,7 +2396,7 @@ void do_cmd_disarm(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Check for chests */
 		o_idx = chest_check(y, x);
@@ -2619,7 +2619,7 @@ void do_cmd_bash(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Nothing useful */
 		if (!((feat >= FEAT_DOOR_HEAD) &&
@@ -2715,7 +2715,7 @@ void do_cmd_alter(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Take a turn */
 		energy_use = 100;
@@ -2844,7 +2844,7 @@ void do_cmd_spike(void)
 		c_ptr = &cave[y][x];
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Require closed door */
 		if (!((feat >= FEAT_DOOR_HEAD) &&
@@ -3726,7 +3726,6 @@ void do_cmd_fire_aux(int item, object_type *j_ptr)
 
 		return;
 	}
-	project_length = 0; /* reset to default */
 
 	/* Get local object */
 	q_ptr = &forge;
@@ -3776,6 +3775,7 @@ void do_cmd_fire_aux(int item, object_type *j_ptr)
 		ty = target_row;
 	}
 
+	project_length = 0; /* reset to default */
 
 	/* Hack -- Handle stuff */
 	handle_stuff();
@@ -4322,8 +4322,6 @@ bool do_cmd_throw_aux(int mult, bool boomerang, int shuriken)
 		/* Get a direction (or cancel) */
 		if (!get_aim_dir(&dir)) return FALSE;
 
-		project_length = 0;  /* reset to default */
-
 		/* Predict the "target" location */
 		tx = px + 99 * ddx[dir];
 		ty = py + 99 * ddy[dir];
@@ -4334,6 +4332,8 @@ bool do_cmd_throw_aux(int mult, bool boomerang, int shuriken)
 			tx = target_col;
 			ty = target_row;
 		}
+
+		project_length = 0;  /* reset to default */
 	}
 
 	if ((q_ptr->name1 == ART_MJOLLNIR) ||
@@ -4348,7 +4348,7 @@ bool do_cmd_throw_aux(int mult, bool boomerang, int shuriken)
 			inven_item_describe(item);
 		inven_item_optimize(item);
 	}
-	
+
 	/* Reduce and describe floor item */
 	else
 	{
@@ -4360,7 +4360,7 @@ bool do_cmd_throw_aux(int mult, bool boomerang, int shuriken)
 		equiped_item = TRUE;
 		p_ptr->redraw |= (PR_EQUIPPY);
 	}
-	
+
 	/* Take a turn */
 	energy_use = 100;
 

@@ -1045,6 +1045,7 @@ static flag_insc_table flag_insc_plus[] =
 	{ "器", "Dx", TR_DEX, -1 },
 	{ "耐", "Cn", TR_CON, -1 },
 	{ "魅", "Ch", TR_CHR, -1 },
+	{ "道", "Md", TR_MAGIC_MASTERY, -1 },
 	{ "隠", "Sl", TR_STEALTH, -1 },
 	{ "探", "Sr", TR_SEARCH, -1 },
 	{ "赤", "If", TR_INFRA, -1 },
@@ -1201,6 +1202,7 @@ static flag_insc_table flag_insc_plus[] =
 	{ "Dx", TR_DEX, -1 },
 	{ "Cn", TR_CON, -1 },
 	{ "Ch", TR_CHR, -1 },
+	{ "Md", TR_MAGIC_MASTERY, -1 },
 	{ "Sl", TR_STEALTH, -1 },
 	{ "Sr", TR_SEARCH, -1 },
 	{ "If", TR_INFRA, -1 },
@@ -2227,6 +2229,7 @@ void object_desc(char *buf, object_type *o_ptr, int pref, int mode)
 	{
 		if (known && o_ptr->name1) basenm = a_name + a_info[o_ptr->name1].name;
 		else basenm = get_object_name(o_ptr);
+		append_name = FALSE;
 	}
 
 	/* Start dumping the result */
@@ -2731,6 +2734,10 @@ t = object_desc_str(t, "(マルチ・トラップ)");
 	if (have_flag(flgs, TR_SHOW_MODS)) show_weapon = TRUE;
 
 	/* Display the item like a weapon */
+	if ((o_ptr->tval > TV_CAPTURE) && (o_ptr->xtra3 == 1 + ESSENCE_SLAY_GLOVE))
+		show_weapon = TRUE;
+
+	/* Display the item like a weapon */
 	if (o_ptr->to_h && o_ptr->to_d) show_weapon = TRUE;
 
 	/* Display the item like armour */
@@ -2765,7 +2772,7 @@ t = object_desc_str(t, "(マルチ・トラップ)");
 		case TV_BOW:
 
 		/* Mega-Hack -- Extract the "base power" */
-		power = (o_ptr->sval % 10);
+		power = bow_tmul(o_ptr->sval);
 
 		/* Apply the "Extra Might" flag */
 		if (have_flag(flgs, TR_XTRA_MIGHT)) power++;

@@ -911,7 +911,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 	c_ptr = &cave[y][x];
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 	/* Floors (etc) */
 	if ((feat <= FEAT_INVIS) || (feat == FEAT_DIRT) || (feat == FEAT_GRASS))
@@ -1797,7 +1797,7 @@ static char ascii_to_zenkaku[2*128+1] =  "\
 /*
  * Prepare Bigtile or 2-bytes character attr/char pairs
  */
-static void bigtile_attr(char *cp, byte *ap, char *cp2, byte *ap2)
+void bigtile_attr(char *cp, byte *ap, char *cp2, byte *ap2)
 {
 	if (*ap & 0x80)
 	{
@@ -1927,7 +1927,7 @@ void note_spot(int y, int x)
 	byte feat;
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 
 	/* Blind players see nothing */
@@ -2142,6 +2142,9 @@ void lite_spot(int y, int x)
 		if (use_bigtile)
 			Term_queue_char(panel_col_of(x)+1, y-panel_row_prt, 255, -1);
 #endif /* USE_TRANSPARENCY */
+
+		/* Update sub-windows */
+		p_ptr->window |= (PW_OVERHEAD | PW_DUNGEON);
 	}
 }
 
@@ -3604,8 +3607,12 @@ void update_mon_lite(void)
 			if ((c_ptr->info & (CAVE_VIEW | CAVE_TEMP)) == CAVE_VIEW)
 			{
 				/* It is now lit */
-				lite_spot(fy, fx);
+
+				/* Note */
 				note_spot(fy, fx);
+
+				/* Redraw */
+				lite_spot(fy, fx);
 			}
 
 			/* Save in the monster lit array */
@@ -4622,7 +4629,7 @@ void map_area(int range)
 			c_ptr = &cave[y][x];
 
 			/* Feature code (applying "mimic" field) */
-			feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+			feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 			/* All non-walls are "checked" */
 			if ((feat <= FEAT_DOOR_TAIL) ||
@@ -4644,7 +4651,7 @@ void map_area(int range)
 					c_ptr = &cave[y + ddy_ddd[i]][x + ddx_ddd[i]];
 
 					/* Feature code (applying "mimic" field) */
-					feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+					feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 					/* Memorize walls (etc) */
 					if ((feat >= FEAT_RUBBLE) && (feat != FEAT_DIRT) && (feat != FEAT_GRASS))
@@ -4717,7 +4724,7 @@ void wiz_lite(bool wizard, bool ninja)
 			cave_type *c_ptr = &cave[y][x];
 
 			/* Feature code (applying "mimic" field) */
-			feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+			feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 			/* Process all non-walls */
 			if (cave_floor_bold(y, x) || (feat == FEAT_RUBBLE) || (feat == FEAT_TREES) || (feat == FEAT_MOUNTAIN))
@@ -4732,7 +4739,7 @@ void wiz_lite(bool wizard, bool ninja)
 					c_ptr = &cave[yy][xx];
 
 					/* Feature code (applying "mimic" field) */
-					feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+					feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 					/* Memorize normal features */
 					if (ninja)
