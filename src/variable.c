@@ -388,8 +388,8 @@ s16b lite_x[LITE_MAX];
  * Array of grids lit by player lite (see "cave.c")
  */
 s16b mon_lite_n;
-s16b mon_lite_y[LITE_MAX];
-s16b mon_lite_x[LITE_MAX];
+s16b mon_lite_y[MON_LITE_MAX];
+s16b mon_lite_x[MON_LITE_MAX];
 
 /*
  * Array of grids viewable to the player (see "cave.c")
@@ -728,22 +728,17 @@ char *v_text;
  * The skill table
  */
 skill_table *s_info;
-char *s_name;
-char *s_text;
 
 /*
  * The magic info
  */
 player_magic *m_info;
-char *m_name;
-char *m_text;
 
 /*
  * The terrain feature arrays
  */
 feature_type *f_info;
 char *f_name;
-char *f_text;
 
 /*
  * The object kind arrays

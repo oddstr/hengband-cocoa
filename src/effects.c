@@ -171,6 +171,7 @@ void reset_tim_flags(void)
 	p_ptr->tim_regen = 0;       /* Timed -- Regeneration */
 	p_ptr->tim_stealth = 0;     /* Timed -- Stealth */
 	p_ptr->tim_esp = 0;
+	p_ptr->wraith_form = 0;     /* Timed -- Wraith Form */
 	p_ptr->tim_ffall = 0;
 	p_ptr->tim_sh_touki = 0;
 	p_ptr->tim_sh_fire = 0;
@@ -195,7 +196,7 @@ void reset_tim_flags(void)
 	p_ptr->oppose_cold = 0;     /* Timed -- oppose cold */
 	p_ptr->oppose_pois = 0;     /* Timed -- oppose poison */
 
-	p_ptr->word_recall = FALSE;
+	p_ptr->word_recall = 0;
 	p_ptr->sutemi = FALSE;
 	p_ptr->counter = FALSE;
 	p_ptr->ele_attack = 0;
@@ -419,6 +420,18 @@ msg_print("あなたは混乱した！");
 			msg_print("You are confused!");
 #endif
 
+			if (p_ptr->action == ACTION_LEARN)
+			{
+#ifdef JP
+				msg_print("学習が続けられない！");
+#else
+				msg_print("You cannot continue Learning!");
+#endif
+				new_mane = FALSE;
+
+				p_ptr->redraw |= (PR_STATE);
+				p_ptr->action = ACTION_NONE;
+			}
 			if (p_ptr->action == ACTION_KAMAE)
 			{
 #ifdef JP

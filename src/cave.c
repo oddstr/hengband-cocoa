@@ -1797,7 +1797,7 @@ static char ascii_to_zenkaku[2*128+1] =  "\
 /*
  * Prepare Bigtile or 2-bytes character attr/char pairs
  */
-static void bigtile_attr(char *cp, byte *ap, char *cp2, byte *ap2)
+void bigtile_attr(char *cp, byte *ap, char *cp2, byte *ap2)
 {
 	if (*ap & 0x80)
 	{
@@ -2142,6 +2142,9 @@ void lite_spot(int y, int x)
 		if (use_bigtile)
 			Term_queue_char(panel_col_of(x)+1, y-panel_row_prt, 255, -1);
 #endif /* USE_TRANSPARENCY */
+
+		/* Update sub-windows */
+		p_ptr->window |= (PW_OVERHEAD | PW_DUNGEON);
 	}
 }
 
@@ -3604,8 +3607,12 @@ void update_mon_lite(void)
 			if ((c_ptr->info & (CAVE_VIEW | CAVE_TEMP)) == CAVE_VIEW)
 			{
 				/* It is now lit */
-				lite_spot(fy, fx);
+
+				/* Note */
 				note_spot(fy, fx);
+
+				/* Redraw */
+				lite_spot(fy, fx);
 			}
 
 			/* Save in the monster lit array */
