@@ -1491,6 +1491,7 @@ errr check_load_init(void)
 #define ENTRY_ALIGN 42
 
 #define ENTRY_EXP_ANDR 43
+#define ENTRY_EXP_TO_ADV_ANDR 44
 
 
 static struct
@@ -1546,6 +1547,7 @@ static struct
 	{29,  6, 21, "社会的地位"},
 	{29,  7, 21, "属性"},
 	{29, 14, 21, "強化度"},
+	{29, 16, 21, "次レベル"},
 };
 #else
 = {
@@ -1593,6 +1595,7 @@ static struct
 	{29,  6, 21, "Social Class"},
 	{29,  7, 21, "Align"},
 	{29, 14, 21, "Construction"},
+	{29, 16, 21, "Const to Adv"},
 };
 #endif
 
@@ -1838,12 +1841,15 @@ static void display_player_middle(void)
 		display_player_one_line(ENTRY_MAX_EXP, format("%ld", p_ptr->max_exp), TERM_L_GREEN);
 
 	/* Dump exp to advance */
+	if (p_ptr->prace == RACE_ANDROID) e = ENTRY_EXP_TO_ADV_ANDR;
+	else e = ENTRY_EXP_TO_ADV;
+
 	if (p_ptr->lev >= PY_MAX_LEVEL)
-		display_player_one_line(ENTRY_EXP_TO_ADV, "*****", TERM_L_GREEN);
+		display_player_one_line(e, "*****", TERM_L_GREEN);
 	else if (p_ptr->prace == RACE_ANDROID)
-		display_player_one_line(ENTRY_EXP_TO_ADV, format("%ld", (s32b)(player_exp_a[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
+		display_player_one_line(e, format("%ld", (s32b)(player_exp_a[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
 	else
-		display_player_one_line(ENTRY_EXP_TO_ADV, format("%ld", (s32b)(player_exp[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
+		display_player_one_line(e, format("%ld", (s32b)(player_exp[p_ptr->lev - 1] * p_ptr->expfact / 100L)), TERM_L_GREEN);
 
 	/* Dump gold */
 	display_player_one_line(ENTRY_GOLD, format("%ld", p_ptr->au), TERM_L_GREEN);
@@ -2571,7 +2577,7 @@ static void player_flags(u32b flgs[TR_FLAG_SIZE])
 		add_flag(flgs, TR_RES_BLIND);
 		add_flag(flgs, TR_RES_CONF);
 		add_flag(flgs, TR_HOLD_LIFE);
-		add_flag(flgs, TR_LITE);
+		if (p_ptr->pclass != CLASS_NINJA) add_flag(flgs, TR_LITE);
 		if (p_ptr->lev > 9)
 			add_flag(flgs, TR_SPEED);
 	}
@@ -2830,10 +2836,10 @@ static void known_obj_immunity(u32b flgs[TR_FLAG_SIZE])
 		/* Known flags */
 		object_flags_known(o_ptr, o_flgs);
 
-		if (have_flag(flgs, TR_IM_ACID)) add_flag(flgs, TR_RES_ACID);
-		if (have_flag(flgs, TR_IM_ELEC)) add_flag(flgs, TR_RES_ELEC);
-		if (have_flag(flgs, TR_IM_FIRE)) add_flag(flgs, TR_RES_FIRE);
-		if (have_flag(flgs, TR_IM_COLD)) add_flag(flgs, TR_RES_COLD);
+		if (have_flag(o_flgs, TR_IM_ACID)) add_flag(flgs, TR_RES_ACID);
+		if (have_flag(o_flgs, TR_IM_ELEC)) add_flag(flgs, TR_RES_ELEC);
+		if (have_flag(o_flgs, TR_IM_FIRE)) add_flag(flgs, TR_RES_FIRE);
+		if (have_flag(o_flgs, TR_IM_COLD)) add_flag(flgs, TR_RES_COLD);
 	}
 }
 
@@ -3206,8 +3212,8 @@ static void display_player_other_flag_info(void)
 	display_flag_aux(row+13, col, "Poison Brd:", TR_BRAND_POIS, &f, DP_WP);
 	display_flag_aux(row+14, col, "Sharpness :", TR_VORPAL, &f, DP_WP);
 	display_flag_aux(row+15, col, "Quake     :", TR_IMPACT, &f, DP_WP);
-	display_flag_aux(row+16, col, "Vampicic  :", TR_VAMPIRIC, &f, DP_WP);
-	display_flag_aux(row+17, col, "Chatic    :", TR_CHAOTIC, &f, DP_WP);
+	display_flag_aux(row+16, col, "Vampiric  :", TR_VAMPIRIC, &f, DP_WP);
+	display_flag_aux(row+17, col, "Chaotic   :", TR_CHAOTIC, &f, DP_WP);
 	display_flag_aux(row+18, col, "Force Wep.:", TR_FORCE_WEAPON, &f, DP_WP);
 #endif
 
@@ -3907,7 +3913,7 @@ void display_player(int mode)
 			if (*statmsg)
 			{
 				char temp[64*2], *t;
-				roff_to_buf(statmsg, 60, temp);
+				roff_to_buf(statmsg, 60, temp, sizeof(temp));
 				t = temp;
 				for(i=0 ; i<2 ; i++)
 				{
@@ -4145,14 +4151,7 @@ errr make_character_dump(FILE *fff)
 				pet = TRUE;
 			}
 			monster_desc(pet_name, m_ptr, 0x88);
-			fprintf(fff, "%s", pet_name);
-			if (p_ptr->riding == i)
-#ifdef JP
-				fprintf(fff, " 乗馬中");
-#else
-				fprintf(fff, " (riding)");
-#endif
-			fprintf(fff, "\n");
+			fprintf(fff, "%s\n", pet_name);
 		}
 		if (pet) fprintf(fff, "\n");
 	}
@@ -4388,21 +4387,21 @@ errr make_character_dump(FILE *fff)
 
 	if (ironman_autoscum)
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     ALWAYS");
+		fprintf(fff, "\n 自動選り好み:       ALWAYS");
 #else
 		fprintf(fff, "\n Autoscum:           ALWAYS");
 #endif
 
 	else if (auto_scum)
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     ON");
+		fprintf(fff, "\n 自動選り好み:       ON");
 #else
 		fprintf(fff, "\n Autoscum:           ON");
 #endif
 
 	else
 #ifdef JP
-		fprintf(fff, "\n 自動選り好み  :     OFF");
+		fprintf(fff, "\n 自動選り好み:       OFF");
 #else
 		fprintf(fff, "\n Autoscum:           OFF");
 #endif
@@ -4439,7 +4438,7 @@ errr make_character_dump(FILE *fff)
 
 	if (vanilla_town)
 #ifdef JP
-		fprintf(fff, "\n 元祖の町のみ: ON");
+		fprintf(fff, "\n 元祖の町のみ:       ON");
 #else
 		fprintf(fff, "\n Vanilla Town:       ON");
 #endif
@@ -4464,15 +4463,15 @@ errr make_character_dump(FILE *fff)
 #ifdef JP
 		fprintf(fff, "\n 階段を上がれない:   ON");
 #else
-		fprintf(fff, "\n Diving only:        ON");
+		fprintf(fff, "\n Diving Only:        ON");
 #endif
 
 
 	if (ironman_rooms)
 #ifdef JP
-		fprintf(fff, "\n 普通でない部屋を生成:         ON");
+		fprintf(fff, "\n 普通でない部屋:     ON");
 #else
-		fprintf(fff, "\n Unusual rooms:      ON");
+		fprintf(fff, "\n Unusual Rooms:      ON");
 #endif
 
 
@@ -4493,7 +4492,7 @@ errr make_character_dump(FILE *fff)
 
 	else if (empty_levels)
 #ifdef JP
-		fprintf(fff, "\n アリーナ:           ON");
+		fprintf(fff, "\n アリーナ:           ENABLED");
 #else
 		fprintf(fff, "\n Arena Levels:       ENABLED");
 #endif
@@ -4511,6 +4510,8 @@ errr make_character_dump(FILE *fff)
 #else
 	fprintf(fff, "\n Num. Random Quests: %d", number_of_quests());
 #endif
+
+	fprintf(fff, "\n");
 
 	if (p_ptr->arena_number == 99)
 	{
@@ -4539,9 +4540,9 @@ errr make_character_dump(FILE *fff)
 	else
 	{
 #ifdef JP
-		fprintf(fff, "\n 闘技場:   %2d勝\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number));
+		fprintf(fff, "\n 闘技場: %2d勝\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number));
 #else
-		fprintf(fff, "\n Arena:   %2d victor%s\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number), (p_ptr->arena_number>1) ? "ies" : "y");
+		fprintf(fff, "\n Arena: %2d Victor%s\n", (p_ptr->arena_number > MAX_ARENA_MONS ? MAX_ARENA_MONS : p_ptr->arena_number), (p_ptr->arena_number > 1) ? "ies" : "y");
 #endif
 	}
 
@@ -4679,7 +4680,7 @@ fprintf(fff, "\n\n  [突然変異]\n\n");
 	if (equip_cnt)
 	{
 #ifdef JP
-fprintf(fff, "  [ キャラクタの装備 ]\n\n");
+fprintf(fff, "  [キャラクタの装備]\n\n");
 #else
 		fprintf(fff, "  [Character Equipment]\n\n");
 #endif
@@ -4701,7 +4702,7 @@ fprintf(fff, "  [ キャラクタの装備 ]\n\n");
 
 	/* Dump the inventory */
 #ifdef JP
-fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
+fprintf(fff, "  [キャラクタの持ち物]\n\n");
 #else
 	fprintf(fff, "  [Character Inventory]\n\n");
 #endif
@@ -4729,7 +4730,7 @@ fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
 	{
 		/* Header with name of the town */
 #ifdef JP
-		fprintf(fff, "  [ 我が家のアイテム ]\n");
+		fprintf(fff, "  [我が家のアイテム]\n");
 #else
 		fprintf(fff, "  [Home Inventory]\n");
 #endif
@@ -4761,7 +4762,7 @@ fprintf(fff, "  [ キャラクタの持ち物 ]\n\n");
 	{
 		/* Header with name of the town */
 #ifdef JP
-		fprintf(fff, "  [ 博物館のアイテム ]\n");
+		fprintf(fff, "  [博物館のアイテム]\n");
 #else
 		fprintf(fff, "  [Museum]\n");
 #endif

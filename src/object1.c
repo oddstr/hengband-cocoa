@@ -1496,7 +1496,7 @@ return "全感知 : 55+d55 ターン毎";
 		case ART_AMBER:
 		{
 #ifdef JP
-return "体力回復(500) : 500 ターン毎";
+return "体力回復(700) : 250 ターン毎";
 #else
 			return "heal (700) every 250 turns";
 #endif
@@ -2374,7 +2374,7 @@ return "空気の息";
 /*
  * Describe a "fully identified" item
  */
-bool identify_fully_aux(object_type *o_ptr)
+bool screen_object(object_type *o_ptr, bool real)
 {
 	int                     i = 0, j, k;
 
@@ -2383,6 +2383,8 @@ bool identify_fully_aux(object_type *o_ptr)
 	cptr            info[128];
 	char o_name[MAX_NLEN];
 	int wid, hgt;
+
+	int trivial_info = 0;
 
 	/* Extract the flags */
 	object_flags(o_ptr, flgs);
@@ -2393,9 +2395,15 @@ bool identify_fully_aux(object_type *o_ptr)
 
 		roff_to_buf(o_ptr->name1 ? (a_text + a_info[o_ptr->name1].text) :
 			    (k_text + k_info[lookup_kind(o_ptr->tval, o_ptr->sval)].text),
-			    77 - 15, temp);
+			    77 - 15, temp, sizeof(temp));
 		for (j = 0; temp[j]; j += 1 + strlen(&temp[j]))
 		{ info[i] = &temp[j]; i++;}
+	}
+
+	if (TV_SHOT <= o_ptr->tval && o_ptr->tval <= TV_CARD)
+	{
+		/* Descriptions of a basic equipment is just a flavor */
+		trivial_info = i;
 	}
 
 	/* Mega-Hack -- describe activation */
@@ -2653,12 +2661,15 @@ info[i++] = "それは乗馬中は非常に使いやすい。";
 			info[i++] = "It is made for use while riding.";
 #endif
 		else
+		{
 #ifdef JP
-info[i++] = "それは乗馬中でも使いやすい。";
+			info[i++] = "それは乗馬中でも使いやすい。";
 #else
 			info[i++] = "It is suitable for use while riding.";
 #endif
-
+			/* This information is not important enough */
+			trivial_info++;
+		}
 	}
 	if (have_flag(flgs, TR_STR))
 	{
@@ -3610,6 +3621,11 @@ info[i++] = "それは呪われている。";
 			info[i++] = "It is cursed.";
 #endif
 
+			/*
+			 * It's a trivial infomation since there is
+			 * fake inscription {cursed}
+			 */
+			trivial_info++;
 		}
 	}
 
@@ -3767,60 +3783,107 @@ info[i++] = "それはあなたの魔力を吸い取る。";
 
 	}
 
-	/* XTRA HACK ARTDESC */
+	/* Describe about this kind of object instead of THIS fake object */
+	if (!real)
+	{
+		switch (o_ptr->tval)
+		{
+		case TV_RING:
+			switch (o_ptr->sval)
+			{
+			case SV_RING_LORDLY:
+#ifdef JP
+				info[i++] = "それは幾つかのランダムな耐性を授ける。";
+#else
+				info[i++] = "It provides some random resistances.";
+#endif
+				break;
+			case SV_RING_WARNING:
+#ifdef JP
+				info[i++] = "それはひとつの低級なESPを授ける事がある。";
+#else
+				info[i++] = "It may provide a low rank ESP.";
+#endif
+				break;
+			}
+			break;
+
+		case TV_AMULET:
+			switch (o_ptr->sval)
+			{
+			case SV_AMULET_RESISTANCE:
+#ifdef JP
+				info[i++] = "それは毒への耐性を授ける事がある。";
+#else
+				info[i++] = "It may provides resistance to poison.";
+#endif
+#ifdef JP
+				info[i++] = "それはランダムな耐性を授ける事がある。";
+#else
+				info[i++] = "It may provide a random resistances.";
+#endif
+				break;
+			case SV_AMULET_THE_MAGI:
+#ifdef JP
+				info[i++] = "それは最大で３つまでの低級なESPを授ける。";
+#else
+				info[i++] = "It provides up to three low rank ESPs.";
+#endif
+				break;
+			}
+			break;
+		}
+	}
+
 	if (have_flag(flgs, TR_IGNORE_ACID) &&
 	    have_flag(flgs, TR_IGNORE_ELEC) &&
 	    have_flag(flgs, TR_IGNORE_FIRE) &&
 	    have_flag(flgs, TR_IGNORE_COLD))
 	{
 #ifdef JP
-	  info[i++] = "それは酸・電撃・火炎・冷気では傷つかない。";
+		info[i++] = "それは酸・電撃・火炎・冷気では傷つかない。";
 #else
-	  info[i++] = "It cannot be harmed by the elements.";
+		info[i++] = "It cannot be harmed by the elements.";
 #endif
-	} else {
-	if (have_flag(flgs, TR_IGNORE_ACID))
+	}
+	else
 	{
+		if (have_flag(flgs, TR_IGNORE_ACID))
+		{
 #ifdef JP
-info[i++] = "それは酸では傷つかない。";
+			info[i++] = "それは酸では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by acid.";
+			info[i++] = "It cannot be harmed by acid.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_ELEC))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_ELEC))
+		{
 #ifdef JP
-info[i++] = "それは電撃では傷つかない。";
+			info[i++] = "それは電撃では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by electricity.";
+			info[i++] = "It cannot be harmed by electricity.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_FIRE))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_FIRE))
+		{
 #ifdef JP
-info[i++] = "それは火炎では傷つかない。";
+			info[i++] = "それは火炎では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by fire.";
+			info[i++] = "It cannot be harmed by fire.";
 #endif
-
-	}
-	if (have_flag(flgs, TR_IGNORE_COLD))
-	{
+		}
+		if (have_flag(flgs, TR_IGNORE_COLD))
+		{
 #ifdef JP
-info[i++] = "それは冷気では傷つかない。";
+			info[i++] = "それは冷気では傷つかない。";
 #else
-		info[i++] = "It cannot be harmed by cold.";
+			info[i++] = "It cannot be harmed by cold.";
 #endif
-
+		}
 	}
 
-	/* XTRA HACK ARTDESC */
-	}
-
-	/* No special effects */
-	if (!i) return (FALSE);
+	/* No relevant informations */
+	if (i <= trivial_info) return (FALSE);
 
 	/* Save the screen */
 	screen_save();
@@ -3829,8 +3892,12 @@ info[i++] = "それは冷気では傷つかない。";
 	Term_get_size(&wid, &hgt);
 
 	/* Display Item name */
-	object_desc(o_name, o_ptr, TRUE, 3);
-	prt(format("%s", o_name), 0, 0);
+	if (real)
+		object_desc(o_name, o_ptr, TRUE, 3);
+	else
+		object_desc_store(o_name, o_ptr, TRUE, 0);
+
+	prt(o_name, 0, 0);
 
 	/* Erase the screen */
 	for (k = 1; k < hgt; k++) prt("", k, 13);
@@ -4183,13 +4250,13 @@ cptr describe_use(int i)
 	switch (i)
 	{
 #ifdef JP
-case INVEN_RARM: p = p_ptr->ryoute ? " 両手に装備している" : (left_hander ? " 左手に装備している" : " 右手に装備している"); break;
+case INVEN_RARM: p = p_ptr->ryoute ? "両手に装備している" : (left_hander ? "左手に装備している" : "右手に装備している"); break;
 #else
 		case INVEN_RARM: p = "attacking monsters with"; break;
 #endif
 
 #ifdef JP
-case INVEN_LARM:   p = (left_hander ? " 右手に装備している" : " 左手に装備している"); break;
+case INVEN_LARM:   p = (left_hander ? "右手に装備している" : "左手に装備している"); break;
 #else
 		case INVEN_LARM:   p = "wearing on your arm"; break;
 #endif
@@ -4368,7 +4435,10 @@ void display_inven(void)
 	byte            attr = TERM_WHITE;
 	char            tmp_val[80];
 	char            o_name[MAX_NLEN];
+	int             wid, hgt;
 
+	/* Get size */
+	Term_get_size(&wid, &hgt);
 
 	/* Find the "final" slot */
 	for (i = 0; i < INVEN_PACK; i++)
@@ -4435,12 +4505,12 @@ void display_inven(void)
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			Term_putstr(71, i, -1, TERM_WHITE, tmp_val);
+			prt(tmp_val, i, wid - 9);
 		}
 	}
 
 	/* Erase the rest of the window */
-	for (i = z; i < Term->hgt; i++)
+	for (i = z; i < hgt; i++)
 	{
 		/* Erase the line */
 		Term_erase(0, i, 255);
@@ -4459,7 +4529,10 @@ void display_equip(void)
 	byte            attr = TERM_WHITE;
 	char            tmp_val[80];
 	char            o_name[MAX_NLEN];
+	int             wid, hgt;
 
+	/* Get size */
+	Term_get_size(&wid, &hgt);
 
 	/* Display the equipment */
 	for (i = INVEN_RARM; i < INVEN_TOTAL; i++)
@@ -4514,30 +4587,29 @@ void display_equip(void)
 		/* Erase the rest of the line */
 		Term_erase(3+n, i - INVEN_RARM, 255);
 
-		/* Display the slot description (if needed) */
-		if (show_labels)
-		{
-			Term_putstr(61, i - INVEN_RARM, -1, TERM_WHITE, "<--");
-			Term_putstr(65, i - INVEN_RARM, -1, TERM_WHITE, mention_use(i));
-		}
-
 		/* Display the weight (if needed) */
 		if (show_weights && o_ptr->weight)
 		{
 			int wgt = o_ptr->weight * o_ptr->number;
-			int col = (show_labels ? 52 : 71);
 #ifdef JP
 			sprintf(tmp_val, "%3d.%1d kg", lbtokg1(wgt) , lbtokg2(wgt));
 #else
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			Term_putstr(col, i - INVEN_RARM, -1, TERM_WHITE, tmp_val);
+			prt(tmp_val, i - INVEN_RARM, wid - (show_labels ? 28 : 9));
+		}
+
+		/* Display the slot description (if needed) */
+		if (show_labels)
+		{
+			Term_putstr(wid - 20, i - INVEN_RARM, -1, TERM_WHITE, " <-- ");
+			prt(mention_use(i), i - INVEN_RARM, wid - 15);
 		}
 	}
 
 	/* Erase the rest of the window */
-	for (i = INVEN_TOTAL - INVEN_RARM; i < Term->hgt; i++)
+	for (i = INVEN_TOTAL - INVEN_RARM; i < hgt; i++)
 	{
 		/* Clear that line */
 		Term_erase(0, i, 255);
@@ -4733,7 +4805,7 @@ int show_inven(int target_item)
 			(void)sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j + 1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 
@@ -4935,7 +5007,7 @@ int show_equip(int target_item)
 			(void)sprintf(tmp_val, "%3d.%d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j+1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 
@@ -5028,6 +5100,12 @@ static bool verify(cptr prompt, int item)
 	/* Query */
 	return (get_check(out_val));
 }
+
+
+#ifdef JP
+#undef strchr
+#define strchr strchr_j
+#endif
 
 
 /*
@@ -6269,7 +6347,7 @@ int show_floor(int target_item, int y, int x, int *min_width)
 			sprintf(tmp_val, "%3d.%1d lb", wgt / 10, wgt % 10);
 #endif
 
-			put_str(tmp_val, j + 1, wid - 9);
+			prt(tmp_val, j + 1, wid - 9);
 		}
 	}
 

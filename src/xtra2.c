@@ -107,6 +107,7 @@ void check_experience(void)
 msg_format("レベル %d にようこそ。", p_ptr->lev);
 #else
 		msg_format("Welcome to level %d.", p_ptr->lev);
+
 #endif
 
 		/* Update some stuff */
@@ -116,7 +117,7 @@ msg_format("レベル %d にようこそ。", p_ptr->lev);
 		p_ptr->redraw |= (PR_LEV | PR_TITLE);
 
 		/* Window stuff */
-		p_ptr->window |= (PW_PLAYER | PW_SPELL);
+		p_ptr->window |= (PW_PLAYER | PW_SPELL | PW_INVEN);
 
 		/* HPとMPの上昇量を表示 */
 		level_up = 1;
@@ -364,6 +365,24 @@ static bool kind_is_armor(int k_idx)
 
 
 /*
+ * Hack -- determine if a template is hafted weapon
+ */
+static bool kind_is_hafted(int k_idx)
+{
+	object_kind *k_ptr = &k_info[k_idx];
+
+	/* Analyze the item type */
+	if (k_ptr->tval == TV_HAFTED)
+	{
+		return (TRUE);
+	}
+
+	/* Assume not good */
+	return (FALSE);
+}
+
+
+/*
  * Check for "Quest" completion when a quest monster is killed or charmed.
  */
 void check_quest_completion(monster_type *m_ptr)
@@ -593,7 +612,7 @@ msg_print("魔法の階段が現れた...");
 		cave_set_feat(y, x, FEAT_MORE);
 
 		/* Remember to update everything */
-		p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTERS);
+		p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MONSTERS | PU_MON_LITE);
 	}
 
 	/*
@@ -659,7 +678,8 @@ void monster_death(int m_idx, bool drop_item)
 	object_type *q_ptr;
 
 
-	if (world_monster) world_monster = FALSE;
+	/* The caster is dead? */
+	if (world_monster && world_monster == m_idx) world_monster = 0;
 
 	/* Notice changes in view */
 	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_1 | RF7_SELF_LITE_2))
@@ -753,11 +773,6 @@ void monster_death(int m_idx, bool drop_item)
 	/* Handle the possibility of player vanquishing arena combatant -KMW- */
 	if (p_ptr->inside_arena && !is_pet(m_ptr))
 	{
-		char m_name[80];
-
-		/* Extract monster name */
-		monster_desc(m_name, m_ptr, 0);
-
 		p_ptr->exit_bldg = TRUE;
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS)
@@ -793,7 +808,15 @@ msg_print("勝利！チャンピオンへの道を進んでいる。");
 
 		if (p_ptr->arena_number > MAX_ARENA_MONS) p_ptr->arena_number++;
 		p_ptr->arena_number++;
-		if (record_arena) do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		if (record_arena)
+		{
+			char m_name[80];
+
+			/* Extract monster name */
+			monster_desc(m_name, m_ptr, 0x288);
+
+			do_cmd_write_nikki(NIKKI_ARENA, p_ptr->arena_number, m_name);
+		}
 	}
 
 	if (m_idx == p_ptr->riding)
@@ -866,15 +889,15 @@ msg_print("地面に落とされた。");
 	{
 		if (!one_in_(7))
 		{
-			int wy = py, wx = px;
+			int wy = y, wx = x;
 			int attempts = 100;
 			bool pet = is_pet(m_ptr);
 
 			do
 			{
-				scatter(&wy, &wx, py, px, 20, 0);
+				scatter(&wy, &wx, y, x, 20, 0);
 			}
-			while (!(in_bounds(wy, wx) && cave_floor_bold(wy, wx)) && --attempts);
+			while (!(in_bounds(wy, wx) && cave_empty_bold2(wy, wx)) && --attempts);
 
 			if (attempts > 0)
 			{
@@ -1077,7 +1100,29 @@ msg_print("地面に落とされた。");
 		(void)drop_near(q_ptr, -1, y, x);
 	}
 
-	else if ((m_ptr->r_idx == MON_A_GOLD || (m_ptr->r_idx == MON_A_SILVER && !((r_ptr->r_pkills+1)%5))) && !(p_ptr->inside_arena || p_ptr->inside_battle))
+	else if ((r_ptr->d_char == '\\') && (dun_level > 4) &&
+	    !(p_ptr->inside_arena || p_ptr->inside_battle))
+	{
+		/* Get local object */
+		q_ptr = &forge;
+
+		/* Wipe the object */
+		object_wipe(q_ptr);
+
+		/* Activate restriction */
+		get_obj_num_hook = kind_is_hafted;
+
+		/* Prepare allocation table */
+		get_obj_num_prep();
+
+		/* Make a great object */
+		make_object(q_ptr, FALSE, FALSE);
+
+		/* Drop it in the dungeon */
+		(void)drop_near(q_ptr, -1, y, x);
+	}
+
+	else if ((m_ptr->r_idx == MON_A_GOLD || (m_ptr->r_idx == MON_A_SILVER && (r_ptr->r_pkills % 5 == 0))) && !(p_ptr->inside_arena || p_ptr->inside_battle))
 	{
 		/* Get local object */
 		q_ptr = &forge;
@@ -1463,7 +1508,7 @@ msg_print("地面に落とされた。");
 #ifdef JP
 		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "見事に変愚蛮怒の勝利者となった！");
 #else
-		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "become *WINNER* of Hengband finly!");
+		do_cmd_write_nikki(NIKKI_BUNSHOU, 0, "become *WINNER* of Hengband finely!");
 #endif
 
 		if (p_ptr->pclass == CLASS_CHAOS_WARRIOR)
@@ -1707,6 +1752,8 @@ bool mon_take_hit(int m_idx, int dam, bool *fear, cptr note)
 	/* Wake it up */
 	m_ptr->csleep = 0;
 
+	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
+
 	/* Hack - Cancel any special player stealth magics. -LM- */
 	if (p_ptr->special_defense & NINJA_S_STEALTH)
 	{
@@ -1723,9 +1770,42 @@ bool mon_take_hit(int m_idx, int dam, bool *fear, cptr note)
 
 		if (r_info[m_ptr->r_idx].flags7 & RF7_TANUKI)
 		{
+			/* You might have unmasked Tanuki first time */
 			r_ptr = &r_info[m_ptr->r_idx];
 			m_ptr->ap_r_idx = m_ptr->r_idx;
 			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
+		}
+
+		if (m_ptr->mflag2 & MFLAG_CHAMELEON)
+		{
+			/* You might have unmasked Chameleon first time */
+			if (r_ptr->flags1 & RF1_UNIQUE)
+				r_ptr = &r_info[MON_CHAMELEON_K];
+			else
+				r_ptr = &r_info[MON_CHAMELEON];
+			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
+		}
+
+		/* When the player kills a Unique, it stays dead */
+		if (r_ptr->flags1 & RF1_UNIQUE && !(m_ptr->smart & SM_CLONED))
+			r_ptr->max_num = 0;
+
+		/* When the player kills a Nazgul, it stays dead */
+		if (r_ptr->flags7 & RF7_UNIQUE_7) r_ptr->max_num--;
+
+		/* Recall even invisible uniques or winners */
+		if (m_ptr->ml || (r_ptr->flags1 & RF1_UNIQUE))
+		{
+			/* Count kills this life */
+			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_pkills < MAX_SHORT)) r_info[MON_KAGE].r_pkills++;
+			else if (r_ptr->r_pkills < MAX_SHORT) r_ptr->r_pkills++;
+
+			/* Count kills in all lives */
+			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_tkills < MAX_SHORT)) r_info[MON_KAGE].r_tkills++;
+			else if (r_ptr->r_tkills < MAX_SHORT) r_ptr->r_tkills++;
+
+			/* Hack -- Auto-recall */
+			monster_race_track(m_ptr->ap_r_idx);
 		}
 
 		/* Extract monster name */
@@ -1973,44 +2053,8 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			}
 		}
 
-		if (r_ptr->flags7 & RF7_KILL_EXP)
-			get_exp_from_mon((long)m_ptr->max_maxhp*2, &exp_mon);
-		else
-			get_exp_from_mon(((long)m_ptr->max_maxhp+1L) * 9L / 10L, &exp_mon);
-
 		/* Generate treasure */
 		monster_death(m_idx, TRUE);
-		if (m_ptr->mflag2 & MFLAG_CHAMELEON)
-		{
-			if (r_ptr->flags1 & RF1_UNIQUE)
-				r_ptr = &r_info[MON_CHAMELEON_K];
-			else
-				r_ptr = &r_info[MON_CHAMELEON];
-			if (r_ptr->r_sights < MAX_SHORT) r_ptr->r_sights++;
-		}
-
-		/* When the player kills a Unique, it stays dead */
-		if (r_ptr->flags1 & RF1_UNIQUE && !(m_ptr->smart & SM_CLONED))
-			r_ptr->max_num = 0;
-
-		/* When the player kills a Nazgul, it stays dead */
-		if (r_ptr->flags7 & RF7_UNIQUE_7) r_ptr->max_num--;
-
-		/* Recall even invisible uniques or winners */
-		if (m_ptr->ml || (r_ptr->flags1 & RF1_UNIQUE))
-		{
-			/* Count kills this life */
-			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_pkills < MAX_SHORT)) r_info[MON_KAGE].r_pkills++;
-			else if (r_ptr->r_pkills < MAX_SHORT) r_ptr->r_pkills++;
-
-			/* Count kills in all lives */
-			if ((m_ptr->mflag2 & MFLAG_KAGE) && (r_info[MON_KAGE].r_tkills < MAX_SHORT)) r_info[MON_KAGE].r_tkills++;
-			else if (r_ptr->r_tkills < MAX_SHORT) r_ptr->r_tkills++;
-
-			/* Hack -- Auto-recall */
-			monster_race_track(m_ptr->ap_r_idx);
-		}
-
 		if ((m_ptr->r_idx == MON_BANOR) || (m_ptr->r_idx == MON_LUPART))
 		{
 			r_info[MON_BANORLUPART].max_num = 0;
@@ -2055,6 +2099,12 @@ msg_format("%sの首には賞金がかかっている。", m_name);
 			/* Delete the monster */
 			delete_monster_idx(m_idx);
 		}
+
+		/* Prevent bug of chaos patron's reward */
+		if (r_ptr->flags7 & RF7_KILL_EXP)
+			get_exp_from_mon((long)exp_mon.max_maxhp*2, &exp_mon);
+		else
+			get_exp_from_mon(((long)exp_mon.max_maxhp+1L) * 9L / 10L, &exp_mon);
 
 		/* Not afraid */
 		(*fear) = FALSE;
@@ -2858,7 +2908,7 @@ static bool target_set_accept(int y, int x)
 		byte feat;
 
 		/* Feature code (applying "mimic" field) */
-		feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+		feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 		/* Notice glyphs */
 		if (c_ptr->info & CAVE_OBJECT) return (TRUE);
@@ -3148,6 +3198,7 @@ static int target_set_aux(int y, int x, int mode, cptr info)
 	{
 		monster_type *m_ptr = &m_list[c_ptr->m_idx];
 		monster_race *ap_r_ptr = &r_info[m_ptr->ap_r_idx];
+		char m_name[80];
 		bool recall = FALSE;
 
 		/* Not boring */
@@ -3510,7 +3561,7 @@ static int target_set_aux(int y, int x, int mode, cptr info)
 
 
 	/* Feature code (applying "mimic" field) */
-	feat = c_ptr->mimic ? c_ptr->mimic : f_info[c_ptr->feat].mimic;
+	feat = f_info[c_ptr->mimic ? c_ptr->mimic : c_ptr->feat].mimic;
 
 	/* Require knowledge about grid, or ability to see grid */
 	if (!(c_ptr->info & CAVE_MARK) && !player_can_see_bold(y, x))

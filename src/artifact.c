@@ -1909,7 +1909,7 @@ bool create_artifact(object_type *o_ptr, bool a_scroll)
 		o_ptr->ident |= (IDENT_MENTAL);
 
 		strcpy(dummy_name, "");
-		(void)identify_fully_aux(o_ptr);
+		(void)screen_object(o_ptr, TRUE);
 
 #ifdef JP
 		if (!(get_string("このアーティファクトを何と名付けますか？", dummy_name, 80)))
@@ -2396,7 +2396,7 @@ bool activate_random_artifact(object_type * o_ptr)
 			if (banish_evil(100))
 			{
 #ifdef JP
-				msg_print("アーティファクトの力が邪悪を打ち倒した！");
+				msg_print("アーティファクトの力が邪悪を打ち払った！");
 #else
 				msg_print("The power of the artifact banishes evil!");
 #endif

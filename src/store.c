@@ -20,6 +20,8 @@ static int store_top = 0;
 static store_type *st_ptr = NULL;
 static owner_type *ot_ptr = NULL;
 #endif
+static s16b old_town_num = 0;
+static s16b inner_town_num = 0;
 #define RUMOR_CHANCE 8
 
 #define MAX_COMMENT_1	6
@@ -934,6 +936,10 @@ static s32b price_item(object_type *o_ptr, int greed, bool flip)
 		/* Mega-Hack -- Black market sucks */
 		if (cur_store_num == STORE_BLACK)
 			price = price / 2;
+
+		/* Compute the final price (with rounding) */
+		/* Hack -- prevent undefflow */
+		price = (price * adjust + 50L) / 100L;
 	}
 
 	/* Shop is selling */
@@ -948,10 +954,11 @@ static s32b price_item(object_type *o_ptr, int greed, bool flip)
 		/* Mega-Hack -- Black market sucks */
 		if (cur_store_num == STORE_BLACK)
 			price = price * 2;
-	}
 
-	/* Compute the final price (with rounding) */
-	price = (price * adjust + 50L) / 100L;
+		/* Compute the final price (with rounding) */
+		/* Hack -- prevent overflow */
+		price = (s32b)(((u32b)price * (u32b)adjust + 50UL) / 100UL);
+	}
 
 	/* Note -- Never become "free" */
 	if (price <= 0L) return (1L);
@@ -983,6 +990,7 @@ static void mass_produce(object_type *o_ptr)
 		{
 			if (cost <= 5L) size += damroll(3, 5);
 			if (cost <= 20L) size += damroll(3, 5);
+			if (cost <= 50L) size += damroll(2, 2);
 			break;
 		}
 
@@ -1028,6 +1036,7 @@ static void mass_produce(object_type *o_ptr)
 		case TV_DIGGING:
 		case TV_BOW:
 		{
+			if (o_ptr->art_name) break;
 			if (o_ptr->name2) break;
 			if (cost <= 10L) size += damroll(3, 5);
 			if (cost <= 100L) size += damroll(3, 5);
@@ -1196,21 +1205,24 @@ static bool store_object_similar(object_type *o_ptr, object_type *j_ptr)
  */
 static void store_object_absorb(object_type *o_ptr, object_type *j_ptr)
 {
+	int max_num = (o_ptr->tval == TV_ROD) ?
+		MIN(99, MAX_SHORT / k_info[o_ptr->k_idx].pval) : 99;
 	int total = o_ptr->number + j_ptr->number;
+	int diff = (total > max_num) ? total - max_num : 0;
 
 	/* Combine quantity, lose excess items */
-	o_ptr->number = (total > 99) ? 99 : total;
+	o_ptr->number = (total > max_num) ? max_num : total;
 
 	/* Hack -- if rods are stacking, add the pvals (maximum timeouts) together. -LM- */
 	if (o_ptr->tval == TV_ROD)
 	{
-		o_ptr->pval += j_ptr->pval;
+		o_ptr->pval += j_ptr->pval * (j_ptr->number - diff) / j_ptr->number;
 	}
 
 	/* Hack -- if wands are stacking, combine the charges. -LM- */
 	if (o_ptr->tval == TV_WAND)
 	{
-		o_ptr->pval += j_ptr->pval;
+		o_ptr->pval += j_ptr->pval * (j_ptr->number - diff) / j_ptr->number;
 	}
 }
 
@@ -1308,6 +1320,9 @@ static bool store_will_buy(object_type *o_ptr)
 			/* Analyze the type */
 			switch (o_ptr->tval)
 			{
+				case TV_POTION:
+					if (o_ptr->sval != SV_POTION_WATER) return FALSE;
+
 				case TV_WHISTLE:
 				case TV_FOOD:
 				case TV_LITE:
@@ -4064,7 +4079,7 @@ msg_format("%sを調べている...", o_name);
 
 
 	/* Describe it fully */
-	if (!identify_fully_aux(o_ptr))
+	if (!screen_object(o_ptr, TRUE))
 #ifdef JP
 msg_print("特に変わったところはないようだ。");
 #else
@@ -4309,7 +4324,9 @@ static void store_process_command(void)
 		/* Character description */
 		case 'C':
 		{
+			p_ptr->town_num = old_town_num;
 			do_cmd_change_name();
+			p_ptr->town_num = inner_town_num;
 			display_store();
 			break;
 		}
@@ -4327,28 +4344,36 @@ static void store_process_command(void)
 		/* Single line from a pref file */
 		case '"':
 		{
+			p_ptr->town_num = old_town_num;
 			do_cmd_pref();
+			p_ptr->town_num = inner_town_num;
 			break;
 		}
 
 		/* Interact with macros */
 		case '@':
 		{
+			p_ptr->town_num = old_town_num;
 			do_cmd_macros();
+			p_ptr->town_num = inner_town_num;
 			break;
 		}
 
 		/* Interact with visuals */
 		case '%':
 		{
+			p_ptr->town_num = old_town_num;
 			do_cmd_visuals();
+			p_ptr->town_num = inner_town_num;
 			break;
 		}
 
 		/* Interact with colors */
 		case '&':
 		{
+			p_ptr->town_num = old_town_num;
 			do_cmd_colors();
+			p_ptr->town_num = inner_town_num;
 			break;
 		}
 
@@ -4455,7 +4480,6 @@ void do_cmd_store(void)
 	int         tmp_chr;
 	int         i;
 	cave_type   *c_ptr;
-	s16b        old_town_num;
 
 
 	/* Access the player grid */
@@ -4482,6 +4506,7 @@ void do_cmd_store(void)
 	old_town_num = p_ptr->town_num;
 	if ((which == STORE_HOME) || (which == STORE_MUSEUM)) p_ptr->town_num = 1;
 	if (dun_level) p_ptr->town_num = NO_TOWN;
+	inner_town_num = p_ptr->town_num;
 
 	/* Hack -- Check the "locked doors" */
 	if ((town[p_ptr->town_num].store[which].store_open >= turn) ||
@@ -4808,7 +4833,7 @@ void do_cmd_store(void)
 
 
 	/* Update everything */
-	p_ptr->update |= (PU_VIEW | PU_LITE);
+	p_ptr->update |= (PU_VIEW | PU_LITE | PU_MON_LITE);
 	p_ptr->update |= (PU_MONSTERS);
 
 	/* Redraw entire screen */

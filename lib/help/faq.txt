@@ -9,17 +9,11 @@ Q. I want to play as an Android, Balrog, Golem, Skeleton, Zombie,
 
 A. Scroll of Satisfy Hunger and Berserker's ability of Satisfy Hunger
    are obsoleted.  And races which previously relyed on Satisfy Hunger
-   have new sources of nutrition now; Android can quaff oil, Balrogs
-   can sacrifice human corpse using the 'E'at command, All Undead
-   races can absorb mana from staves and wands using the 'E'at
-   command, Ents can gain enough nutrition from potions.
-
-
-Berserkers gain a class power 'Satisfy Hunger' at level 5.  Press
-   the 'U'(original keyset) or 'O'(Roguelike keyset) to use class
-   power.  Berserkers also gain one more class power 'Recall' at level
-   10.  If your level is lower than 5, eating huge amount of foods at
-   once will help you.
+   have new sources of nutrition now; Android can quaff oil.  Balrogs
+   can sacrifice human corpse using the 'E'at command.  Golems,
+   Skeletons, Zombies, and Spectres can absorb mana from staves and
+   wands using the 'E'at command.  Ents can gain enough nutrition from
+   potions.
 
 
 Q. I got through the Yeek cave and I headed into the wilderness....and
@@ -38,6 +32,13 @@ Q. I'm playing as a berserker, and cannot read scrolls.  How do I
 A. You can simply 't'ake off cursed equipments.  Since cursed
    equipments are strongly sticking, you need to try 't'ake off
    command many times.
+
+
+Q. I know Berserkers cannot use scrolls, and rods.  How do I recall
+   from dungeon?  Maybe I need to travel completely on foot?!!
+
+A. Berserkers gain a class power 'Recall' at level 10.  Press the
+   'U'(original keyset) or 'O'(Roguelike keyset) to use class power.
 
 
 Q. Why Ninja have Iron Spikes at the start?
@@ -108,7 +109,7 @@ A. You cannot directly control your mount unless you use one hand to
 Q. Where is the score server?  And how do I register my character
    dumps?
 
-A. Here;'http://echizen.s5.xrea.com/heng/eng-hengband/score.html'.
+A. Here;'http://hengband.sourceforge.jp/en/score.html'.
    When you die, Hengband will ask you as 'Do you send score to the
    world score sever?'.  And if you answer 'y', Hengband will
    automatically register your character dump and screen shot.
@@ -131,17 +132,17 @@ A. Hengband is mainly based on ZAngband 2.2.8 Japanese version.
    Hengband also includes codes from many other variants including
    ToME, OAngband, etc...  Mr.Hoge wrote the first original part of
    Hengband.  And currently, it is maintained by Hengband Development
-   Team(heng-ml @ kmc.gr.jp) including Mr.Hoge, Habu, Henkma, iks,
-   Kuwa, and Mogami.
+   Team including Mr.Hoge, Habu, Henkma, iks, Kuwa, Mogami, nsk, and
+   @nothere.
 
 
 Q. Where is Hengband?
 
-A. Here: http://echizen.s5.xrea.com/heng/eng-hengband/index.html
+A. Here: http://hengband.sourceforge.jp/en/
 
 
 
  Hengband FAQ written by Mogami
 
 --
-Updated    : Hengband 1.3.2
+Updated    : Hengband 1.5.4

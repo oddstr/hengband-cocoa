@@ -728,7 +728,7 @@ static hist_type bg[] =
 
 
 #ifdef JP
-	{"あなたは女王クラコンの何人かの子供のうちの一人です。"
+	{"あなたは女王クラッコンの何人かの子供のうちの一人です。"
 	, 100, 84, 85, 50 },
 
 	{"あなたは赤い肌と", 40, 85, 86, 50 },
@@ -1843,7 +1843,7 @@ static cptr class_jouhou[MAX_CLASS] =
 
 "The Monk character class is very different from all other classes.  Their training in martial arts makes them much more powerful with no armor or weapons.  To gain the resistances necessary for survival a monk may need to wear some kind of armor, but if the armor he wears is too heavy, it will severely disturb his martial arts maneuvers.  As the monk advances levels, new, powerful forms of attack become available.  Their defensive capabilities increase likewise, but if armour is being worn, this effect decreases.  Wisdom determines a Monk's spell casting ability.",
 
-"The Mindcrafter is a unique class that uses the powers of the mind instead of magic.  These powers are unique to Mindcrafters, and vary from simple extrasensory powers to mental domination of others.  Since these powers are developed by the practice of certain disciplines, a Mindcrafter requires no spellbooks to use them.  The available powers are simply determined by the character's level.  Wisdom determines a Mindcrafter's ability to use mind powers,",
+"The Mindcrafter is a unique class that uses the powers of the mind instead of magic.  These powers are unique to Mindcrafters, and vary from simple extrasensory powers to mental domination of others.  Since these powers are developed by the practice of certain disciplines, a Mindcrafter requires no spellbooks to use them.  The available powers are simply determined by the character's level.  Wisdom determines a Mindcrafter's ability to use mind powers.",
 
 "High-mages are mages who specialize in one particular field of magic and learn it very well - much better than the ordinary mage.  For the price of giving up a second realm of magic, they gain substantial benefits in the mana costs, minimum levels, and failure rates in the spells of the realm of their specialty.  A high mage's prime statistic is intelligence as this determines his spell casting ability. ",
 
@@ -1981,15 +1981,15 @@ static cptr realm_jouhou[VALID_REALM] =
 
 "Arcane magic is a general purpose realm of magic.  It attempts to encompass all 'useful' spells from all realms.  This is the downside of Arcane magic: while Arcane does have all the necessary 'tool' spells for a dungeon delver, it has no ultra-powerful high level spells.  As a consequence, all Arcane spellbooks can be bought in town.  It should also be noted that the 'specialized' realms usually offer the same spell at a lower level and cost. ",
 
-"Craft magic can strengthen the caster or equipments.  These spells greatly improve the caster's fighting ability, but spells that hurts opponents directly is not exist.",
+"Craft magic can strengthen the caster or the equipments.  These spells can greatly improve the caster's fighting ability.  Using them against opponents directly is not possible.",
 
 "Demon is a very evil realm, same as Death.  It provides various attack spells and devilish detection spells.  at higher levels, Demon magic provides ability to dominate demons, and to polymorph yourself into a demon.",
 
-"Crusade is a realm of 'Justice'; It does have many attack spells which are mostly used for harming and banishing foul minions of evil, and these spells are not so effective for good monsters.",
+"Crusade is a magic of 'Justice'.  It includes damage spells, which are greatly effective against foul and evil monsters, but have poor effects against good monsters.",
 
 "Music magic shows various effects as sing song.  There is two type of song; the one which shows effects instantly and the other one shows effect continuously until SP runs out.  But the latter type has a limit; only one song can be sing at the same time.",
 
-"The books of Kendo describes various combat technique.  it need to read the books when one studys the techniques, but it doesn't need to take around the books to use the techniques after one momorizes it.  It need a weapon wielded to use the techniques."
+"The books of Kendo describe about various combat techniques.  When learning new techniques, you are required to carry the books, but once you memorizes them, you don't have to carry them.  When using a technique, wielding a weapon is required."
 #endif
 };
 
@@ -2341,7 +2341,7 @@ static bool get_player_realms(void)
 	p_ptr->realm2 = 255;
 	while (1)
 	{
-		char temp[80*8];
+		char temp[80*10];
 		cptr t;
 		count = 0;
 		p_ptr->realm1 = choose_realm(realm_choices1[p_ptr->pclass], &count);
@@ -2355,9 +2355,9 @@ static bool get_player_realms(void)
 		put_str("                                   ", 4, 40);
 		put_str("                                   ", 5, 40);
 
-		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm1)-1], 74, temp);
+		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm1)-1], 74, temp, sizeof(temp));
 		t = temp;
-		for (i = 0; i< 6; i++)
+		for (i = 0; i < 10; i++)
 		{
 			if(t[0] == 0)
 				break; 
@@ -2418,7 +2418,7 @@ else
 			put_str("                                   ", 4, 40);
 			put_str("                                   ", 5, 40);
 
-			roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm2)-1], 74, temp);
+			roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm2)-1], 74, temp, sizeof(temp));
 			t = temp;
 			for (i = 0; i< 6; i++)
 			{
@@ -3062,7 +3062,7 @@ static void get_history(void)
 
        {
 	char temp[64*4];
-	roff_to_buf(s, 60, temp);
+	roff_to_buf(s, 60, temp, sizeof(temp));
 	t = temp;
 	for(i=0 ; i<4 ; i++){
 	     if(t[0]==0)break; 
@@ -3394,6 +3394,30 @@ static void player_wipe(void)
 	}
 }
 
+
+/*
+ *  Hook function for quest monsters
+ */
+static bool mon_hook_quest(int r_idx)
+{
+	monster_race *r_ptr = &r_info[r_idx];
+
+	/* Random quests are in the dungeon */
+	if (r_ptr->flags8 & RF8_WILD_ONLY) return FALSE;
+
+	/* No random quests for aquatic monsters */
+	if (r_ptr->flags7 & RF7_AQUATIC) return FALSE;
+
+	/* No random quests for multiplying monsters */
+	if (r_ptr->flags2 & RF2_MULTIPLY) return FALSE;
+
+	/* No quests to kill friendly monsters */
+	if (r_ptr->flags7 & RF7_FRIENDLY) return FALSE;
+
+	return TRUE;
+}
+
+
 /*
  *  Initialize random quests and final quests
  */
@@ -3411,7 +3435,7 @@ static void init_dungeon_quests(int number_of_quests)
 	p_ptr->inside_quest = 0;
 
 	/* Prepare allocation table */
-	get_mon_num_prep(monster_quest, NULL);
+	get_mon_num_prep(mon_hook_quest, NULL);
 
 	/* Remove QUESTOR flag */
 	for (i = 1; i < max_r_idx; i++)
@@ -4011,6 +4035,9 @@ void player_outfit(void)
 
 		(void)inven_carry(q_ptr);
 	}
+
+	/* Hack -- make aware of the water */
+	k_info[lookup_kind(TV_POTION, SV_POTION_WATER)].aware = TRUE;
 }
 
 
@@ -5323,7 +5350,7 @@ static void edit_history(void)
 			if ((x > 0) && (iskanji2(p_ptr->history[y], x-1))) x--;
 #endif
 		}
-		else if (c == '\r')
+		else if (c == '\r' || c == '\n')
 		{
 			break;
 		}
@@ -5620,7 +5647,7 @@ static bool player_birth_aux(void)
 
 		clear_from(10);
 
-		roff_to_buf(race_jouhou[p_ptr->prace], 74, temp);
+		roff_to_buf(race_jouhou[p_ptr->prace], 74, temp, sizeof(temp));
 		t = temp;
 
 		for (i = 0; i< 10; i++)
@@ -5655,7 +5682,7 @@ static bool player_birth_aux(void)
 		if (!get_player_class()) return FALSE;
 
 		clear_from(10);
-		roff_to_buf(class_jouhou[p_ptr->pclass], 74, temp);
+		roff_to_buf(class_jouhou[p_ptr->pclass], 74, temp, sizeof(temp));
 		t = temp;
 
 		for (i = 0; i< 9; i++)
@@ -5690,7 +5717,7 @@ static bool player_birth_aux(void)
 		if (!get_player_seikaku()) return FALSE;
 
 		clear_from(10);
-		roff_to_buf(seikaku_jouhou[p_ptr->pseikaku], 74, temp);
+		roff_to_buf(seikaku_jouhou[p_ptr->pseikaku], 74, temp, sizeof(temp));
 		t = temp;
 
 		for (i = 0; i< 6; i++)
@@ -5826,8 +5853,6 @@ static bool player_birth_aux(void)
 
 	/* Clear */
 	clear_from(10);
-
-	init_dungeon_quests(number_of_quests);
 
 	/* Reset turn; before auto-roll and after choosing race */
 	init_turn();
@@ -6198,6 +6223,8 @@ static bool player_birth_aux(void)
 	/* Start over */
 	if (c == 'S') return (FALSE);
 
+	init_dungeon_quests(number_of_quests);
+
 	/* Save character data for quick start */
 	save_prev_data(&previous_char);
 	previous_char.quests = number_of_quests;
@@ -6309,6 +6336,12 @@ void player_birth(void)
 
 	playtime = 0;
 
+	/*
+	 * Paranoia - wipe the pets
+	 * For accuracy of precalc_cur_num_of_pet() called from wipe_m_list()
+	 */
+	C_WIPE(party_mon, MAX_PARTY_MON, monster_type);
+
 	/* 
 	 * Wipe monsters in old dungeon
 	 * This wipe destroys value of m_list[].cur_num .
@@ -6415,13 +6448,13 @@ void player_birth(void)
 
 void dump_yourself(FILE *fff)
 {
-	char temp[80*8];
+	char temp[80*10];
 	int i;
 	cptr t;
 
 	if (!fff) return;
 
-	roff_to_buf(race_jouhou[p_ptr->prace], 78, temp);
+	roff_to_buf(race_jouhou[p_ptr->prace], 78, temp, sizeof(temp));
 	fprintf(fff, "\n\n");
 #ifdef JP
 	fprintf(fff, "種族: %s\n", race_info[p_ptr->prace].title);
@@ -6429,14 +6462,14 @@ void dump_yourself(FILE *fff)
 	fprintf(fff, "Race: %s\n", race_info[p_ptr->prace].title);
 #endif
 	t = temp;
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < 10; i++)
 	{
 		if(t[0] == 0)
 			break; 
 		fprintf(fff, "%s\n",t);
 		t += strlen(t) + 1;
 	}
-	roff_to_buf(class_jouhou[p_ptr->pclass], 78, temp);
+	roff_to_buf(class_jouhou[p_ptr->pclass], 78, temp, sizeof(temp));
 	fprintf(fff, "\n");
 #ifdef JP
 	fprintf(fff, "職業: %s\n", class_info[p_ptr->pclass].title);
@@ -6444,14 +6477,14 @@ void dump_yourself(FILE *fff)
 	fprintf(fff, "Class: %s\n", class_info[p_ptr->pclass].title);
 #endif
 	t = temp;
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < 10; i++)
 	{
 		if(t[0] == 0)
 			break; 
 		fprintf(fff, "%s\n",t);
 		t += strlen(t) + 1;
 	}
-	roff_to_buf(seikaku_jouhou[p_ptr->pseikaku], 78, temp);
+	roff_to_buf(seikaku_jouhou[p_ptr->pseikaku], 78, temp, sizeof(temp));
 	fprintf(fff, "\n");
 #ifdef JP
 	fprintf(fff, "性格: %s\n", seikaku_info[p_ptr->pseikaku].title);
@@ -6469,7 +6502,7 @@ void dump_yourself(FILE *fff)
 	fprintf(fff, "\n");
 	if (p_ptr->realm1)
 	{
-		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm1)-1], 78, temp);
+		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm1)-1], 78, temp, sizeof(temp));
 #ifdef JP
 		fprintf(fff, "魔法: %s\n", realm_names[p_ptr->realm1]);
 #else
@@ -6487,7 +6520,7 @@ void dump_yourself(FILE *fff)
 	fprintf(fff, "\n");
 	if (p_ptr->realm2)
 	{
-		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm2)-1], 78, temp);
+		roff_to_buf(realm_jouhou[technic2magic(p_ptr->realm2)-1], 78, temp, sizeof(temp));
 #ifdef JP
 		fprintf(fff, "魔法: %s\n", realm_names[p_ptr->realm2]);
 #else

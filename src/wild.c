@@ -1130,7 +1130,7 @@ bool change_wild_mode(void)
 #ifdef JP
 		msg_print("荒野なんてない。");
 #else
-		msg_print("No global mal");
+		msg_print("No global map.");
 #endif
 		return FALSE;
 	}
@@ -1166,7 +1166,7 @@ bool change_wild_mode(void)
 				return FALSE;
 			}
 		}
-			
+
 		energy_use = 1000;
 	}
 

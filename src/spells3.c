@@ -134,6 +134,9 @@ bool teleport_away(int m_idx, int dis, bool dec_valour)
 	/* Redraw the new grid */
 	lite_spot(ny, nx);
 
+	if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+		p_ptr->update |= (PU_MON_LITE);
+
 	return (TRUE);
 }
 
@@ -241,7 +244,8 @@ void teleport_to_player(int m_idx, int power)
 	/* Redraw the new grid */
 	lite_spot(ny, nx);
 
-	p_ptr->update |= (PU_MON_LITE);
+	if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+		p_ptr->update |= (PU_MON_LITE);
 }
 
 
@@ -263,7 +267,7 @@ void teleport_player(int dis)
 	int d, i, min, ox, oy;
 	int tries = 0;
 
-	int xx = -1, yy = -1;
+	int xx, yy;
 
 	/* Initialize */
 	int y = py;
@@ -367,35 +371,29 @@ msg_print("不思議な力がテレポートを防いだ！");
 	lite_spot(oy, ox);
 
 	/* Monsters with teleport ability may follow the player */
-	while (xx < 2)
+	for (xx = -1; xx < 2; xx++)
 	{
-		yy = -1;
-
-		while (yy < 2)
+		for (yy = -1; yy < 2; yy++)
 		{
-			if (xx == 0 && yy == 0)
+			int tmp_m_idx = cave[oy+yy][ox+xx].m_idx;
+
+			/* A monster except your mount may follow */
+			if (tmp_m_idx && p_ptr->riding != tmp_m_idx)
 			{
-				/* Do nothing */
-			}
-			else
-			{
-				if (cave[oy+yy][ox+xx].m_idx)
+				monster_type *m_ptr = &m_list[tmp_m_idx];
+				monster_race *r_ptr = &r_info[m_ptr->r_idx];
+
+				/*
+				 * The latter limitation is to avoid
+				 * totally unkillable suckers...
+				 */
+				if ((r_ptr->flags6 & RF6_TPORT) &&
+				    !(r_ptr->flags3 & RF3_RES_TELE))
 				{
-					if ((r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].flags6 & RF6_TPORT) &&
-					    !(r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].flags3 & RF3_RES_TELE))
-						/*
-						 * The latter limitation is to avoid
-						 * totally unkillable suckers...
-						 */
-					{
-						if (!(m_list[cave[oy+yy][ox+xx].m_idx].csleep))
-							teleport_to_player(cave[oy+yy][ox+xx].m_idx, r_info[m_list[cave[oy+yy][ox+xx].m_idx].r_idx].level);
-					}
+					if (!m_ptr->csleep) teleport_to_player(tmp_m_idx, r_ptr->level);
 				}
 			}
-			yy++;
 		}
-		xx++;
 	}
 
 	forget_flow();
@@ -523,7 +521,7 @@ void teleport_player_level(void)
 {
 	/* No effect in arena or quest */
 	if (p_ptr->inside_arena || (p_ptr->inside_quest && !random_quest_number(dun_level)) ||
-	    (quest_number(dun_level) && (dun_level > 1) && ironman_downward))
+	    ((quest_number(dun_level) || (dun_level >= d_info[dungeon_type].maxdepth)) && (dun_level > 1) && ironman_downward))
 	{
 #ifdef JP
 msg_print("効果がなかった。");
@@ -894,6 +892,9 @@ bool apply_disenchant(int mode)
 	/* No item, nothing happens */
 	if (!o_ptr->k_idx) return (FALSE);
 
+	/* Disenchant equipments only -- No disenchant on monster ball */
+	if (o_ptr->tval < TV_BOW || TV_CARD < o_ptr->tval)
+		return FALSE;
 
 	/* Nothing to disenchant */
 	if ((o_ptr->to_h <= 0) && (o_ptr->to_d <= 0) && (o_ptr->to_a <= 0) && (o_ptr->pval <= 1))
@@ -2513,7 +2514,7 @@ msg_format("%sは既に強化されています！",
 #else
 		msg_format("The %s %s already %s!",
 		    o_name, ((o_ptr->number > 1) ? "are" : "is"),
-		    ((o_ptr->number > 1) ? "kaji items" : "an kaji item"));
+		    ((o_ptr->number > 1) ? "customized items" : "a customized item"));
 #endif
 	}
 
@@ -2895,7 +2896,7 @@ s = "鑑定するべきアイテムがない。";
 	}
 
 	/* Describe it fully */
-	(void)identify_fully_aux(o_ptr);
+	(void)screen_object(o_ptr, TRUE);
 
 	/* Auto-inscription/destroy */
 	idx = is_autopick(o_ptr);
@@ -2916,10 +2917,7 @@ s = "鑑定するべきアイテムがない。";
 bool item_tester_hook_recharge(object_type *o_ptr)
 {
 	/* Recharge staffs */
-	if (o_ptr->tval == TV_STAFF)
-	{
-		if (o_ptr->sval != SV_STAFF_NOTHING) return (TRUE);
-	}
+	if (o_ptr->tval == TV_STAFF) return (TRUE);
 
 	/* Recharge wands */
 	if (o_ptr->tval == TV_WAND) return (TRUE);
@@ -3964,6 +3962,39 @@ s16b experience_of_spell(int spell, int use_realm)
 
 
 /*
+ * Modify spell fail rate
+ * Using p_ptr->to_m_chance, p_ptr->dec_mana, p_ptr->easy_spell and p_ptr->heavy_spell
+ */
+int mod_spell_chance_1(int chance)
+{
+	chance += p_ptr->to_m_chance;
+
+	if (p_ptr->heavy_spell) chance += 20;
+
+	if (p_ptr->dec_mana && p_ptr->easy_spell) chance -= 4;
+	else if (p_ptr->easy_spell) chance -= 3;
+	else if (p_ptr->dec_mana) chance -= 2;
+
+	return chance;
+}
+
+
+/*
+ * Modify spell fail rate (as "suffix" process)
+ * Using p_ptr->dec_mana, p_ptr->easy_spell and p_ptr->heavy_spell
+ * Note: variable "chance" cannot be negative.
+ */
+int mod_spell_chance_2(int chance)
+{
+	if (p_ptr->dec_mana) chance--;
+
+	if (p_ptr->heavy_spell) chance += 5;
+
+	return MAX(chance, 0);
+}
+
+
+/*
  * Returns spell chance of failure for spell -RAK-
  */
 s16b spell_chance(int spell, int use_realm)
@@ -4016,7 +4047,6 @@ s16b spell_chance(int spell, int use_realm)
 		chance += 5 * (shouhimana - p_ptr->csp);
 	}
 
-	chance += p_ptr->to_m_chance;
 	if ((use_realm != p_ptr->realm1) && ((p_ptr->pclass == CLASS_MAGE) || (p_ptr->pclass == CLASS_PRIEST))) chance += 5;
 
 	/* Extract the minimum failure rate */
@@ -4035,10 +4065,7 @@ s16b spell_chance(int spell, int use_realm)
 	if (((p_ptr->pclass == CLASS_PRIEST) || (p_ptr->pclass == CLASS_SORCERER)) && p_ptr->icky_wield[0]) chance += 25;
 	if (((p_ptr->pclass == CLASS_PRIEST) || (p_ptr->pclass == CLASS_SORCERER)) && p_ptr->icky_wield[1]) chance += 25;
 
-	if (p_ptr->heavy_spell) chance += 20;
-	if(p_ptr->dec_mana && p_ptr->easy_spell) chance-=4;
-	else if (p_ptr->easy_spell) chance-=3;
-	else if (p_ptr->dec_mana) chance-=2;
+	chance = mod_spell_chance_1(chance);
 
 	if ((use_realm == REALM_NATURE) && ((p_ptr->align > 50) || (p_ptr->align < -50))) chance += penalty;
 	if (((use_realm == REALM_LIFE) || (use_realm == REALM_CRUSADE)) && (p_ptr->align < -20)) chance += penalty;
@@ -4054,19 +4081,16 @@ s16b spell_chance(int spell, int use_realm)
 	/* Always a 5 percent chance of working */
 	if (chance > 95) chance = 95;
 
-	if ((use_realm == p_ptr->realm1) || (use_realm == p_ptr->realm2))
+	if ((use_realm == p_ptr->realm1) || (use_realm == p_ptr->realm2)
+	    || (p_ptr->pclass == CLASS_SORCERER) || (p_ptr->pclass == CLASS_RED_MAGE))
 	{
 		s16b exp = experience_of_spell(spell, use_realm);
 		if(exp > 1399) chance--;
 		if(exp > 1599) chance--;
 	}
-	if(p_ptr->dec_mana) chance--;
-	if (p_ptr->heavy_spell) chance += 5;
-
-	chance = MAX(chance,0);
 
 	/* Return the chance */
-	return (chance);
+	return mod_spell_chance_2(chance);
 }
 
 
@@ -4353,7 +4377,7 @@ static void spell_info(char *p, int spell, int use_realm)
 		case 15: sprintf(p, " %s%d+d%d", s_dur, plev/2, plev/2); break;
 		case 16: sprintf(p, " %s25+d30", s_dur); break;
 		case 17: sprintf(p, " %s30+d20", s_dur); break;
-		case 19: sprintf(p, " %s%d+d%d", s_dur, plev+20, plev); break;
+		case 19: sprintf(p, " %s%d+d%d", s_dur, plev, plev+20); break;
 		case 20: sprintf(p, " %s50+d50", s_dur); break;
 		case 23: sprintf(p, " %s20+d20", s_dur); break;
 		case 31: sprintf(p, " %s13+d13", s_dur); break;
@@ -4543,9 +4567,9 @@ put_str(buf, y, x + 29);
 
 			max = FALSE;
 			if (!increment && (shougou == 4)) max = TRUE;
-			else if ((increment == 32) && (shougou == 3)) max = TRUE;
+			else if ((increment == 32) && (shougou >= 3)) max = TRUE;
 			else if (s_ptr->slevel >= 99) max = TRUE;
-			else if (p_ptr->pclass == CLASS_RED_MAGE) max = TRUE;
+			else if ((p_ptr->pclass == CLASS_RED_MAGE) && (shougou >= 2)) max = TRUE;
 
 			strncpy(ryakuji,shougou_moji[shougou],4);
 			ryakuji[3] = ']';
@@ -5124,7 +5148,7 @@ int elec_dam(int dam, cptr kb_str, int monspell)
 	/* Vulnerability (Ouch!) */
 	if (p_ptr->muta3 & MUT3_VULN_ELEM) dam *= 2;
 	if (p_ptr->special_defense & KATA_KOUKIJIN) dam += dam / 3;
-	if (p_ptr->prace == RACE_ANDROID) dam += dam / 3;
+	if (prace_is_(RACE_ANDROID)) dam += dam / 3;
 
 	/* Resist the damage */
 	if (p_ptr->resist_elec) dam = (dam + 2) / 3;
@@ -5976,6 +6000,9 @@ msg_format("乱暴な魔法のために%sが壊れた！", o_name);
 	{
 		p_ptr->csp = p_ptr->msp;
 	}
+
+	/* Redraw mana and hp */
+	p_ptr->redraw |= (PR_MANA);
 
 	p_ptr->notice |= (PN_COMBINE | PN_REORDER);
 	p_ptr->window |= (PW_INVEN);

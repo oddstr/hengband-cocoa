@@ -212,9 +212,8 @@ static void close_auto_dump(FILE *fff, cptr mark, int line_num)
 
 
 /*
- *   Take note to the dialy.
+ *   Take note to the diary.
  */
-
 errr do_cmd_write_nikki(int type, int num, cptr note)
 {
 	int day, hour, min;
@@ -223,6 +222,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 	char buf[1024];
 	cptr note_level = "";
 	bool do_level = TRUE;
+	char note_level_buf[40];
 
 	static bool disable_nikki = FALSE;
 
@@ -304,11 +304,14 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 			note_level = "Quest:";
 #endif
 		else
+		{
 #ifdef JP
-			note_level = format("%d階(%s):", dun_level, d_name+d_info[dungeon_type].name);
+			sprintf(note_level_buf, "%d階(%s):", dun_level, d_name+d_info[dungeon_type].name);
 #else
-			note_level = format("%s L%d:", d_name+d_info[dungeon_type].name, dun_level);
+			sprintf(note_level_buf, "%s L%d:", d_name+d_info[dungeon_type].name, dun_level);
 #endif
+			note_level = note_level_buf;
+		}
 	}
 
 	switch(type)
@@ -339,7 +342,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sを発見した。\n", hour, min, note_level, note);
 #else
-			fprintf(fff, " %2d:%02d %20s discover %s.\n", hour, min, note_level, note);
+			fprintf(fff, " %2d:%02d %20s discovered %s.\n", hour, min, note_level, note);
 #endif
 			break;
 		}
@@ -429,11 +432,11 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 				if (!(dun_level+num)) to = "地上";
 				else to = format("%d階", dun_level+num);
 #else
-				if (!(dun_level+num)) to = "the surfice";
+				if (!(dun_level+num)) to = "the surface";
 				else to = format("level %d", dun_level+num);
 #endif
 			}
-				
+
 #ifdef JP 
 			fprintf(fff, " %2d:%02d %20s %sへ%s。\n", hour, min, note_level, to, note);
 #else
@@ -447,13 +450,13 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 				fprintf(fff, " %2d:%02d %20s 帰還を使って%sの%d階へ下りた。\n", hour, min, note_level, d_name+d_info[dungeon_type].name, max_dlv[dungeon_type]);
 #else
-				fprintf(fff, " %2d:%02d %20s recall to dungeon level %d of %s.\n", hour, min, note_level, max_dlv[dungeon_type], d_name+d_info[dungeon_type].name);
+				fprintf(fff, " %2d:%02d %20s recalled to dungeon level %d of %s.\n", hour, min, note_level, max_dlv[dungeon_type], d_name+d_info[dungeon_type].name);
 #endif
 			else
 #ifdef JP
 				fprintf(fff, " %2d:%02d %20s 帰還を使って地上へと戻った。\n", hour, min, note_level);
 #else
-				fprintf(fff, " %2d:%02d %20s recall from dungeon to surface.\n", hour, min, note_level);
+				fprintf(fff, " %2d:%02d %20s recalled from dungeon to surface.\n", hour, min, note_level);
 #endif
 			break;
 		}
@@ -463,7 +466,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s クエスト「%s」へと突入した。\n", hour, min, note_level, quest[num].name);
 #else
-			fprintf(fff, " %2d:%02d %20s enter quest '%s'.\n", hour, min, note_level, quest[num].name);
+			fprintf(fff, " %2d:%02d %20s entered the quest '%s'.\n", hour, min, note_level, quest[num].name);
 #endif
 			break;
 		}
@@ -496,7 +499,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 				else to = format("level %d", dun_level+num);
 #endif
 			}
-				
+
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sへとテレポートで移動した。\n", hour, min, note_level, to);
 #else
@@ -509,7 +512,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sを購入した。\n", hour, min, note_level, note);
 #else
-			fprintf(fff, " %2d:%02d %20s buy %s.\n", hour, min, note_level, note);
+			fprintf(fff, " %2d:%02d %20s bought %s.\n", hour, min, note_level, note);
 #endif
 			break;
 		}
@@ -518,7 +521,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sを売却した。\n", hour, min, note_level, note);
 #else
-			fprintf(fff, " %2d:%02d %20s sell %s.\n", hour, min, note_level, note);
+			fprintf(fff, " %2d:%02d %20s sold %s.\n", hour, min, note_level, note);
 #endif
 			break;
 		}
@@ -538,14 +541,14 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s 闘技場の%d回戦(%s)に勝利した。\n", hour, min, note_level, num, note);
 #else
-			fprintf(fff, " %2d:%02d %20s win the %d%s fight (%s).\n", hour, min, note_level, num, (num%10==1?"st":num%10==2?"nd":num%10==3?"rd":"th"), note);
+			fprintf(fff, " %2d:%02d %20s won the %d%s fight (%s).\n", hour, min, note_level, num, (num%10==1?"st":num%10==2?"nd":num%10==3?"rd":"th"), note);
 #endif
 			if (num == MAX_ARENA_MONS)
 			{
 #ifdef JP
 				fprintf(fff, "                 闘技場のすべての敵に勝利し、チャンピオンとなった。\n");
 #else
-				fprintf(fff, "                 win all fight to become a Chanpion.\n");
+				fprintf(fff, "                 won all fight to become a Chanpion.\n");
 #endif
 				do_level = FALSE;
 			}
@@ -556,7 +559,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sを識別した。\n", hour, min, note_level, note);
 #else
-			fprintf(fff, " %2d:%02d %20s identify %s.\n", hour, min, note_level, note);
+			fprintf(fff, " %2d:%02d %20s identified %s.\n", hour, min, note_level, note);
 #endif
 			break;
 		}
@@ -575,7 +578,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #else
 				to = format("level %d of %s", dun_level, d_name+d_info[dungeon_type].name);
 #endif
-				
+
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sへとウィザード・テレポートで移動した。\n", hour, min, note_level, to);
 #else
@@ -598,11 +601,11 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #else
 				to = format("level %d of %s", dun_level, d_name+d_info[dungeon_type].name);
 #endif
-				
+
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s %sへとパターンの力で移動した。\n", hour, min, note_level, to);
 #else
-			fprintf(fff, " %2d:%02d %20s use Pattern to teleport to %s.\n", hour, min, note_level, to);
+			fprintf(fff, " %2d:%02d %20s used Pattern to teleport to %s.\n", hour, min, note_level, to);
 #endif
 			break;
 		}
@@ -611,7 +614,7 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 			fprintf(fff, " %2d:%02d %20s レベルが%dに上がった。\n", hour, min, note_level, num);
 #else
-			fprintf(fff, " %2d:%02d %20s reach player level %d.\n", hour, min, note_level, num);
+			fprintf(fff, " %2d:%02d %20s reached player level %d.\n", hour, min, note_level, num);
 #endif
 			break;
 		}
@@ -636,56 +639,56 @@ errr do_cmd_write_nikki(int type, int num, cptr note)
 #ifdef JP
 					fprintf(fff, "%sを旅の友にすることに決めた。\n", note);
 #else
-					fprintf(fff, "decide to travel together with %s.\n", note);
+					fprintf(fff, "decided to travel together with %s.\n", note);
 #endif
 					break;
 				case 1:
 #ifdef JP
 					fprintf(fff, "%sの名前を消した。\n", note);
 #else
-					fprintf(fff, "unname %s.\n", note);
+					fprintf(fff, "unnamed %s.\n", note);
 #endif
 					break;
 				case 2:
 #ifdef JP
 					fprintf(fff, "%sを解放した。\n", note);
 #else
-					fprintf(fff, "dismiss %s.\n", note);
+					fprintf(fff, "dismissed %s.\n", note);
 #endif
 					break;
 				case 3:
 #ifdef JP
 					fprintf(fff, "%sが死んでしまった。\n", note);
 #else
-					fprintf(fff, "%s die.\n", note);
+					fprintf(fff, "%s died.\n", note);
 #endif
 					break;
 				case 4:
 #ifdef JP
 					fprintf(fff, "%sをおいて別のマップへ移動した。\n", note);
 #else
-					fprintf(fff, "move to other map leaving %s behind.\n", note);
+					fprintf(fff, "moved to another map leaving %s behind.\n", note);
 #endif
 					break;
 				case 5:
 #ifdef JP
 					fprintf(fff, "%sとはぐれてしまった。\n", note);
 #else
-					fprintf(fff, "lose sight of %s.\n", note);
+					fprintf(fff, "lost sight of %s.\n", note);
 #endif
 					break;
 				case 6:
 #ifdef JP
 					fprintf(fff, "%sが*破壊*によって消え去った。\n", note);
 #else
-					fprintf(fff, "%s is made disappeared by *destruction*.\n", note);
+					fprintf(fff, "%s was made disappeared by *destruction*.\n", note);
 #endif
 					break;
 				case 7:
 #ifdef JP
 					fprintf(fff, "%sが岩石に押し潰された。\n", note);
 #else
-					fprintf(fff, "%s is crushed by falling rocks.\n", note);
+					fprintf(fff, "%s was crushed by falling rocks.\n", note);
 #endif
 					break;
 				default:
@@ -3469,6 +3472,9 @@ void do_cmd_visuals(void)
 
 	char buf[1024];
 
+	const char *empty_symbol = "<< ? >>";
+
+	if (use_bigtile) empty_symbol = "<< ?? >>";
 
 	/* File type is "TEXT" */
 	FILE_TYPE(FILE_TYPE_TEXT);
@@ -3809,7 +3815,8 @@ void do_cmd_visuals(void)
 			while (1)
 			{
 				monster_race *r_ptr = &r_info[r];
-				char c;
+				byte a, a2;
+				char c, c2;
 				int t;
 
 				byte da = (r_ptr->d_attr);
@@ -3838,15 +3845,14 @@ void do_cmd_visuals(void)
 					    format("Default attr/char = %3u / %3u", da, dc));
 #endif
 
-				Term_putstr(40, 19, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 19, da, dc);
-				if (use_bigtile)
-				{
-					if (da & 0x80)
-						Term_putch(44, 19, 255, -1);
-					else
-						Term_putch(44, 19, 0, ' ');
-				}
+				Term_putstr(40, 19, -1, TERM_WHITE, empty_symbol);
+
+				a = da;
+				c = dc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 19, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 19, a2, c2);
 
 				/* Label the Current values */
 #ifdef JP
@@ -3857,15 +3863,15 @@ void do_cmd_visuals(void)
 					    format("Current attr/char = %3u / %3u", ca, cc));
 #endif
 
-				Term_putstr(40, 20, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 20, ca, cc);
-				if (use_bigtile)
-				{
-					if (ca & 0x80)
-						Term_putch(44, 20, 255, -1);
-					else
-						Term_putch(44, 20, 0, ' ');
-				}
+				Term_putstr(40, 20, -1, TERM_WHITE, empty_symbol);
+
+				a = ca;
+				c = cc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 20, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 20, a2, c2);
+
 
 				/* Prompt */
 #ifdef JP
@@ -3922,7 +3928,8 @@ void do_cmd_visuals(void)
 			while (1)
 			{
 				object_kind *k_ptr = &k_info[k];
-				char c;
+				byte a, a2;
+				char c, c2;
 				int t;
 
 				byte da = (byte)k_ptr->d_attr;
@@ -3951,15 +3958,14 @@ void do_cmd_visuals(void)
 					    format("Default attr/char = %3d / %3d", da, dc));
 #endif
 
-				Term_putstr(40, 19, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 19, da, dc);
-				if (use_bigtile)
-				{
-					if (da & 0x80)
-						Term_putch(44, 19, 255, -1);
-					else
-						Term_putch(44, 19, 0, ' ');
-				}
+				Term_putstr(40, 19, -1, TERM_WHITE, empty_symbol);
+				a = da;
+				c = dc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 19, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 19, a2, c2);
+
 
 				/* Label the Current values */
 #ifdef JP
@@ -3970,15 +3976,14 @@ void do_cmd_visuals(void)
 					    format("Current attr/char = %3d / %3d", ca, cc));
 #endif
 
-				Term_putstr(40, 20, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 20, ca, cc);
-				if (use_bigtile)
-				{
-					if (ca & 0x80)
-						Term_putch(44, 20, 255, -1);
-					else
-						Term_putch(44, 20, 0, ' ');
-				}
+				Term_putstr(40, 20, -1, TERM_WHITE, empty_symbol);
+				a = ca;
+				c = cc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 20, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 20, a2, c2);
+
 
 				/* Prompt */
 #ifdef JP
@@ -4035,7 +4040,8 @@ void do_cmd_visuals(void)
 			while (1)
 			{
 				feature_type *f_ptr = &f_info[f];
-				char c;
+				byte a, a2;
+				char c, c2;
 				int t;
 
 				byte da = (byte)f_ptr->d_attr;
@@ -4064,15 +4070,14 @@ void do_cmd_visuals(void)
 					    format("Default attr/char = %3d / %3d", da, dc));
 #endif
 
-				Term_putstr(40, 19, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 19, da, dc);
-				if (use_bigtile)
-				{
-					if (da & 0x80)
-						Term_putch(44, 19, 255, -1);
-					else
-						Term_putch(44, 19, 0, ' ');
-				}
+				Term_putstr(40, 19, -1, TERM_WHITE, empty_symbol);
+				a = da;
+				c = dc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 19, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 19, a2, c2);
+
 
 				/* Label the Current values */
 #ifdef JP
@@ -4083,15 +4088,14 @@ void do_cmd_visuals(void)
 					    format("Current attr/char = %3d / %3d", ca, cc));
 #endif
 
-				Term_putstr(40, 20, -1, TERM_WHITE, "<< ? >>");
-				Term_putch(43, 20, ca, cc);
-				if (use_bigtile)
-				{
-					if (ca & 0x80)
-						Term_putch(44, 20, 255, -1);
-					else
-						Term_putch(44, 20, 0, ' ');
-				}
+				Term_putstr(40, 20, -1, TERM_WHITE, empty_symbol);
+				a = ca;
+				c = cc;
+				if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+				Term_putch(43, 20, a, c);
+				if (use_bigtile) Term_putch(43 + 1, 20, a2, c2);
+
 
 				/* Prompt */
 #ifdef JP
@@ -4834,7 +4838,9 @@ static cptr monster_group_text[] =
 	"イエティ",
 	"ハウンド",
 	"ミミック",
+	"壁/植物/気体",
 	"おばけキノコ",
+	"球体",
 #else
 	"Uniques",
 	"Ant",
@@ -4889,7 +4895,9 @@ static cptr monster_group_text[] =
 	"Yeti",
 	"Zephyr Hound",
 	"Mimic",
+	"Wall/Plant/Gas",
 	"Mushroom patch",
+	"Ball",
 #endif
 	NULL
 };
@@ -4898,7 +4906,7 @@ static cptr monster_group_text[] =
  * Symbols of monsters in each group. Note the "Uniques" group
  * is handled differently.
  */
-static cptr monster_group_char[] = 
+static cptr monster_group_char[] =
 {
 	(char *) -1L,
 	"a",
@@ -4952,8 +4960,10 @@ static cptr monster_group_char[] =
 	"X",
 	"Y",
 	"Z",
-	"$!?=.|~[]",
+	"!$&()+./=>?[\\]`{|~",
+	"#%",
 	",",
+	"*",
 	NULL
 };
 
@@ -5097,7 +5107,7 @@ static cptr object_group_text[] =
 	"Rods",
 	"Cards",
 	"Capture Balls",
-	"Parchements",
+	"Parchments",
 	"Spikes",
 	"Boxs",
 	"Figurines",
@@ -5143,7 +5153,7 @@ static byte object_group_tval[] =
 	TV_ROD,
 	TV_CARD,
 	TV_CAPTURE,
-	TV_PARCHEMENT,
+	TV_PARCHMENT,
 	TV_SPIKE,
 	TV_CHEST,
 	TV_FIGURINE,
@@ -5200,7 +5210,7 @@ static int collect_objects(int grp_cur, int object_idx[])
 		if (!(k))  continue; 
 
 		/* Require objects ever seen*/
-		if (!k_ptr->aware) continue;
+		if (!k_ptr->aware && !p_ptr->wizard) continue;
 
 		/* Check for race in the group */
 		if (k_ptr->tval == group_tval)
@@ -7279,7 +7289,20 @@ static void browser_cursor(char ch, int *column, int *grp_cur, int grp_cnt,
 	int list = *list_cur;
 
 	/* Extract direction */
-	d = get_keymap_dir(ch);
+	if (ch == ' ')
+	{
+		/* Hack -- scroll up full screen */
+		d = 3;
+	}
+	else if (ch == '-')
+	{
+		/* Hack -- scroll down full screen */
+		d = 9;
+	}
+	else
+	{
+		d = get_keymap_dir(ch);
+	}
 
 	if (!d) return;
 
@@ -7292,7 +7315,7 @@ static void browser_cursor(char ch, int *column, int *grp_cur, int grp_cnt,
 			int old_grp = grp;
 
 			/* Move up or down */
-			grp += ddy[d] * BROWSER_ROWS;
+			grp += ddy[d] * (BROWSER_ROWS - 1);
 
 			/* Verify */
 			if (grp >= grp_cnt)	grp = grp_cnt - 1;
@@ -7371,6 +7394,8 @@ static void display_monster_list(int col, int row, int per_page, s16b mon_idx[],
 	for (i = 0; i < per_page && mon_idx[i]; i++)
 	{
 		byte attr;
+		byte a, a2;
+		char c, c2;
 
 		/* Get the race index */
 		int r_idx = mon_idx[mon_top + i] ;
@@ -7392,15 +7417,23 @@ static void display_monster_list(int col, int row, int per_page, s16b mon_idx[],
 			c_prt(attr, format ("%d", r_idx), row + i, 60);
 		}
 
+		a = r_ptr->x_attr;
+		c = r_ptr->x_char;
+		if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
 		/* Display symbol */
-		Term_putch(70, row + i, r_ptr->x_attr, r_ptr->x_char);
+
+		Term_putch(70, row + i, a, c);
+
+		/* Second byte */
+		if (use_bigtile) Term_putch(70 + 1, row + i, a2, c2);
 
 		/* Display kills */
 		if (!unique)	put_str(format("%5d", r_ptr->r_pkills), row + i, 73);
 #ifdef JP
-		else put_str(format("%s", (r_ptr->max_num == 0) ? "死亡" : "生存"), row + i, 73);
+		else c_put_str((r_ptr->max_num == 0 ? TERM_L_DARK : TERM_WHITE), (r_ptr->max_num == 0 ? "死亡" : "生存"), row + i, 73);
 #else
-		else put_str(format("%s", (r_ptr->max_num == 0) ? "dead" : "alive"), row + i, 73);
+		else c_put_str((r_ptr->max_num == 0 ? TERM_L_DARK : TERM_WHITE), (r_ptr->max_num == 0 ? "dead" : "alive"), row + i, 73);
 #endif
 	
 	}
@@ -7588,6 +7621,10 @@ static void display_object_list(int col, int row, int per_page, int object_idx[]
 	/* Display lines until done */
 	for (i = 0; i < per_page && object_idx[i]; i++)
 	{
+		char o_name[80];
+		byte a, a2;
+		char c, c2;
+
 		/* Get the object index */
 		int k_idx = object_idx[object_top + i];
 
@@ -7604,14 +7641,25 @@ static void display_object_list(int col, int row, int per_page, int object_idx[]
 
 		if (p_ptr->wizard) c_prt(attr, format ("%d", k_idx), row + i, 70);
 
-		if (k_ptr->aware)
+		a = misc_to_attr[k_ptr->flavor];
+		c = misc_to_char[k_ptr->flavor];
+
+		if (!k_ptr->aware)
 		{
-			byte a = misc_to_attr[k_ptr->flavor];
-			byte c = misc_to_char[k_ptr->flavor];
-	
-			/* Display symbol */
-			Term_putch(76, row + i, a, c);
+			c = ' ';
+			a = TERM_DARK;
 		}
+
+		if (use_bigtile) bigtile_attr(&c, &a, &c2, &a2);
+
+		/* Erase chars before overwritten by the race letter */
+		Term_erase(69, row + i, 255);
+
+		/* Display symbol */
+		Term_putch(76, row + i, a, c);
+
+		/* Second byte */
+		if (use_bigtile) Term_putch(76 + 1, row + i, a2, c2);
 	}
 
 	/* Clear remaining lines */
@@ -7650,8 +7698,15 @@ static void desc_obj_fake(int k_idx)
 	/* Hack -- Handle stuff */
 	handle_stuff();
 
-	/* screen_object(o_ptr, FALSE); */
-	if (!identify_fully_aux(o_ptr)) msg_print("特に変わったところはないようだ。");
+	if (!screen_object(o_ptr, FALSE))
+	{
+#ifdef JP
+		msg_print("特に変わったところはないようだ。");
+#else
+		msg_print("You see nothing special.");
+#endif
+		msg_print(NULL);
+	}
 }
 
 
@@ -7766,7 +7821,7 @@ static void do_cmd_knowledge_objects(void)
 		prt("<dir>, 'r' to recall, ESC", 23, 0);
 #endif
 
-		/* Mega Hack -- track this monster race */
+		/* Mega Hack -- track this object */
 		if (object_cnt) object_kind_track(object_idx[object_cur]);
 
 		/* The "current" object changed */

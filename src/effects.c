@@ -14,13 +14,15 @@
 
 void set_action(int typ)
 {
-	if (typ == p_ptr->action)
+	int prev_typ = p_ptr->action;
+
+	if (typ == prev_typ)
 	{
 		return;
 	}
 	else
 	{
-		switch(p_ptr->action)
+		switch (prev_typ)
 		{
 			case ACTION_SEARCH:
 			{
@@ -92,7 +94,10 @@ void set_action(int typ)
 
 	p_ptr->action = typ;
 
-	switch(p_ptr->action)
+	/* If we are requested other action, stop singing */
+	if (prev_typ == ACTION_SING) stop_singing();
+
+	switch (p_ptr->action)
 	{
 		case ACTION_SEARCH:
 		{
@@ -171,6 +176,7 @@ void reset_tim_flags(void)
 	p_ptr->tim_regen = 0;       /* Timed -- Regeneration */
 	p_ptr->tim_stealth = 0;     /* Timed -- Stealth */
 	p_ptr->tim_esp = 0;
+	p_ptr->wraith_form = 0;     /* Timed -- Wraith Form */
 	p_ptr->tim_ffall = 0;
 	p_ptr->tim_sh_touki = 0;
 	p_ptr->tim_sh_fire = 0;
@@ -195,7 +201,7 @@ void reset_tim_flags(void)
 	p_ptr->oppose_cold = 0;     /* Timed -- oppose cold */
 	p_ptr->oppose_pois = 0;     /* Timed -- oppose poison */
 
-	p_ptr->word_recall = FALSE;
+	p_ptr->word_recall = 0;
 	p_ptr->sutemi = FALSE;
 	p_ptr->counter = FALSE;
 	p_ptr->ele_attack = 0;
@@ -380,7 +386,7 @@ msg_print("やっと目が見えるようになった。");
 	if (disturb_state) disturb(0, 0);
 
 	/* Fully update the visuals */
-	p_ptr->update |= (PU_UN_VIEW | PU_UN_LITE | PU_VIEW | PU_LITE | PU_MONSTERS);
+	p_ptr->update |= (PU_UN_VIEW | PU_UN_LITE | PU_VIEW | PU_LITE | PU_MONSTERS | PU_MON_LITE);
 
 	/* Redraw map */
 	p_ptr->redraw |= (PR_MAP);
@@ -419,6 +425,18 @@ msg_print("あなたは混乱した！");
 			msg_print("You are confused!");
 #endif
 
+			if (p_ptr->action == ACTION_LEARN)
+			{
+#ifdef JP
+				msg_print("学習が続けられない！");
+#else
+				msg_print("You cannot continue Learning!");
+#endif
+				new_mane = FALSE;
+
+				p_ptr->redraw |= (PR_STATE);
+				p_ptr->action = ACTION_NONE;
+			}
 			if (p_ptr->action == ACTION_KAMAE)
 			{
 #ifdef JP
@@ -4855,7 +4873,7 @@ msg_print("奇妙なくらい普通になった気がする。");
 		}
 		else
 		{
-			p_ptr->old_race2 = 1L << (p_ptr->prace-32);
+			p_ptr->old_race2 |= 1L << (p_ptr->prace-32);
 		}
 		p_ptr->prace = new_race;
 		rp_ptr = &race_info[p_ptr->prace];
@@ -4924,8 +4942,8 @@ msg_format("%sの構成が変化した！", p_ptr->prace == RACE_ANDROID ? "機械" : "内臓
 		if (one_in_(6))
 		{
 #ifdef JP
-msg_print("現在姿で生きていくのは困難なようだ！");
-take_hit(DAMAGE_LOSELIFE, damroll(randint1(10), p_ptr->lev), "致命的な突然変異", -1);
+			msg_print("現在の姿で生きていくのは困難なようだ！");
+			take_hit(DAMAGE_LOSELIFE, damroll(randint1(10), p_ptr->lev), "致命的な突然変異", -1);
 #else
 			msg_print("You find living difficult in your present form!");
 			take_hit(DAMAGE_LOSELIFE, damroll(randint1(10), p_ptr->lev), "a lethal mutation", -1);

@@ -524,15 +524,18 @@ void mindcraft_info(char *p, int use_mind, int power)
 
 #ifdef ALLOW_REPEAT /* TNB */
 
-      /* Get the spell, if available */
-      if (repeat_pull(sn))
+	/* Get the spell, if available */
+	if (repeat_pull(sn))
 	{
-	  /* Verify the spell */
-	  if (mind_ptr->info[*sn].min_lev <= plev)
-	    {
-	      /* Success */
-	      return (TRUE);
-	    }
+		/* Hack -- If requested 1111, pull again */
+		if (*sn == 1111) repeat_pull(sn);
+
+		/* Verify the spell */
+		if (mind_ptr->info[*sn].min_lev <= plev)
+		{
+			/* Success */
+			return (TRUE);
+		}
 	}
 
 #endif /* ALLOW_REPEAT -- TNB */
@@ -1114,11 +1117,12 @@ static bool cast_force_spell(int spell)
 			int oy = y, ox = x;
 			int m_idx = cave[y][x].m_idx;
 			monster_type *m_ptr = &m_list[m_idx];
+			monster_race *r_ptr = &r_info[m_ptr->r_idx];
 			char m_name[80];
 
 			monster_desc(m_name, m_ptr, 0);
 
-			if (randint1(r_info[m_ptr->r_idx].level * 3 / 2) > randint0(dam / 2) + dam/2)
+			if (randint1(r_ptr->level * 3 / 2) > randint0(dam / 2) + dam/2)
 			{
 #ifdef JP
 				msg_format("%sは飛ばされなかった。", m_name);
@@ -1154,6 +1158,9 @@ static bool cast_force_spell(int spell)
 					update_mon(m_idx, TRUE);
 					lite_spot(oy, ox);
 					lite_spot(ty, tx);
+
+					if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+						p_ptr->update |= (PU_MON_LITE);
 				}
 			}
 		}
@@ -1181,6 +1188,7 @@ msg_format("%sはもう無敵ではない。", m_name);
 #else
 			msg_format("%^s is no longer invulnerable.", m_name);
 #endif
+			m_ptr->energy_need += ENERGY_NEED();
 		}
 		if (m_ptr->fast)
 		{
@@ -1516,7 +1524,7 @@ static bool cast_berserk_spell(int spell)
 			verify_panel();
 
 			/* Update stuff */
-			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
+			p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 			/* Update the monsters */
 			p_ptr->update |= (PU_DISTANCE);
@@ -1688,11 +1696,7 @@ msg_print("その方向にはモンスターはいません。");
 		set_oppose_fire(plev, FALSE);
 		break;
 	case 10:
-		project_length = 5;
-		if (!get_aim_dir(&dir)) return FALSE;
-		project_hook(GF_ATTACK, dir, HISSATSU_NYUSIN, PROJECT_STOP | PROJECT_KILL);
-
-		break;
+		return rush_attack(NULL);
 	case 11:
 	{
 		int i;
@@ -1784,7 +1788,8 @@ msg_print("その方向にはモンスターはいません。");
 		/* Redraw the new grid */
 		lite_spot(ty, tx);
 
-		p_ptr->update |= (PU_MON_LITE);
+		if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_SELF_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_2))
+			p_ptr->update |= (PU_MON_LITE);
 
 		break;
 	}
@@ -2282,7 +2287,7 @@ void do_cmd_mind_browse(void)
 		Term_erase(12, 17, 255);
 		Term_erase(12, 16, 255);
 
-		roff_to_buf( mind_tips[use_mind][n],62,temp);
+		roff_to_buf(mind_tips[use_mind][n], 62, temp, sizeof(temp));
 		for(j=0, line = 17;temp[j];j+=(1+strlen(&temp[j])))
 		{
 			prt(&temp[j], line, 15);

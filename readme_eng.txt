@@ -79,6 +79,9 @@ Serpent of Chaos, whom you must kill in order to win the game.
 
 ---------  Commands  ----------- 
 
+     Please read on-line help (Press the ? key in the game) for full
+information of the game.  Here are only descriptions of basic commands.
+
      The following section lists most commands, and the less frequently used 
 ones may be accessed by pressing the return key, or (if using the original 
 keyset) the 'x' key, to bring up the command menu.  Almost any command may be 
@@ -147,7 +150,7 @@ keyset, and by pushing 'x' in the Rogue-like keyset.
   M  Full dungeon map
   ~  Display various information
 
-  [other]
+  [Other]
   p  Command pets
   =  Set options
   $  Reload auto-picker preference file
@@ -155,13 +158,21 @@ keyset, and by pushing 'x' in the Rogue-like keyset.
   n/[  Repeat previous command
   @  Interact with macros
 
+  [Help]
+  ?  View the on-line help 
+     (Press a-z to choose a section,  space key to go next page.)
+
 
 --- Inscriptions
 
 Below, only the new features in Hengband are explained.
 
-- You can inscribe on spellbooks with "@ma" or "@m"+any alphabet letter.
+- You can inscribe on objects with "@ma" or '@'+<any command letter>+<any tag>.
   Then, type these alphabet letter in 'm' command to cast from the spellbook.
+
+- The inscriptions "@1" or '@'+<any tag number> make the objects able
+  to be used by pressing <tag number> key in any command.  Any
+  alphabet key cannot be used as a tag in this form.
 
 - You can inscribe on *identified* items with "%" or "%all".
   Then, "%" or "%all" is automatically replaced by strings which describe the 
@@ -226,5 +237,5 @@ by modifying data or source files, or by restoring from a backed
 up savefile.
 
 The score server is here:
-  http://echizen.s5.xrea.com/heng/eng-hengband/score.html
+  http://hengband.sourceforge.jp/en/score.html
 

@@ -4696,6 +4696,7 @@ void aggravate_monsters(int who)
 			{
 				/* Wake up */
 				m_ptr->csleep = 0;
+				if (r_info[m_ptr->r_idx].flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				sleep = TRUE;
 			}
 			if (!is_pet(m_ptr)) m_ptr->mflag2 |= MFLAG_NOPET;
@@ -4796,6 +4797,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -4925,6 +4927,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -5057,6 +5060,7 @@ msg_format("%^sには効果がなかった。", m_name);
 			if (m_ptr->csleep)
 			{
 				m_ptr->csleep = 0;
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 				if (m_ptr->ml && !p_ptr->blind)
 				{
 #ifdef JP
@@ -5545,7 +5549,7 @@ bool earthquake(int cy, int cx, int r)
 	}
 
 	/* First, affect the player (if necessary) */
-	if (hurt && !(p_ptr->prace == RACE_SPECTRE) && !(p_ptr->wraith_form) && !(p_ptr->kabenuke))
+	if (hurt && !prace_is_(RACE_SPECTRE) && !p_ptr->wraith_form && !p_ptr->kabenuke)
 	{
 		/* Check around the player */
 		for (i = 0; i < 8; i++)
@@ -5998,7 +6002,7 @@ void discharge_minion(void)
 		if (dam > 800) dam = 800;
 		project(i, 2+(r_ptr->level/20), m_ptr->fy,
 			m_ptr->fx, dam, GF_PLASMA, 
-			PROJECT_STOP | PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL | PROJECT_MONSTER, -1);
+			PROJECT_STOP | PROJECT_GRID | PROJECT_ITEM | PROJECT_KILL, -1);
 		delete_monster_idx(i);
 	}
 }
@@ -6063,6 +6067,8 @@ static void cave_temp_room_lite(void)
 			{
 				/* Wake up! */
 				m_ptr->csleep = 0;
+
+				if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
 
 				/* Notice the "waking up" */
 				if (m_ptr->ml)
@@ -6658,6 +6664,8 @@ msg_print("テレポートを邪魔された！");
 #endif
 
 		m_ptr->csleep = 0;
+		if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2)) p_ptr->update |= (PU_MON_LITE);
+
 		/* Failure */
 		return FALSE;
 	}
@@ -6704,14 +6712,7 @@ msg_print("テレポートを邪魔された！");
 	verify_panel();
 
 	/* Update stuff */
-	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
-
-	/* Notice changes in view */
-	if (r_ptr->flags7 & (RF7_HAS_LITE_1 | RF7_HAS_LITE_2 | RF7_SELF_LITE_1 | RF7_SELF_LITE_2))
-	{
-		/* Update some things */
-		p_ptr->update |= (PU_MON_LITE);
-	}
+	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 	/* Update the monsters */
 	p_ptr->update |= (PU_DISTANCE);
@@ -6971,7 +6972,7 @@ bool wall_stone(void)
 	bool dummy = (project(0, 1, py, px, 0, GF_STONE_WALL, flg, -1));
 
 	/* Update stuff */
-	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW);
+	p_ptr->update |= (PU_VIEW | PU_LITE | PU_FLOW | PU_MON_LITE);
 
 	/* Update the monsters */
 	p_ptr->update |= (PU_MONSTERS);
@@ -7534,4 +7535,121 @@ void kawarimi(bool success)
 
 	p_ptr->special_defense &= ~(NINJA_KAWARIMI);
 	p_ptr->redraw |= (PR_STATUS);
+}
+
+
+/*
+ * "Rush Attack" routine for Samurai or Ninja
+ * Return value is for checking "done"
+ */
+bool rush_attack(bool *mdeath)
+{
+	int dir;
+	int tx, ty, nx, ny;
+	int tm_idx = 0;
+	u16b path_g[32];
+	int path_n, i;
+	bool tmp_mdeath = FALSE;
+
+	if (mdeath) *mdeath = FALSE;
+
+	project_length = 5;
+	if (!get_aim_dir(&dir)) return FALSE;
+
+	/* Use the given direction */
+	tx = px + project_length * ddx[dir];
+	ty = py + project_length * ddy[dir];
+
+	/* Hack -- Use an actual "target" */
+	if ((dir == 5) && target_okay())
+	{
+		tx = target_col;
+		ty = target_row;
+	}
+
+	if (in_bounds(ty, tx)) tm_idx = cave[ty][tx].m_idx;
+
+	path_n = project_path(path_g, project_length, py, px, ty, tx, PROJECT_STOP | PROJECT_KILL);
+	project_length = 0;
+
+	/* No need to move */
+	if (!path_n) return TRUE;
+
+	/* Use ty and tx as to-move point */
+	ty = py;
+	tx = px;
+
+	/* Project along the path */
+	for (i = 0; i < path_n; i++)
+	{
+		ny = GRID_Y(path_g[i]);
+		nx = GRID_X(path_g[i]);
+
+		if (!cave_empty_bold(ny, nx) || !player_can_enter(cave[ny][nx].feat))
+		{
+			if (cave[ny][nx].m_idx)
+			{
+				monster_type *m_ptr = &m_list[cave[ny][nx].m_idx];
+
+				if (tm_idx != cave[ny][nx].m_idx)
+				{
+#ifdef JP
+					msg_format("%s%sが立ちふさがっている！", tm_idx ? "別の" : "",
+						m_ptr->ml ? "モンスター" : "何か");
+#else
+					msg_format("There is %s in the way!", m_ptr->ml ? (tm_idx ? "another monster" : "a monster") :
+						"someone");
+#endif
+				}
+				else
+				{
+					if ((py != ty) || (px != tx))
+					{
+						/* Hold the monster name */
+						char m_name[80];
+
+						/* Get the monster name (BEFORE polymorphing) */
+						monster_desc(m_name, m_ptr, 0);
+#ifdef JP
+						msg_format("素早く%sの懐に入り込んだ！", m_name);
+#else
+						msg_format("You quickly jump in and attack %s!", m_name);
+#endif
+					}
+				}
+
+				tmp_mdeath = py_attack(ny, nx, HISSATSU_NYUSIN);
+			}
+			else
+			{
+				if (tm_idx)
+				{
+#ifdef JP
+					msg_print("失敗！");
+#else
+					msg_print("Failed!");
+#endif
+				}
+				else
+				{
+#ifdef JP
+					msg_print("ここには入身では入れない。");
+#else
+					msg_print("You can't move to that place.");
+#endif
+				}
+			}
+			break;
+		}
+		else
+		{
+			ty = ny;
+			tx = nx;
+		}
+	}
+
+	if ((py != ty) || (px != tx)) teleport_player_to(ty, tx, FALSE);
+
+	if (mdeath) *mdeath = tmp_mdeath;
+	return TRUE;
 }
