@@ -316,6 +316,17 @@ s = "魔力を取り込めるアイテムがない。";
 		o_ptr = &o_list[0 - item];
 	}
 
+	if (o_ptr->tval == TV_STAFF && o_ptr->sval == SV_STAFF_NOTHING)
+	{
+#ifdef JP
+		msg_print("この杖には発動の為の能力は何も備わっていないようだ。");
+#else
+		msg_print("This staff doesn't have any magical ability.");
+#endif
+		return FALSE;
+	}
+
+
 	if (!object_known_p(o_ptr))
 	{
 #ifdef JP
@@ -2740,7 +2751,7 @@ strcpy(power_desc[num].name, "帰還");
 		power_desc[num].level = 10;
 		power_desc[num].cost = 10;
 		power_desc[num].fail = 100 - racial_chance(10, A_DEX, 20);
-		power_desc[num++].number = -4;
+		power_desc[num++].number = -3;
 		break;
 	}
 	case CLASS_MIRROR_MASTER:

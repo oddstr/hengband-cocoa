@@ -1045,6 +1045,7 @@ static flag_insc_table flag_insc_plus[] =
 	{ "´ï", "Dx", TR_DEX, -1 },
 	{ "ÂÑ", "Cn", TR_CON, -1 },
 	{ "Ì¥", "Ch", TR_CHR, -1 },
+	{ "Æ»", "Md", TR_MAGIC_MASTERY, -1 },
 	{ "±£", "Sl", TR_STEALTH, -1 },
 	{ "Ãµ", "Sr", TR_SEARCH, -1 },
 	{ "ÀÖ", "If", TR_INFRA, -1 },
@@ -1201,6 +1202,7 @@ static flag_insc_table flag_insc_plus[] =
 	{ "Dx", TR_DEX, -1 },
 	{ "Cn", TR_CON, -1 },
 	{ "Ch", TR_CHR, -1 },
+	{ "Md", TR_MAGIC_MASTERY, -1 },
 	{ "Sl", TR_STEALTH, -1 },
 	{ "Sr", TR_SEARCH, -1 },
 	{ "If", TR_INFRA, -1 },
@@ -2227,6 +2229,7 @@ void object_desc(char *buf, object_type *o_ptr, int pref, int mode)
 	{
 		if (known && o_ptr->name1) basenm = a_name + a_info[o_ptr->name1].name;
 		else basenm = get_object_name(o_ptr);
+		append_name = FALSE;
 	}
 
 	/* Start dumping the result */

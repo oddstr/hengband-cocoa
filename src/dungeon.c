@@ -1421,15 +1421,16 @@ static void recharged_notice(object_type *o_ptr)
 			object_desc(o_name, o_ptr, FALSE, 0);
 
 			/* Notify the player */
-			if (o_ptr->number > 1)
 #ifdef JP
-msg_format("%sは再充填された。", o_name);
-else msg_format("%sは再充填された。", o_name);
+			msg_format("%sは再充填された。", o_name);
 #else
+			if (o_ptr->number > 1)
 				msg_format("Your %s are recharged.", o_name);
-			else msg_format("Your %s is recharged.", o_name);
+			else
+				msg_format("Your %s is recharged.", o_name);
 #endif
 
+			disturb(1, 0);
 
 			/* Done. */
 			return;
@@ -5556,10 +5557,16 @@ msg_format("%s(%c)を落とした。", o_name, index_to_label(item));
 		if (energy_use)
 		{
 			/* Use some energy */
-			if (!world_player)
-				p_ptr->energy_need += (s16b)((s32b)energy_use * ENERGY_NEED() / 100L);
-			else
+			if (world_player || energy_use > 400)
+			{
+				/* The Randomness is irrelevant */
 				p_ptr->energy_need += energy_use * TURNS_PER_TICK / 10;
+			}
+			else
+			{
+				/* There is some randomness of needed energy */
+				p_ptr->energy_need += (s16b)((s32b)energy_use * ENERGY_NEED() / 100L);
+			}
 
 			/* Hack -- constant hallucination */
 			if (p_ptr->image) p_ptr->redraw |= (PR_MAP);

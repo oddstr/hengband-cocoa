@@ -983,6 +983,7 @@ static void mass_produce(object_type *o_ptr)
 		{
 			if (cost <= 5L) size += damroll(3, 5);
 			if (cost <= 20L) size += damroll(3, 5);
+			if (cost <= 50L) size += damroll(2, 2);
 			break;
 		}
 
@@ -1308,6 +1309,9 @@ static bool store_will_buy(object_type *o_ptr)
 			/* Analyze the type */
 			switch (o_ptr->tval)
 			{
+				case TV_POTION:
+					if (o_ptr->sval != SV_POTION_WATER) return FALSE;
+
 				case TV_WHISTLE:
 				case TV_FOOD:
 				case TV_LITE:
