@@ -390,7 +390,9 @@ sint project_path(u16b *gp, int range, int y1, int x1, int y2, int x2, int flg)
 			/* Sometimes stop at non-initial monsters/players */
 			if (flg & (PROJECT_STOP))
 			{
-				if ((n > 0) && (cave[y][x].m_idx != 0)) break;
+				if ((n > 0) &&
+                                    ((y == py && x == px) || cave[y][x].m_idx != 0))
+                                        break;
 			}
 
 			if (!in_bounds(y, x)) break;
@@ -473,7 +475,9 @@ sint project_path(u16b *gp, int range, int y1, int x1, int y2, int x2, int flg)
 			/* Sometimes stop at non-initial monsters/players */
 			if (flg & (PROJECT_STOP))
 			{
-				if ((n > 0) && (cave[y][x].m_idx != 0)) break;
+				if ((n > 0) &&
+                                    ((y == py && x == px) || cave[y][x].m_idx != 0))
+                                        break;
 			}
 
 			if (!in_bounds(y, x)) break;
@@ -538,7 +542,9 @@ sint project_path(u16b *gp, int range, int y1, int x1, int y2, int x2, int flg)
 			/* Sometimes stop at non-initial monsters/players */
 			if (flg & (PROJECT_STOP))
 			{
-				if ((n > 0) && (cave[y][x].m_idx != 0)) break;
+				if ((n > 0) &&
+                                    ((y == py && x == px) || cave[y][x].m_idx != 0))
+                                        break;
 			}
 
 			if (!in_bounds(y, x)) break;
@@ -6405,7 +6411,7 @@ static bool project_p(int who, cptr who_name, int r, int y, int x, int dam, int 
 	bool fuzzy = FALSE;
 
 	/* Source monster */
-	monster_type *m_ptr;
+	monster_type *m_ptr = NULL;
 
 	/* Monster name (for attacks) */
 	char m_name[80];
@@ -6481,14 +6487,25 @@ else msg_print("¹¶·â¤¬Ä·¤ÍÊÖ¤Ã¤¿¡ª");
 	if (blind) fuzzy = TRUE;
 
 
-	/* Get the source monster */
-	m_ptr = &m_list[who];
+	if (who > 0)
+	{
+		/* Get the source monster */
+		m_ptr = &m_list[who];
 
-	/* Get the monster name */
-	monster_desc(m_name, m_ptr, 0);
+		/* Get the monster name */
+		monster_desc(m_name, m_ptr, 0);
 
-	/* Get the monster's real name (gotten before polymorph!) */
-	strcpy(killer, who_name);
+		/* Get the monster's real name (gotten before polymorph!) */
+		strcpy(killer, who_name);
+	}
+	else if (who < 0)
+	{
+#ifdef JP
+		strcpy(killer, "æ«");
+#else
+		strcpy(killer, "a trap");
+#endif
+	}
 
 	/* Analyze the damage */
 	switch (typ)
@@ -6501,8 +6518,8 @@ if (fuzzy) msg_print("»À¤Ç¹¶·â¤µ¤ì¤¿¡ª");
 #else
 			if (fuzzy) msg_print("You are hit by acid!");
 #endif
-
-			acid_dam(dam, killer, monspell);
+			
+			get_damage = acid_dam(dam, killer, monspell);
 			break;
 		}
 
@@ -6515,7 +6532,7 @@ if (fuzzy) msg_print("²Ð±ê¤Ç¹¶·â¤µ¤ì¤¿¡ª");
 			if (fuzzy) msg_print("You are hit by fire!");
 #endif
 
-			fire_dam(dam, killer, monspell);
+			get_damage = fire_dam(dam, killer, monspell);
 			break;
 		}
 
@@ -6528,7 +6545,7 @@ if (fuzzy) msg_print("Îäµ¤¤Ç¹¶·â¤µ¤ì¤¿¡ª");
 			if (fuzzy) msg_print("You are hit by cold!");
 #endif
 
-			cold_dam(dam, killer, monspell);
+			get_damage = cold_dam(dam, killer, monspell);
 			break;
 		}
 
@@ -6541,7 +6558,7 @@ if (fuzzy) msg_print("ÅÅ·â¤Ç¹¶·â¤µ¤ì¤¿¡ª");
 			if (fuzzy) msg_print("You are hit by lightning!");
 #endif
 
-			elec_dam(dam, killer, monspell);
+			get_damage = elec_dam(dam, killer, monspell);
 			break;
 		}
 
@@ -8068,6 +8085,9 @@ bool project(int who, int rad, int y, int x, int dam, int typ, int flg, int mons
 
 	/* Attacker's name (prepared before polymorph)*/
 	char who_name[80];
+
+	/* Initialize by null string */
+	who_name[0] = '\0';
 
 	rakubadam_p = 0;
 	rakubadam_m = 0;

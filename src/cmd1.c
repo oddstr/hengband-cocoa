@@ -1246,9 +1246,9 @@ static void hit_trap(bool break_trap)
 
 			dam = damroll(4, 6);
 #ifdef JP
-			fire_dam(dam, "炎のトラップ", -1);
+			(void)fire_dam(dam, "炎のトラップ", -1);
 #else
-			fire_dam(dam, "a fire trap", -1);
+			(void)fire_dam(dam, "a fire trap", -1);
 #endif
 
 			break;
@@ -1264,9 +1264,9 @@ static void hit_trap(bool break_trap)
 
 			dam = damroll(4, 6);
 #ifdef JP
-			acid_dam(dam, "酸のトラップ", -1);
+			(void)acid_dam(dam, "酸のトラップ", -1);
 #else
-			acid_dam(dam, "an acid trap", -1);
+			(void)acid_dam(dam, "an acid trap", -1);
 #endif
 
 			break;
@@ -2874,6 +2874,8 @@ msg_format("刃が%sの急所を貫いた！", m_name);
 				}
 				k += (p_ptr->to_d[hand] + o_ptr->to_d);
 
+                                if (k < 0) k = 0;
+
 #ifdef JP
 				take_hit(DAMAGE_FORCE, k, "死の大鎌", -1);
 #else
@@ -3323,6 +3325,15 @@ bool player_can_enter(byte feature)
 		case FEAT_PERM_INNER:
 		case FEAT_PERM_OUTER:
 		case FEAT_PERM_SOLID:
+                case FEAT_PATTERN_START:
+                case FEAT_PATTERN_1:
+                case FEAT_PATTERN_2:
+                case FEAT_PATTERN_3:
+                case FEAT_PATTERN_4:
+                case FEAT_PATTERN_END:
+                case FEAT_PATTERN_OLD:
+                case FEAT_PATTERN_XTRA1:
+                case FEAT_PATTERN_XTRA2:
 		{
 			return (FALSE);
 		}

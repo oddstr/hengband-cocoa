@@ -1267,9 +1267,7 @@ s32b object_value_real(object_type *o_ptr)
 		case TV_AMULET:
 		{
 			/* Hack -- negative bonuses are bad */
-			if (o_ptr->to_a < 0) return (0L);
-			if (o_ptr->to_h < 0) return (0L);
-			if (o_ptr->to_d < 0) return (0L);
+			if (o_ptr->to_h + o_ptr->to_d + o_ptr->to_a < 0) return (0L);
 
 			/* Give credit for bonuses */
 			value += ((o_ptr->to_h + o_ptr->to_d + o_ptr->to_a) * 200L);
@@ -3309,11 +3307,12 @@ static void a_m_aux_3(object_type *o_ptr, int level, int power)
 							{
 								o_ptr->name2 = EGO_RING_BERSERKER;
 								o_ptr->to_h -= 2+randint1(4);
+								o_ptr->to_d += 2+randint1(4);
 							}
 							break;
 						case SV_RING_PROTECTION:
 							o_ptr->name2 = EGO_RING_SUPER_AC;
-							o_ptr->to_a += m_bonus(5, level);
+							o_ptr->to_a += 7 + m_bonus(5, level);
 							break;
 						case SV_RING_RES_FEAR:
 							o_ptr->name2 = EGO_RING_HERO;
@@ -6371,7 +6370,7 @@ bool process_frakir(int xx, int yy)
 #ifdef JP
 			msg_format("%sが鋭く震えた！", o_name);
 #else
-			msg_format("%s pulsates sharply!", o_name);
+			msg_format("Your %s pulsates sharply!", o_name);
 #endif
 			disturb(0,0);
 #ifdef JP
@@ -6392,7 +6391,7 @@ bool process_frakir(int xx, int yy)
 #ifdef JP
 		msg_format("%sが震えた！", o_name);
 #else
-		msg_format("%s pulsates!", o_name);
+		msg_format("Your %s pulsates!", o_name);
 #endif
 		disturb(0,0);
 #ifdef JP
@@ -6632,7 +6631,7 @@ static essence_type essence_info[MAX_ESSENCE] = {
 {"","resist cold activation", 52, 5, 50},
 {"","fiery sheath", 0, 5, 30},
 {"","electric sheath", 0, 5, 30},
-{"","coldly sheath", 0, 5, 30},
+{"","sheath of coldness", 0, 5, 30},
 {"","resistance", 0, 2, 150},
 {"","elements proof", 0, 6, 10},
 {"","gauntlets of slay", 97, 1, 200},
@@ -6679,7 +6678,7 @@ static void display_essence(void)
 	for (i = 0; i < MAX_ESSENCE; i++)
 	{
 		if (!essence_info[i].drain_name[0]) continue;
-		prt(format("%-11s %5d", essence_info[i].drain_name, p_ptr->magic_num1[i]), 2+num%20, 8+num/20*22);
+		prt(format("%-11s %5d", essence_info[i].drain_name, p_ptr->magic_num1[i]), 2+num%21, 8+num/21*22);
 		num++;
 	}
 #ifdef JP

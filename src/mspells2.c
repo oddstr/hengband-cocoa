@@ -26,7 +26,7 @@ static void monst_breath_monst(int m_idx, int y, int x, int typ, int dam_hp, int
 	monster_race *r_ptr = &r_info[m_ptr->r_idx];
 
 	/* Determine the radius of the blast */
-	if (rad < 1) rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
+	if (rad < 1 && breath) rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
 
 	/* Handle breath attacks */
 	if (breath) rad = 0 - rad;
@@ -169,9 +169,6 @@ bool monst_spell_monst(int m_idx)
 	monster_race *tr_ptr;
 
 	u32b f4, f5, f6;
-
-	/* Expected ball spell radius */
-	int rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
 
 	bool wake_up = FALSE;
 	bool fear = FALSE;
@@ -318,11 +315,22 @@ bool monst_spell_monst(int m_idx)
 		/* Prevent collateral damage */
 		if (!(p_ptr->pet_extra_flags & PF_BALL_SPELL) && pet && (m_idx != p_ptr->riding))
 		{
-			if(distance(py, px, y, x) <= rad)
+                        int dist = distance(py, px, y, x);
+
+                        /* Expected breath radius */
+                        int rad = (r_ptr->flags2 & RF2_POWERFUL) ? 3 : 2;
+
+			if (dist <= 2)
 			{
 				f4 &= ~(RF4_BALL_MASK);
 				f5 &= ~(RF5_BALL_MASK);
 				f6 &= ~(RF6_BALL_MASK);
+			}
+			else if(dist <= 4)
+			{
+				f4 &= ~(RF4_BIG_BALL_MASK);
+				f5 &= ~(RF5_BIG_BALL_MASK);
+				f6 &= ~(RF6_BIG_BALL_MASK);
 			}
 
 			if (((f4 & RF4_BEAM_MASK) ||
@@ -2259,12 +2267,7 @@ if (see_both) msg_format("%^sは耐性を持っている！", t_name);
 				}
 				else
 				{
-#ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "は死んだ。", m_idx);
-#else
-					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " is destroyed.", m_idx);
-#endif
-
+					mon_take_hit_mon(FALSE, t_idx, dam, &fear, NULL, m_idx);
 				}
 
 				wake_up = TRUE;
@@ -2310,11 +2313,7 @@ if (see_both) msg_format("%^sは耐性を持っている！", t_name);
 				}
 				else
 				{
-#ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "は死んだ。", m_idx);
-#else
-					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " is destroyed.", m_idx);
-#endif
+					mon_take_hit_mon(FALSE, t_idx, dam, &fear, NULL, m_idx);
 
 				}
 
@@ -2361,12 +2360,7 @@ if (see_both) msg_format("%^sは耐性を持っている！", t_name);
 				}
 				else
 				{
-#ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "は死んだ。", m_idx);
-#else
-					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " is destroyed.", m_idx);
-#endif
-
+					mon_take_hit_mon(FALSE, t_idx, dam, &fear, NULL, m_idx);
 				}
 
 				wake_up = TRUE;
@@ -2412,12 +2406,7 @@ if (see_both) msg_format("%^sは耐性を持っている！", t_name);
 				}
 				else
 				{
-#ifdef JP
-mon_take_hit_mon(FALSE, t_idx, dam, &fear, "は死んだ。", m_idx);
-#else
-					mon_take_hit_mon(FALSE, t_idx, dam, &fear, " is destroyed.", m_idx);
-#endif
-
+					mon_take_hit_mon(FALSE, t_idx, dam, &fear, NULL, m_idx);
 				}
 
 				wake_up = TRUE;

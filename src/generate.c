@@ -169,6 +169,9 @@ static bool alloc_stairs(int feat, int num, int walls)
 				/* Require a certain number of adjacent walls */
 				if (next_to_walls(y, x) < walls) continue;
 
+                                /* No hidden trap on stairs */
+                                c_ptr->info &= ~CAVE_TRAP;
+
 				/* Clear previous contents, add stairs */
 				if (i < more_num) c_ptr->feat = feat+0x07;
 				else c_ptr->feat = feat;
@@ -1488,10 +1491,13 @@ static void place_pet(void)
 		if (m_idx)
 		{
 			monster_type *m_ptr = &m_list[m_idx];
-			monster_race *r_ptr = &r_info[m_ptr->r_idx];
+			monster_race *r_ptr;
 			
 			cave[cy][cx].m_idx = m_idx;
+
 			m_ptr->r_idx = party_mon[i].r_idx;
+                        r_ptr = &r_info[m_ptr->r_idx];
+
 			m_ptr->ap_r_idx = party_mon[i].ap_r_idx;
 			m_ptr->sub_align = party_mon[i].sub_align;
 			m_ptr->fy = cy;

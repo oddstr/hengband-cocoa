@@ -3294,7 +3294,7 @@ static int rod_effect(int sval, int dir, bool *use_charge, bool magic)
 		case SV_ROD_IDENTIFY:
 		{
 			ident = TRUE;
-			if (!ident_spell(FALSE, FALSE)) *use_charge = FALSE;
+			if (!ident_spell(FALSE, TRUE)) *use_charge = FALSE;
 			break;
 		}
 
@@ -3675,6 +3675,9 @@ msg_print("そのロッドはまだ充填中です。");
 
 	/* Window stuff */
 	p_ptr->window |= (PW_INVEN | PW_EQUIP | PW_PLAYER);
+
+	/* Delayed optimization */
+	optimize_inventry_auto_destroy();
 }
 
 
@@ -3722,17 +3725,6 @@ static bool item_tester_hook_activate(object_type *o_ptr)
 
 	/* Check activation flag */
 	if (f3 & (TR3_ACTIVATE)) return (TRUE);
-
-	if ((o_ptr->tval > TV_CAPTURE) && o_ptr->xtra3)
-	{
-		switch(o_ptr->xtra3)
-		case ESSENCE_TMP_RES_ACID:
-		case ESSENCE_TMP_RES_ELEC:
-		case ESSENCE_TMP_RES_FIRE:
-		case ESSENCE_TMP_RES_COLD:
-		case ESSENCE_EARTHQUAKE:
-			return (TRUE);
-	}
 
 	/* Assume not */
 	return (FALSE);
@@ -7082,7 +7074,7 @@ static bool select_magic_eater(bool only_browse)
  */
 void do_cmd_magic_eater(bool only_browse)
 {
-	int item, dir, chance, level, k_idx, tval, sval;
+	int item, chance, level, k_idx, tval, sval;
 	bool use_charge = TRUE;
 
 	/* Not when confused */
@@ -7150,6 +7142,8 @@ msg_print("呪文をうまく唱えられなかった！");
 	}
 	else
 	{
+                int dir = 0;
+
 		if (tval == TV_ROD)
 		{
 			if ((sval >= SV_ROD_MIN_DIRECTION) && (sval != SV_ROD_HAVOC) && (sval != SV_ROD_AGGRAVATE) && (sval != SV_ROD_PESTICIDE))
