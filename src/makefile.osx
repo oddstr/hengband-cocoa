@@ -1,6 +1,6 @@
 # File: Makefile.osx
 
-# This is a Makefile for the Mac OS X Cocoa port of Angband.
+# This is a Makefile for the Mac OS X Cocoa port of Hengband.
 
 # default target
 all: install
@@ -10,9 +10,9 @@ CC = clang
 LD = ld
 OPT ?= -O2
 
-NAME = Angband
+NAME = Hengband
 APPNAME = $(NAME).app
-EXE = angband
+EXE = hengband
 
 ARCH = -arch i386 -arch x86_64
 WARNINGS = -W -Wall -Wno-unused-parameter -Wno-missing-field-initializers
@@ -22,50 +22,36 @@ CFLAGS = -g -I. $(WARNINGS) $(OPT) -DMACH_O_CARBON -DHAVE_MKSTEMP \
 	-fno-stack-protector $(ARCH)
 LIBS = -framework Cocoa
 
-# Import user prefs
-# If you don't want to edit this file, put your module redefinitions
-# and build flags in "./config"
--include config
-
-# -DALLOW_BORG is required for all .o files in a borg build 
-ifneq (,$(findstring borg, $(MAKECMDGOALS)))
-CFLAGS += -DALLOW_BORG
-endif
-
-# Check for autoconf.h; do not warn on nonexistence
-autoconf= $(wildcard autoconf.h)
-ifneq ($(autoconf),)
-CFLAGS += -DHAVE_CONFIG_H
-endif
-
-# Note that Makefile.inc sets VERSION, and so we must run version.sh after
-# including Makefile.inc
-include Makefile.inc
-
-VERSION := $(shell ../scripts/version.sh)
-CFLAGS += -DBUILD_ID=${VERSION}
-
-BOBJS = borg1.o borg2.o borg3.o borg4.o borg5.o borg6.o borg7.o borg8.o borg9.o
-OBJS = $(BASEOBJS)
+OBJS = \
+	artifact.o autopick.o avatar.o birth.o bldg.o cave.o \
+	cmd1.o cmd2.o cmd3.o cmd4.o cmd5.o cmd6.o do-spell.o \
+	dungeon.o effects.o files.o floors.o flavor.o generate.o \
+	grid.o hissatsu.o inet.o init1.o init2.o japanese.o \
+	load.o main-win.o mane.o melee1.o melee2.o mind.o \
+	monster1.o monster2.o mspells1.o mspells2.o mspells3.o \
+	mutation.o snipe.o hex.o \
+	obj_kind.o object1.o object2.o racial.o readdib.o \
+	report.o rooms.o save.o scores.o spells1.o \
+	spells2.o spells3.o store.o streams.o tables.o util.o \
+	variable.o wild.o wizard1.o wizard2.o xtra1.o xtra2.o \
+	z-form.o z-rand.o z-term.o z-util.o z-virt.o \
+	chuukei.o
 OSX_OBJS = main-cocoa.o
 
 
-
 #
-# Build the "Angband" program
+# Build the "Hengband" program
 #
 
 
 $(EXE).o: $(OBJS)
 	$(LD) -r -arch x86_64 -o $@.x86_64 $(OBJS)
 	$(LD) -r -arch i386 -o $@.i386 $(OBJS)
-	lipo -arch x86_64 $@.x86_64 -arch i386 $@.i386 -create -output angband.o
+	lipo -arch x86_64 $@.x86_64 -arch i386 $@.i386 -create -output $(EXE).o
 
 $(EXE): $(EXE).o $(OSX_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(EXE) $(EXE).o $(OSX_OBJS) $(LIBS) 
 
-borg: $(OBJS) $(BOBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(EXE) $(OBJS) $(BOBJS) $(LIBS) 
 
 #
 # Clean up old junk
@@ -112,9 +98,9 @@ APPRES = $(APPCONT)/Resources
 # of 8x8.png for Vanilla.  Make sure setting dpi to 72, *not* preserving
 # the actual size of image.  When you have them ready, put them in
 # the lib/xtra/graf directory and rebuild.
-PLIST = cocoa/Angband-Cocoa.xml
+PLIST = cocoa/Hengband-Cocoa.xml
 
-ICONFILES = cocoa/Angband_Icons.icns cocoa/Save.icns cocoa/Edit.icns cocoa/Data.icns
+ICONFILES = cocoa/Hengband_Icons.icns cocoa/Save.icns cocoa/Edit.icns cocoa/Data.icns
 
 LIBFILES = \
   ../lib/edit/*.txt \
