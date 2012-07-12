@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string>$NAME$_Icons</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rephial.$EXECUTABLE$</string>
+	<string>jp.sourceforge.hengband.$EXECUTABLE$</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
