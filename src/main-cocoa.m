@@ -16,15 +16,6 @@
  */
 
 #include "angband.h"
-#include "cmds.h"
-#include "files.h"
-#include "init.h"
-#include "grafmode.h"
-
-#if BORG
-#include "borg1.h"
-#include "borg9.h"
-#endif
 
 #if defined(MACH_O_CARBON)
 
@@ -47,6 +38,7 @@
 # define USE_LIVE_RESIZE_CACHE 1
 #endif
 
+#if 0
 /*
  * Support the improved game command handling
  */
@@ -2904,6 +2896,7 @@ static void initialize_file_paths(void)
 }
 
 @end
+#endif /* 0 */
 
 int main(int argc, char* argv[])
 {
@@ -2911,4 +2904,9 @@ int main(int argc, char* argv[])
     return (0);
 }
 
+/* those externed in externs.h #if defined(MACH_O_CARBON) */
+u32b _fcreator, _ftype;
+void fsetfileinfo(cptr path, u32b fcreator, u32b ftype)
+{
+}
 #endif /* MACINTOSH || MACH_O_CARBON */
