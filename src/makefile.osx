@@ -8,7 +8,8 @@ all: install
 # settings
 CC = clang
 LD = ld
-OPT ?= -O2
+#OPT ?= -O2
+OPT ?= -O0
 
 NAME = Hengband
 APPNAME = $(NAME).app
