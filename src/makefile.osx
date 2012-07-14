@@ -117,9 +117,12 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	@mkdir -p $(APPBIN)
 	@mkdir -p $(APPRES)
 	@mkdir -p $(APPRES)/English.lproj/MainMenu.nib 
+	@mkdir -p $(APPRES)/lib/apex
+	@mkdir -p $(APPRES)/lib/data
 	@mkdir -p $(APPRES)/lib/edit
 	@mkdir -p $(APPRES)/lib/file
 	@mkdir -p $(APPRES)/lib/help
+	@mkdir -p $(APPRES)/lib/save
 	@mkdir -p $(APPRES)/lib/pref
 	@mkdir -p $(APPRES)/lib/script
 	@mkdir -p $(APPRES)/lib/xtra/graf

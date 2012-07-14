@@ -55,6 +55,7 @@ enum
 {
     AngbandEventWakeup = 1
 };
+#endif /* 0 */
 
 /* Redeclare some 10.7 constants and methods so we can build on 10.6 */
 enum
@@ -280,9 +281,12 @@ static int pict_cols = 0;
 static int pict_rows = 0;
 
 /*
- * Value used to signal that we using ASCII, not graphical tiles.
- */ 
-#define GRAF_MODE_NONE 0
+ * Available graphics modes
+ */
+#define GRAF_MODE_NONE	0
+#define GRAF_MODE_8X8	1
+#define GRAF_MODE_16X16	2
+#define GRAF_MODE_32X32	3
 
 /*
  * Requested graphics mode (as a grafID).
@@ -295,7 +299,9 @@ static int graf_mode_req = 0;
  */
 static BOOL graphics_are_enabled(void)
 {
-    return current_graphics_mode && current_graphics_mode->grafID != GRAPHICS_NONE;
+    // TODO: fix graphics
+    return false;
+    //return current_graphics_mode && current_graphics_mode->grafID != GRAPHICS_NONE;
 }
 
 /*
@@ -316,7 +322,7 @@ static void handle_open_when_ready(void);
 static void play_sound(int event);
 static void update_term_visibility(void);
 static BOOL check_events(int wait);
-static void cocoa_file_open_hook(const char *path, file_type ftype);
+//static void cocoa_file_open_hook(const char *path, file_type ftype);
 static BOOL send_event(NSEvent *event);
 static void record_current_savefile(void);
 
@@ -363,6 +369,7 @@ static bool initialized = FALSE;
 - (NSSize)scaleFromBaseSize;
 
 @end
+
 
 @implementation NSImage (AngbandImages)
 
@@ -867,6 +874,7 @@ static int compare_advances(const void *ap, const void *bp)
 + (void)beginGame
 {
     
+#if 0
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
     //set the command hook
@@ -923,6 +931,7 @@ static int compare_advances(const void *ap, const void *bp)
     [pool drain];
     
     play_game();
+#endif /* 0 */
 }
 
 + (void)endGame
@@ -1227,6 +1236,7 @@ static void record_current_savefile(void)
  * Initialize a new Term
  *
  */
+#define ANGBAND_TERM_MAX 8
 static void Term_init_cocoa(term *t)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -1414,6 +1424,9 @@ static errr Term_xtra_cocoa_react(void)
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     AngbandContext *angbandContext = Term->data;
     
+    
+// TODO: fix graphics
+#if 0
     /* Handle graphics */
     int expected_graf_mode = (current_graphics_mode ? current_graphics_mode->grafID : GRAF_MODE_NONE);
     if (graf_mode_req != expected_graf_mode)
@@ -1469,6 +1482,7 @@ static errr Term_xtra_cocoa_react(void)
             reset_visuals(TRUE);
         }
     }
+#endif /* fix graphics */
     
     [pool drain];
     
@@ -1503,6 +1517,7 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Process random events */
         case TERM_XTRA_BORED:
         {
+#if 0
             /* Update our windows so that we reflect what's in p_ptr */
             (void)update_term_visibility();
             
@@ -1511,13 +1526,16 @@ static errr Term_xtra_cocoa(int n, int v)
             
             /* Success */
             break;
+#endif /* 0 */
         }
             
             /* Process pending events */
         case TERM_XTRA_EVENT:
         {
+#if 0
             /* Process an event */
             (void)check_events(v);
+#endif /* 0 */
             
             /* Success */
             break;
@@ -1526,9 +1544,11 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Flush all pending events (if any) */
         case TERM_XTRA_FLUSH:
         {
+#if 0
             /* Hack -- flush all events */
             while (check_events(CHECK_EVENTS_DRAIN)) /* loop */;
             
+#endif /* 0 */
             /* Success */
             break;
         }
@@ -1564,6 +1584,7 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Delay (milliseconds) */
         case TERM_XTRA_DELAY:
         {
+#if 0
             /* If needed */
             if (v > 0)
             {
@@ -1581,6 +1602,7 @@ static errr Term_xtra_cocoa(int n, int v)
                 } while ([date timeIntervalSinceNow] >= 0);
                 
             }
+#endif /* 0 */
             
             /* Success */
             break;
@@ -1681,6 +1703,14 @@ static void draw_image_tile(CGImageRef image, NSRect srcRect, NSRect dstRect, NS
     CGImageRelease(subimage);
 }
 
+// TODO: fix graphics
+static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
+                            const wchar_t *cp, const byte *tap,
+                            const wchar_t *tcp)
+{
+    return (0);
+}
+#if 0
 static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
                             const wchar_t *cp, const byte *tap,
                             const wchar_t *tcp)
@@ -1770,6 +1800,7 @@ static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
     /* Success */
     return (0);
 }
+#endif /* 0 */
 
 /*
  * Low level graphics.  Assumes valid input.
@@ -1934,9 +1965,11 @@ static size_t Term_mbcs_cocoa(wchar_t *dest, const char *src, int n)
 /* Post a nonsense event so that our event loop wakes up */
 static void wakeup_event_loop(void)
 {
+#if 0
     /* Big hack - send a nonsense event to make us update */
     NSEvent *event = [NSEvent otherEventWithType:NSApplicationDefined location:NSZeroPoint modifierFlags:0 timestamp:0 windowNumber:0 context:NULL subtype:AngbandEventWakeup data1:0 data2:0];
     [NSApp postEvent:event atStart:NO];
+#endif /* 0 */
 }
 
 
@@ -1951,9 +1984,6 @@ static term *term_data_link(int i)
     /* Initialize the term */
     term_init(newterm, 80, 24, 256 /* keypresses, for some reason? */);
     
-    /* Differentiate between BS/^h, Tab/^i, etc. */
-    newterm->complex_input = TRUE;
-
     /* Use a "software" cursor */
     newterm->soft_cursor = TRUE;
     
@@ -1971,13 +2001,13 @@ static term *term_data_link(int i)
     newterm->curs_hook = Term_curs_cocoa;
     newterm->text_hook = Term_text_cocoa;
     newterm->pict_hook = Term_pict_cocoa;
-    newterm->mbcs_hook = Term_mbcs_cocoa;
     
     /* Global pointer */
     angband_term[i] = newterm;
     
     return newterm;
 }
+#if 0
 
 /*
  * Load preferences from preferences file for current host+current user+
@@ -2221,6 +2251,7 @@ static void play_sound(int event)
     /* Release the autorelease pool */
     [autorelease_pool drain];
 }
+#endif /* 0 */
 
 /*
  * 
@@ -2241,6 +2272,8 @@ static void init_windows(void)
 }
 
 
+// No need for event loop methods
+#if 0
 /*
  *    Run the event loop and return a gameplay status to init_angband
  */
@@ -2599,6 +2632,7 @@ static void cocoa_file_open_hook(const char *path, file_type ftype)
     }
     [pool drain];
 }
+#endif /* 0 */
 
 /*** Main program ***/
 
@@ -2608,7 +2642,7 @@ static void initialize_file_paths(void)
 {
     NSFileManager *fm = [NSFileManager defaultManager];
     
-    char libpath[PATH_MAX+1] = {0}, basepath[PATH_MAX+1] = {0};
+    char libpath[PATH_MAX+1] = {0};
     
     /* Get the path to the lib directory in the bundle */
     NSString *libString = [[[NSBundle bundleForClass:[AngbandView class]] resourcePath] stringByAppendingPathComponent:@"/lib"];
@@ -2623,6 +2657,8 @@ static void initialize_file_paths(void)
     [libString getFileSystemRepresentation:libpath maxLength:sizeof libpath];
     strlcat(libpath, "/", sizeof libpath);
     
+// Now PRIVATE_USER_PATH is set to "~/.angband"
+#if 0
     /* Get the path to the Angband directory in ~/Documents */
     NSString *angbandBase = get_data_directory();
     [angbandBase getFileSystemRepresentation:basepath maxLength:sizeof basepath];
@@ -2643,26 +2679,24 @@ static void initialize_file_paths(void)
         [[NSApplication sharedApplication] presentError:error];
         exit(0);
     }
+#endif /* 0 */
     
-    
-    //void init_file_paths(const char *configpath, const char *libpath, const char *datapath)
-    init_file_paths(libpath, libpath, basepath);
-    create_needed_dirs();
-    
+    init_file_paths(libpath);
 }
 
 @interface AngbandAppDelegate : NSObject {
     IBOutlet NSMenu *terminalsMenu;
 }
-
+#if 0
 - (IBAction)newGame:sender;
 - (IBAction)editFont:sender;
 - (IBAction)openGame:sender;
+#endif /* 0 */
 
 @end
 
 @implementation AngbandAppDelegate
-
+#if 0
 - (IBAction)newGame:sender
 {
     /* Game is in progress */
@@ -2894,9 +2928,51 @@ static void initialize_file_paths(void)
     
     return YES;
 }
+#endif /* 0 */
+
+- (void)applicationDidFinishLaunching:sender
+{
+    bool new_game = true;
+
+    /* Initialize file paths */
+    initialize_file_paths();
+
+    /* Prepare the windows */
+    init_windows();
+    
+    /* Note the "system" */
+    ANGBAND_SYS = "mac";
+    
+	/* Save some info for later */
+	player_euid = geteuid();
+	player_egid = getegid();
+    
+    /* We are now initialized */
+    initialized = TRUE;
+    
+    /* Handle "open_when_ready" */
+    //handle_open_when_ready();
+    
+    /* Handle pending events (most notably update) and flush input */
+    Term_flush();
+
+    /* Catch nasty signals */
+    signals_init();
+
+    /* Initialize */
+    init_angband();
+
+    /* Wait for response */
+    pause_line(23);
+
+    /* Play the game */
+    play_game(new_game);
+
+    /* Quit */
+    quit(NULL);
+}
 
 @end
-#endif /* 0 */
 
 int main(int argc, char* argv[])
 {
@@ -2910,3 +2986,5 @@ void fsetfileinfo(cptr path, u32b fcreator, u32b ftype)
 {
 }
 #endif /* MACINTOSH || MACH_O_CARBON */
+
+/* vim: set autoindent shiftwidth=4 tabstop=4 expandtab: */
