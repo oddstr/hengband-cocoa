@@ -68,6 +68,9 @@ enum
 - (void)setRestorable:(BOOL)flag;
 @end
 
+/* Whether or not to start new game */
+static BOOL new_game = FALSE;
+
 /* Delay handling of pre-emptive "quit" event */
 static BOOL quit_when_ready = FALSE;
 
@@ -874,18 +877,11 @@ static int compare_advances(const void *ap, const void *bp)
 + (void)beginGame
 {
     
-#if 0
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    
-    //set the command hook
-    cmd_get_hook = cocoa_get_cmd;
     
     /* Hooks in some "z-util.c" hooks */
     plog_aux = hook_plog;
     quit_aux = hook_quit;
-    
-	/* Hook in to the file_open routine */
-	file_open_hook = cocoa_file_open_hook;
     
     // initialize file paths
     initialize_file_paths();
@@ -893,25 +889,14 @@ static int compare_advances(const void *ap, const void *bp)
     // load preferences
     load_prefs();
     
-	/* Load possible graphics modes */
-	init_graphics_modes("graphics.txt");
-    
-    // load sounds
-    load_sounds();
-    
     /* Prepare the windows */
     init_windows();
-    
-    /* Set up game event handlers */
-    init_display();
-    
-	/* Register the sound hook */
-	sound_hook = play_sound;
     
     /* Note the "system" */
     ANGBAND_SYS = "mac";
     
-    /* Initialize some save file stuff */
+	/* Save some info for later */
+    player_euid = geteuid();
     player_egid = getegid();
     
     /* We are now initialized */
@@ -922,6 +907,10 @@ static int compare_advances(const void *ap, const void *bp)
     
     /* Handle pending events (most notably update) and flush input */
     Term_flush();
+
+    init_angband();
+
+    pause_line(23);
     
     /*
      * Play a game -- "new_game" is set by "new", "open" or the open document
@@ -930,8 +919,7 @@ static int compare_advances(const void *ap, const void *bp)
         
     [pool drain];
     
-    play_game();
-#endif /* 0 */
+    play_game(new_game);
 }
 
 + (void)endGame
@@ -1231,12 +1219,12 @@ static void record_current_savefile(void)
 
 /*** Support for the "z-term.c" package ***/
 
+#define ANGBAND_TERM_MAX 8
 
 /*
  * Initialize a new Term
  *
  */
-#define ANGBAND_TERM_MAX 8
 static void Term_init_cocoa(term *t)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
@@ -1260,7 +1248,7 @@ static void Term_init_cocoa(term *t)
     {
         if (angband_term[termIdx] == t)
         {
-            autosaveName = [NSString stringWithFormat:@"AngbandTerm-%d", termIdx];
+            autosaveName = [NSString stringWithFormat:@"HengbandTerm-%d", termIdx];
             break;
         }
     }
@@ -1280,7 +1268,7 @@ static void Term_init_cocoa(term *t)
     /* Set its title and, for auxiliary terms, tentative size */
     if (termIdx == 0)
     {
-        [window setTitle:@"Angband"];
+        [window setTitle:@"Hengband"];
     }
     else
     {
@@ -1418,15 +1406,14 @@ static CGImageRef create_angband_image(NSString *name)
  */
 static errr Term_xtra_cocoa_react(void)
 {
+// TODO: fix graphics
+#if 0
     /* Don't actually switch graphics until the game is running */
     if (!initialized || !game_in_progress) return (-1);
 
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     AngbandContext *angbandContext = Term->data;
     
-    
-// TODO: fix graphics
-#if 0
     /* Handle graphics */
     int expected_graf_mode = (current_graphics_mode ? current_graphics_mode->grafID : GRAF_MODE_NONE);
     if (graf_mode_req != expected_graf_mode)
@@ -1482,9 +1469,9 @@ static errr Term_xtra_cocoa_react(void)
             reset_visuals(TRUE);
         }
     }
-#endif /* fix graphics */
     
     [pool drain];
+#endif /* 0 */ // fix graphics
     
     /* Success */
     return (0);
@@ -1705,8 +1692,8 @@ static void draw_image_tile(CGImageRef image, NSRect srcRect, NSRect dstRect, NS
 
 // TODO: fix graphics
 static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
-                            const wchar_t *cp, const byte *tap,
-                            const wchar_t *tcp)
+                            const char *cp, const byte *tap,
+                            const char *tcp)
 {
     return (0);
 }
@@ -1807,7 +1794,7 @@ static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
  *
  * Draw several ("n") chars, with an attr, at a given location.
  */
-static errr Term_text_cocoa(int x, int y, int n, byte a, const wchar_t *cp)
+static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
@@ -2007,7 +1994,6 @@ static term *term_data_link(int i)
     
     return newterm;
 }
-#if 0
 
 /*
  * Load preferences from preferences file for current host+current user+
@@ -2042,6 +2028,7 @@ static void load_prefs()
     if (! default_font) default_font = [[NSFont fontWithName:@"Menlo" size:13.] retain];
 }
 
+#if 0
 /* Arbitary limit on number of possible samples per event */
 #define MAX_SAMPLES            8
 
@@ -2271,6 +2258,73 @@ static void init_windows(void)
     Term_activate(primary);
 }
 
+/* Return the directory into which we put data (save and config) */
+static NSString *get_data_directory(void)
+{
+    return [@"~/Documents/Hengband/" stringByExpandingTildeInPath];
+}
+
+/*
+ * Handle the "open_when_ready" flag
+ */
+static void handle_open_when_ready(void)
+{
+    /* Check the flag XXX XXX XXX make a function for this */
+    if (open_when_ready && initialized && !game_in_progress)
+    {
+        /* Forget */
+        open_when_ready = FALSE;
+        
+        /* Game is in progress */
+        game_in_progress = TRUE;
+        
+        /* Wait for a keypress */
+        pause_line(23);
+    }
+}
+
+
+/*
+ * Handle quit_when_ready, by Peter Ammon,
+ * slightly modified to check inkey_flag.
+ */
+static void quit_calmly(void)
+{
+    /* Quit immediately if game's not started */
+    if (!game_in_progress || !character_generated) quit(NULL);
+    
+    /* Save the game and Quit (if it's safe) */
+    if (inkey_flag)
+    {
+        /* Hack -- Forget messages */
+        msg_flag = FALSE;
+        
+        /* Save the game */
+        do_cmd_save_game(FALSE);
+        record_current_savefile();
+        
+        
+        /* Quit */
+        quit(NULL);
+    }
+    
+    /* Wait until inkey_flag is set */
+}
+
+
+
+#if 0
+/* returns YES if we contain an AngbandView (and hence should direct our events to Angband) */
+static BOOL contains_angband_view(NSView *view)
+{
+    if ([view isKindOfClass:[AngbandView class]]) return YES;
+    for (NSView *subview in [view subviews]) {
+        if (contains_angband_view(subview)) return YES;
+    }
+    return NO;
+}
+#endif /* 0 */
+
 
 // No need for event loop methods
 #if 0
@@ -2307,71 +2361,6 @@ static errr cocoa_get_cmd(cmd_context context, bool wait)
         return get_cmd_init();
     else 
         return textui_get_cmd(context, wait);
-}
-
-/* Return the directory into which we put data (save and config) */
-static NSString *get_data_directory(void)
-{
-    return [@"~/Documents/Angband/" stringByExpandingTildeInPath];
-}
-
-/*
- * Handle the "open_when_ready" flag
- */
-static void handle_open_when_ready(void)
-{
-    /* Check the flag XXX XXX XXX make a function for this */
-    if (open_when_ready && initialized && !game_in_progress)
-    {
-        /* Forget */
-        open_when_ready = FALSE;
-        
-        /* Game is in progress */
-        game_in_progress = TRUE;
-        
-        /* Wait for a keypress */
-        pause_line(Term);
-    }
-}
-
-
-/*
- * Handle quit_when_ready, by Peter Ammon,
- * slightly modified to check inkey_flag.
- */
-static void quit_calmly(void)
-{
-    /* Quit immediately if game's not started */
-    if (!game_in_progress || !character_generated) quit(NULL);
-    
-    /* Save the game and Quit (if it's safe) */
-    if (inkey_flag)
-    {
-        /* Hack -- Forget messages */
-        msg_flag = FALSE;
-        
-        /* Save the game */
-        do_cmd_save_game(FALSE, 0);
-        record_current_savefile();
-        
-        
-        /* Quit */
-        quit(NULL);
-    }
-    
-    /* Wait until inkey_flag is set */
-}
-
-
-
-/* returns YES if we contain an AngbandView (and hence should direct our events to Angband) */
-static BOOL contains_angband_view(NSView *view)
-{
-    if ([view isKindOfClass:[AngbandView class]]) return YES;
-    for (NSView *subview in [view subviews]) {
-        if (contains_angband_view(subview)) return YES;
-    }
-    return NO;
 }
 
 /* Encodes an NSEvent Angband-style, or forwards it along.  Returns YES if the event was sent to Angband, NO if Cocoa (or nothing) handled it */
@@ -2546,11 +2535,12 @@ static BOOL check_events(int wait)
     return YES;
     
 }
+#endif /* 0 */
 
 /* Update window visibility to match what's in p_ptr, so we show or hide terms that have or do not have contents respectively. */
 static void update_term_visibility(void)
 {
-    if (! op_ptr) return; //paranoia
+    //if (! op_ptr) return; //paranoia
     
     /* Make a mask of window flags that matter */
     size_t i;
@@ -2573,7 +2563,8 @@ static void update_term_visibility(void)
             BOOL isVisible = [angbandContext isOrderedIn];
             
             /* Ensure the first term is always visible. The remaining terms depend on the op_ptr. */
-            BOOL shouldBeVisible = (i == 0 || (op_ptr->window_flag[i] & significantWindowFlagMask));
+            //BOOL shouldBeVisible = (i == 0 || (op_ptr->window_flag[i] & significantWindowFlagMask));
+            BOOL shouldBeVisible = (i == 0);
             
             if (isVisible && ! shouldBeVisible)
             {
@@ -2614,6 +2605,7 @@ static void hook_quit(const char * str)
     exit(0);
 }
 
+#if 0
 /* Set HFS file type and creator codes on a path */
 static void cocoa_file_open_hook(const char *path, file_type ftype)
 {
@@ -2649,7 +2641,7 @@ static void initialize_file_paths(void)
     BOOL isDir = NO;
     if (! [fm fileExistsAtPath:libString isDirectory:&isDir] || ! isDir)
     {
-        NSRunAlertPanel(@"Unable to find lib directory", @"Unable to find the lib directory at path %@.  Angband has to quit.", @"Nuts", nil, nil, libpath);
+        NSRunAlertPanel(@"Unable to find lib directory", @"Unable to find the lib directory at path %@.  Hengband has to quit.", @"Nuts", nil, nil, libpath);
         exit(0);
     }
     
@@ -2675,7 +2667,7 @@ static void initialize_file_paths(void)
     success = success && [fm createDirectoryAtPath:user withIntermediateDirectories:YES attributes:nil error:&error];
     if (! success)
     {
-        NSRunAlertPanel(@"Unable to create directory", @"Unable to create directory in %@ (error was %@).  Angband has to quit.", @"Nuts", nil, nil, angbandBase, error);
+        NSRunAlertPanel(@"Unable to create directory", @"Unable to create directory in %@ (error was %@).  Hengband has to quit.", @"Nuts", nil, nil, angbandBase, error);
         [[NSApplication sharedApplication] presentError:error];
         exit(0);
     }
@@ -2687,21 +2679,19 @@ static void initialize_file_paths(void)
 @interface AngbandAppDelegate : NSObject {
     IBOutlet NSMenu *terminalsMenu;
 }
-#if 0
 - (IBAction)newGame:sender;
 - (IBAction)editFont:sender;
 - (IBAction)openGame:sender;
-#endif /* 0 */
 
 @end
 
 @implementation AngbandAppDelegate
-#if 0
 - (IBAction)newGame:sender
 {
     /* Game is in progress */
     game_in_progress = TRUE;
-    cmd.command = CMD_NEWGAME;
+    //cmd.command = CMD_NEWGAME;
+    new_game = TRUE;
 }
 
 - (IBAction)editFont:sender
@@ -2800,7 +2790,8 @@ static void initialize_file_paths(void)
         
         /* Game is in progress */
         game_in_progress = TRUE;
-        cmd.command = CMD_LOADFILE;
+        //cmd.command = CMD_LOADFILE;
+        new_game = FALSE;
     }
     
     [pool drain];
@@ -2812,7 +2803,7 @@ static void initialize_file_paths(void)
     msg_flag = FALSE;
     
     /* Save the game */
-    do_cmd_save_game(FALSE, 0);
+    do_cmd_save_game(FALSE);
     
     /* Record the current save file so we can select it by default next time. It's a little sketchy that this only happens when we save through the menu; ideally game-triggered saves would trigger it too. */
     record_current_savefile();
@@ -2863,7 +2854,8 @@ static void initialize_file_paths(void)
         return NSTerminateNow;
     }
     else {
-        cmd_insert(CMD_QUIT);
+        //cmd_insert(CMD_QUIT);
+        quit(NULL);
         /* Post an escape event so that we can return from our get-key-event function */
         wakeup_event_loop();
         quit_when_ready = true;
@@ -2875,6 +2867,7 @@ static void initialize_file_paths(void)
 /* Dynamically build the Graphics menu */
 - (void)menuNeedsUpdate:(NSMenu *)menu {
     
+#if 0
     /* Only the graphics menu is dynamic */
     if (! [[menu title] isEqualToString:@"Graphics"])
         return;
@@ -2905,6 +2898,7 @@ static void initialize_file_paths(void)
         NSMenuItem *item = [menu addItemWithTitle:title action:action keyEquivalent:@""];
         [item setTag:graf->grafID];
     }
+#endif /* 0 */
 }
 
 /* Delegate method that gets called if we're asked to open a file. */
@@ -2921,56 +2915,56 @@ static void initialize_file_paths(void)
     if (! [file getFileSystemRepresentation:savefile maxLength:sizeof savefile]) return NO;
     
     /* Success, remember to load it */
-    cmd.command = CMD_LOADFILE;
+    //cmd.command = CMD_LOADFILE;
+    new_game = FALSE;
     
     /* Wake us up in case this arrives while we're sitting at the Welcome screen! */
     wakeup_event_loop();
     
     return YES;
 }
-#endif /* 0 */
 
-- (void)applicationDidFinishLaunching:sender
-{
-    bool new_game = true;
-
-    /* Initialize file paths */
-    initialize_file_paths();
-
-    /* Prepare the windows */
-    init_windows();
-    
-    /* Note the "system" */
-    ANGBAND_SYS = "mac";
-    
-	/* Save some info for later */
-	player_euid = geteuid();
-	player_egid = getegid();
-    
-    /* We are now initialized */
-    initialized = TRUE;
-    
-    /* Handle "open_when_ready" */
-    //handle_open_when_ready();
-    
-    /* Handle pending events (most notably update) and flush input */
-    Term_flush();
-
-    /* Catch nasty signals */
-    signals_init();
-
-    /* Initialize */
-    init_angband();
-
-    /* Wait for response */
-    pause_line(23);
-
-    /* Play the game */
-    play_game(new_game);
-
-    /* Quit */
-    quit(NULL);
-}
+//- (void)applicationDidFinishLaunching:sender
+//{
+//    bool new_game = true;
+//
+//    /* Initialize file paths */
+//    initialize_file_paths();
+//
+//    /* Prepare the windows */
+//    init_windows();
+//    
+//    /* Note the "system" */
+//    ANGBAND_SYS = "mac";
+//    
+//	/* Save some info for later */
+//	player_euid = geteuid();
+//	player_egid = getegid();
+//    
+//    /* We are now initialized */
+//    initialized = TRUE;
+//    
+//    /* Handle "open_when_ready" */
+//    //handle_open_when_ready();
+//    
+//    /* Handle pending events (most notably update) and flush input */
+//    Term_flush();
+//
+//    /* Catch nasty signals */
+//    signals_init();
+//
+//    /* Initialize */
+//    init_angband();
+//
+//    /* Wait for response */
+//    pause_line(23);
+//
+//    /* Play the game */
+//    play_game(new_game);
+//
+//    /* Quit */
+//    quit(NULL);
+//}
 
 @end
 
