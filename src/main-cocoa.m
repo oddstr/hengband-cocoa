@@ -49,13 +49,13 @@ static game_command cmd = { CMD_NULL, 0 };
 /* Our command-fetching function */
 static errr cocoa_get_cmd(cmd_context context, bool wait);
 
+#endif /* 0 */
 
 /* Application defined event numbers */
 enum
 {
     AngbandEventWakeup = 1
 };
-#endif /* 0 */
 
 /* Redeclare some 10.7 constants and methods so we can build on 10.6 */
 enum
@@ -919,6 +919,7 @@ static int compare_advances(const void *ap, const void *bp)
         
     [pool drain];
     
+    new_game = TRUE;
     play_game(new_game);
 }
 
@@ -1504,7 +1505,6 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Process random events */
         case TERM_XTRA_BORED:
         {
-#if 0
             /* Update our windows so that we reflect what's in p_ptr */
             (void)update_term_visibility();
             
@@ -1513,16 +1513,13 @@ static errr Term_xtra_cocoa(int n, int v)
             
             /* Success */
             break;
-#endif /* 0 */
         }
             
             /* Process pending events */
         case TERM_XTRA_EVENT:
         {
-#if 0
             /* Process an event */
             (void)check_events(v);
-#endif /* 0 */
             
             /* Success */
             break;
@@ -1531,11 +1528,9 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Flush all pending events (if any) */
         case TERM_XTRA_FLUSH:
         {
-#if 0
             /* Hack -- flush all events */
             while (check_events(CHECK_EVENTS_DRAIN)) /* loop */;
             
-#endif /* 0 */
             /* Success */
             break;
         }
@@ -1952,11 +1947,9 @@ static size_t Term_mbcs_cocoa(wchar_t *dest, const char *src, int n)
 /* Post a nonsense event so that our event loop wakes up */
 static void wakeup_event_loop(void)
 {
-#if 0
     /* Big hack - send a nonsense event to make us update */
     NSEvent *event = [NSEvent otherEventWithType:NSApplicationDefined location:NSZeroPoint modifierFlags:0 timestamp:0 windowNumber:0 context:NULL subtype:AngbandEventWakeup data1:0 data2:0];
     [NSApp postEvent:event atStart:NO];
-#endif /* 0 */
 }
 
 
@@ -2312,8 +2305,6 @@ static void quit_calmly(void)
 }
 
 
-
-#if 0
 /* returns YES if we contain an AngbandView (and hence should direct our events to Angband) */
 static BOOL contains_angband_view(NSView *view)
 {
@@ -2323,7 +2314,6 @@ static BOOL contains_angband_view(NSView *view)
     }
     return NO;
 }
-#endif /* 0 */
 
 
 // No need for event loop methods
@@ -2362,6 +2352,7 @@ static errr cocoa_get_cmd(cmd_context context, bool wait)
     else 
         return textui_get_cmd(context, wait);
 }
+#endif /* 0 */
 
 /* Encodes an NSEvent Angband-style, or forwards it along.  Returns YES if the event was sent to Angband, NO if Cocoa (or nothing) handled it */
 static BOOL send_event(NSEvent *event)
@@ -2384,14 +2375,20 @@ static BOOL send_event(NSEvent *event)
             
             unsigned modifiers = [event modifierFlags];
             
+// Want to use command key in macros
+#if 0
             /* Send all NSCommandKeyMasks through */
             if (modifiers & NSCommandKeyMask)
             {
                 [NSApp sendEvent:event];
                 break;
             }
+#endif /* 0 */
             
             if (! [[event characters] length]) break;
+
+            /* Hide the mouse pointer */
+            [NSCursor setHiddenUntilMouseMoves:YES];
             
             
             /* Extract some modifiers */
@@ -2401,79 +2398,43 @@ static BOOL send_event(NSEvent *event)
             int mx = !! (modifiers & NSCommandKeyMask);
             int kp = !! (modifiers & NSNumericPadKeyMask);
             
-            
-            /* Get the Angband char corresponding to this unichar */
-            unichar c = [[event characters] characterAtIndex:0];
-            keycode_t ch;
-            switch (c) {
-                case NSUpArrowFunctionKey: ch = ARROW_UP; break;
-                case NSDownArrowFunctionKey: ch = ARROW_DOWN; break;
-                case NSLeftArrowFunctionKey: ch = ARROW_LEFT; break;
-                case NSRightArrowFunctionKey: ch = ARROW_RIGHT; break;
-                case NSF1FunctionKey: ch = KC_F1; break;
-                case NSF2FunctionKey: ch = KC_F2; break;
-                case NSF3FunctionKey: ch = KC_F3; break;
-                case NSF4FunctionKey: ch = KC_F4; break;
-                case NSF5FunctionKey: ch = KC_F5; break;
-                case NSF6FunctionKey: ch = KC_F6; break;
-                case NSF7FunctionKey: ch = KC_F7; break;
-                case NSF8FunctionKey: ch = KC_F8; break;
-                case NSF9FunctionKey: ch = KC_F9; break;
-                case NSF10FunctionKey: ch = KC_F10; break;
-                case NSF11FunctionKey: ch = KC_F11; break;
-                case NSF12FunctionKey: ch = KC_F12; break;
-                case NSF13FunctionKey: ch = KC_F13; break;
-                case NSF14FunctionKey: ch = KC_F14; break;
-                case NSF15FunctionKey: ch = KC_F15; break;
-                case NSHelpFunctionKey: ch = KC_HELP; break;
-                case NSHomeFunctionKey: ch = KC_HOME; break;
-                case NSPageUpFunctionKey: ch = KC_PGUP; break;
-                case NSPageDownFunctionKey: ch = KC_PGDOWN; break;
-                case NSBeginFunctionKey: ch = KC_BEGIN; break;
-                case NSEndFunctionKey: ch = KC_END; break;
-                case NSInsertFunctionKey: ch = KC_INSERT; break;
-                case NSDeleteFunctionKey: ch = KC_DELETE; break;
-                case NSPauseFunctionKey: ch = KC_PAUSE; break;
-                case NSBreakFunctionKey: ch = KC_BREAK; break;
-                    
-                default:
-                    if (c <= 0x7F)
-                        ch = (char)c;
-                    else
-                        ch = '\0';
-                    break;
-            }
-            
-            /* override special keys */
-            switch([event keyCode]) {
-                case kVK_Return: ch = KC_ENTER; break;
-                case kVK_Escape: ch = ESCAPE; break;
-                case kVK_Tab: ch = KC_TAB; break;
-                case kVK_Delete: ch = KC_BACKSPACE; break;
-                case kVK_ANSI_KeypadEnter: ch = KC_ENTER; kp = TRUE; break;
+            /* Get a character with the key. Upper case with ShiftKey. */
+            unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
+            /* Get key code for the key */
+            unsigned short code = [event keyCode];
+
+			/* Normal key -> simple keypress */
+			if (code < 64 && !mc && !mo && !mx && !kp)
+			{
+				/* Enqueue the keypress */
+				Term_keypress(c);
+			}
+            /* Special key or with modifier */
+            else if (code <= 127)
+            {
+                /* Need to send more than one keypresses */
+
+				/* Introduce with control-underscore */
+				Term_keypress(31);
+
+				/* Send some modifier keys */
+				if (mc) Term_keypress('C');
+				if (ms) Term_keypress('S');
+				if (mo) Term_keypress('O');
+				if (mx) Term_keypress('X');
+				if (kp) Term_keypress('P');
+
+                /* Send underscore as separator */
+				Term_keypress('_');
+
+				/* Hack -- Downshift and encode the keycode */
+				Term_keypress('0' + (code - 64) / 10);
+				Term_keypress('0' + (code - 64) % 10);
+
+				/* Terminate the sequence with 13 == '\r' */
+				Term_keypress(13);
             }
 
-            /* Hide the mouse pointer */
-            [NSCursor setHiddenUntilMouseMoves:YES];
-            
-            /* Enqueue it */
-            if (ch != '\0')
-            {
-                
-                /* Enqueue the keypress */
-#ifdef KC_MOD_ALT
-                byte mods = 0;
-                if (mo) mods |= KC_MOD_ALT;
-                if (mx) mods |= KC_MOD_META;
-                if (mc && MODS_INCLUDE_CONTROL(ch)) mods |= KC_MOD_CONTROL;
-                if (ms && MODS_INCLUDE_SHIFT(ch)) mods |= KC_MOD_SHIFT;
-                if (kp) mods |= KC_MOD_KEYPAD;
-                Term_keypress(ch, mods);
-#else
-                Term_keypress(ch);
-#endif
-            }
-            
             break;
         }
             
@@ -2514,7 +2475,8 @@ static BOOL check_events(int wait)
         if (quit_when_ready)
         {
             /* send escape events until we quit */
-            Term_keypress(0x1B, 0);
+            //Term_keypress(0x1B, 0);
+            Term_keypress(0x1B);
             [pool drain];
             return false;
         }
@@ -2535,7 +2497,6 @@ static BOOL check_events(int wait)
     return YES;
     
 }
-#endif /* 0 */
 
 /* Update window visibility to match what's in p_ptr, so we show or hide terms that have or do not have contents respectively. */
 static void update_term_visibility(void)
