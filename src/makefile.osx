@@ -126,6 +126,7 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	@mkdir -p $(APPRES)/lib/save
 	@mkdir -p $(APPRES)/lib/pref
 	@mkdir -p $(APPRES)/lib/script
+	@mkdir -p $(APPRES)/lib/user
 	@mkdir -p $(APPRES)/lib/xtra/graf
 	@mkdir -p $(APPRES)/lib/xtra/sound
 

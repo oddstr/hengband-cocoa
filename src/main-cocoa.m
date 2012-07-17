@@ -2643,7 +2643,6 @@ static void initialize_file_paths(void)
     [libString getFileSystemRepresentation:libpath maxLength:sizeof libpath];
     strlcat(libpath, "/", sizeof libpath);
     
-// Now PRIVATE_USER_PATH is set to "~/.angband"
 #if 0
     /* Get the path to the Angband directory in ~/Documents */
     NSString *angbandBase = get_data_directory();
