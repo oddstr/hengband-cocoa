@@ -139,7 +139,7 @@ static NSFont *default_font;
     CFAbsoluteTime lastRefreshTime;
     
     /* To address subpixel rendering overdraw problems, we cache all the characters and attributes we're told to draw */
-    wchar_t *charOverdrawCache;
+    char *charOverdrawCache;
     byte *attrOverdrawCache;
 }
 
@@ -1783,6 +1783,21 @@ static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
 }
 #endif /* 0 */
 
+
+/* Special flags in the attr data */
+#define AF_BIGTILE2 0xf0
+#define AF_TILE1   0x80
+
+#ifdef JP
+#define AF_KANJI1  0x10
+#define AF_KANJI2  0x20
+#define AF_KANJIC  0x0f
+/*
+ * 全角文字対応。
+ * 属性に全角文字の１バイト目、２バイト目も記憶。
+ * By FIRST
+ */
+#endif
 /*
  * Low level graphics.  Assumes valid input.
  *
@@ -1806,11 +1821,11 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     
     /* record our data in our cache */
     int start = y * angbandContext->cols + x;
-//    int location;
-//    for (location = 0; location < n; location++) {
-//        angbandContext->charOverdrawCache[start + location] = cp[location];
-//        angbandContext->attrOverdrawCache[start + location] = a;
-//    }
+    int location;
+    for (location = 0; location < n; location++) {
+        angbandContext->charOverdrawCache[start + location] = cp[location];
+        angbandContext->attrOverdrawCache[start + location] = a;
+    }
     
     /* Focus on our layer */
     [angbandContext lockFocus];
@@ -1836,39 +1851,45 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     NSFont *selectionFont = [[angbandContext selectionFont] screenFont];
     [selectionFont set];
 
-//    /* Handle overdraws */
-//    const int overdraws[2] = {x-1, x+n}; //left, right
-      int i;
-//    for (i=0; i < 2; i++) {
-//        int overdrawX = overdraws[i];
-//        
-//        // Nothing to overdraw if we're at an edge
-//        if (overdrawX >= 0 && (size_t)overdrawX < angbandContext->cols)
-//        {
-//            wchar_t previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
-//            // Don't overdraw if it's not text
-//            if (previouslyDrawnVal != NO_OVERDRAW)
-//            {
-//                NSRect overdrawRect = [angbandContext rectInImageForTileAtX:overdrawX Y:y];
-//                NSRect expandedRect = crack_rect(overdrawRect, scaleFactor, push_options(overdrawX, y));
-//                
-//                // Make sure we redisplay it
-//                [[NSColor blackColor] set];
-//                NSRectFill(expandedRect);
-//                redisplayRect = NSUnionRect(redisplayRect, expandedRect);
-//                
-//                // Redraw text if we have any
-//                if (previouslyDrawnVal != 0)
-//                {
-//                    byte color = angbandContext->attrOverdrawCache[y * angbandContext->cols + overdrawX]; 
-//                    
-//                    set_color_for_index(color);
-//                    UniChar unicharString[2] = {(UniChar)previouslyDrawnVal, 0};
-//                    [angbandContext drawUniChar:unicharString inRect:overdrawRect];
-//                }
-//            }
-//        }
-//    }
+    /* Handle overdraws */
+    const int overdraws[2] = {x-1, x+n}; //left, right
+    int i;
+    for (i=0; i < 2; i++) {
+        int overdrawX = overdraws[i];
+        
+        // Nothing to overdraw if we're at an edge
+        if (overdrawX >= 0 && (size_t)overdrawX < angbandContext->cols)
+        {
+#ifdef JP
+            /* もし全角の2バイト目ならoverdrawしない */
+            if (((a & AF_KANJI2) && !(a & AF_TILE1)) || (a & AF_BIGTILE2) == AF_BIGTILE2)
+                continue;
+#else /* JP */
+#endif /* JP */
+            char previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
+            // Don't overdraw if it's not text
+            if (previouslyDrawnVal != NO_OVERDRAW)
+            {
+                NSRect overdrawRect = [angbandContext rectInImageForTileAtX:overdrawX Y:y];
+                NSRect expandedRect = crack_rect(overdrawRect, scaleFactor, push_options(overdrawX, y));
+                
+                // Make sure we redisplay it
+                [[NSColor blackColor] set];
+                NSRectFill(expandedRect);
+                redisplayRect = NSUnionRect(redisplayRect, expandedRect);
+                
+                // Redraw text if we have any
+                if (previouslyDrawnVal != 0)
+                {
+                    byte color = angbandContext->attrOverdrawCache[y * angbandContext->cols + overdrawX]; 
+                    
+                    set_color_for_index(color);
+                    UniChar unicharString[2] = {(UniChar)previouslyDrawnVal, 0};
+                    [angbandContext drawUniChar:unicharString inRect:overdrawRect];
+                }
+            }
+        }
+    }
     
     /* Set the color */
     set_color_for_index(a);
