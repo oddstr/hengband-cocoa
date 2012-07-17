@@ -164,7 +164,7 @@ static NSFont *default_font;
 - (NSRect)rectInImageForTileAtX:(int)x Y:(int)y;
 
 /* Draw the given wide character into the given tile rect. */
-- (void)drawWChar:(wchar_t)wchar inRect:(NSRect)tile;
+- (void)drawUniChar:(UniChar[])unicharString inRect:(NSRect)tile;
 
 /* Locks focus on the Angband image, and scales the CTM appropriately. */
 - (CGContextRef)lockFocus;
@@ -644,13 +644,12 @@ static int compare_advances(const void *ap, const void *bp)
 #endif
 }
 
-- (void)drawWChar:(wchar_t)wchar inRect:(NSRect)tile
+- (void)drawUniChar:(UniChar[])unicharString inRect:(NSRect)tile
 {
     CGContextRef ctx = [[NSGraphicsContext currentContext] graphicsPort];
     CGFloat tileOffsetY = -fontDescender;
     CGFloat tileOffsetX;
     NSFont *screenFont = [angbandViewFont screenFont];
-    UniChar unicharString[2] = {(UniChar)wchar, 0};
 
     // Get glyph and advance
     CGGlyph thisGlyphArray[1] = {};
@@ -1807,11 +1806,11 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     
     /* record our data in our cache */
     int start = y * angbandContext->cols + x;
-    int location;
-    for (location = 0; location < n; location++) {
-        angbandContext->charOverdrawCache[start + location] = cp[location];
-        angbandContext->attrOverdrawCache[start + location] = a;
-    }
+//    int location;
+//    for (location = 0; location < n; location++) {
+//        angbandContext->charOverdrawCache[start + location] = cp[location];
+//        angbandContext->attrOverdrawCache[start + location] = a;
+//    }
     
     /* Focus on our layer */
     [angbandContext lockFocus];
@@ -1836,47 +1835,86 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     
     NSFont *selectionFont = [[angbandContext selectionFont] screenFont];
     [selectionFont set];
-    
-    /* Handle overdraws */
-    const int overdraws[2] = {x-1, x+n}; //left, right
-    int i;
-    for (i=0; i < 2; i++) {
-        int overdrawX = overdraws[i];
-        
-        // Nothing to overdraw if we're at an edge
-        if (overdrawX >= 0 && (size_t)overdrawX < angbandContext->cols)
-        {
-            wchar_t previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
-            // Don't overdraw if it's not text
-            if (previouslyDrawnVal != NO_OVERDRAW)
-            {
-                NSRect overdrawRect = [angbandContext rectInImageForTileAtX:overdrawX Y:y];
-                NSRect expandedRect = crack_rect(overdrawRect, scaleFactor, push_options(overdrawX, y));
-                
-                // Make sure we redisplay it
-                [[NSColor blackColor] set];
-                NSRectFill(expandedRect);
-                redisplayRect = NSUnionRect(redisplayRect, expandedRect);
-                
-                // Redraw text if we have any
-                if (previouslyDrawnVal != 0)
-                {
-                    byte color = angbandContext->attrOverdrawCache[y * angbandContext->cols + overdrawX]; 
-                    
-                    set_color_for_index(color);
-                    [angbandContext drawWChar:previouslyDrawnVal inRect:overdrawRect];
-                }
-            }
-        }
-    }
+
+//    /* Handle overdraws */
+//    const int overdraws[2] = {x-1, x+n}; //left, right
+      int i;
+//    for (i=0; i < 2; i++) {
+//        int overdrawX = overdraws[i];
+//        
+//        // Nothing to overdraw if we're at an edge
+//        if (overdrawX >= 0 && (size_t)overdrawX < angbandContext->cols)
+//        {
+//            wchar_t previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
+//            // Don't overdraw if it's not text
+//            if (previouslyDrawnVal != NO_OVERDRAW)
+//            {
+//                NSRect overdrawRect = [angbandContext rectInImageForTileAtX:overdrawX Y:y];
+//                NSRect expandedRect = crack_rect(overdrawRect, scaleFactor, push_options(overdrawX, y));
+//                
+//                // Make sure we redisplay it
+//                [[NSColor blackColor] set];
+//                NSRectFill(expandedRect);
+//                redisplayRect = NSUnionRect(redisplayRect, expandedRect);
+//                
+//                // Redraw text if we have any
+//                if (previouslyDrawnVal != 0)
+//                {
+//                    byte color = angbandContext->attrOverdrawCache[y * angbandContext->cols + overdrawX]; 
+//                    
+//                    set_color_for_index(color);
+//                    UniChar unicharString[2] = {(UniChar)previouslyDrawnVal, 0};
+//                    [angbandContext drawUniChar:unicharString inRect:overdrawRect];
+//                }
+//            }
+//        }
+//    }
     
     /* Set the color */
     set_color_for_index(a);
     
     /* Draw each */
     NSRect rectToDraw = charRect;
+
+#ifdef JP
+    /* Encoding for cptr -> NSString conversion */
+# if defined(EUC)
+    NSStringEncoding enc = NSJapaneseEUCStringEncoding;
+# elif defined(SJIS)
+    NSStringEncoding enc = NSShiftJISStringEncoding;
+# else
+    error!
+# endif
+#endif /* JP */
+
     for (i=0; i < n; i++) {
-        [angbandContext drawWChar:cp[i] inRect:rectToDraw];
+#ifdef JP
+        /*
+         * ÅÏ¤µ¤ì¤ëÊ¸»úÎócp¤ÏEUC¤Þ¤¿¤ÏSJIS¤Î¥Ð¥¤¥ÈÇÛÎó¡£
+         * ´Á»ú¥³¡¼¥É¤Î1Ê¸»úÌÜ¤ò¸«¤Ä¤±¤¿¤é¡¢¼¡¤Î¥Ð¥¤¥È¤È°ì½ï¤Ë
+         * 1Ê¸»ú¤Îwchar¤ËÊÑ´¹¤·¤Æ¡¢2ÇÜÉý¤ÇÉÁ²è¡£
+         */
+        if (iskanji(cp[i]) && i < n-1){
+            const char buf[2] = {cp[i], cp[++i]};
+            UniChar unicharString[2] =
+            {
+                [[NSString stringWithCString:buf encoding:enc] characterAtIndex:0],
+                0
+            };
+
+            /* Draw 2* wide */
+            rectToDraw.size.width = tileWidth * 2;
+            [angbandContext drawUniChar:unicharString inRect:rectToDraw];
+            rectToDraw.size.width = tileWidth;
+            rectToDraw.origin.x += tileWidth * 2;
+
+            /* Done for this character */
+            continue;
+        }
+#endif /* JP */
+
+        UniChar unicharString[2] = {(UniChar)cp[i], 0};
+        [angbandContext drawUniChar:unicharString inRect:rectToDraw];
         rectToDraw.origin.x += tileWidth;
     }
 
@@ -1897,7 +1935,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 
 /* From the Linux mbstowcs(3) man page:
  *   If dest is NULL, n is ignored, and the conversion  proceeds  as  above,
- *   except  that  the converted wide characters are not written out to memâ€
+ *   except  that  the converted wide characters are not written out to mem-
  *   ory, and that no length limit exists.
  */
 static size_t Term_mbcs_cocoa(wchar_t *dest, const char *src, int n)
@@ -2396,15 +2434,16 @@ static BOOL send_event(NSEvent *event)
             int ms = !! (modifiers & NSShiftKeyMask);
             int mo = !! (modifiers & NSAlternateKeyMask);
             int mx = !! (modifiers & NSCommandKeyMask);
-            int kp = !! (modifiers & NSNumericPadKeyMask);
+            //int kp = !! (modifiers & NSNumericPadKeyMask);
             
-            /* Get a character with the key. Upper case with ShiftKey. */
-            unichar c = [[event charactersIgnoringModifiers] characterAtIndex:0];
+            /* Get a character with the key. */
+            unichar c = [[event characters] characterAtIndex:0];
             /* Get key code for the key */
+            /* See Carbon's Event.h about keycode */
             unsigned short code = [event keyCode];
 
 			/* Normal key -> simple keypress */
-			if (code < 64 && !mc && !mo && !mx && !kp)
+			if (code < 64 && !mo && !mx)
 			{
 				/* Enqueue the keypress */
 				Term_keypress(c);
@@ -2412,27 +2451,21 @@ static BOOL send_event(NSEvent *event)
             /* Special key or with modifier */
             else if (code <= 127)
             {
-                /* Need to send more than one keypresses */
+                int i;
+                char msg[12];
 
-				/* Introduce with control-underscore */
-				Term_keypress(31);
+                /* Encode key */
+                sprintf(msg, "%c%s%s%s%s%lX%c",
+                        31,                    // Starting macro with '^_'
+                        mc ? "C" : "",         // Control flag
+                        ms ? "S" : "",         // Shift flag
+                        mo ? "O" : "",         // Option flag
+                        mx ? "X" : "",         // Command flag
+                        (unsigned long)(code), // Hex keycode 
+                        13);                   // Terminator
 
-				/* Send some modifier keys */
-				if (mc) Term_keypress('C');
-				if (ms) Term_keypress('S');
-				if (mo) Term_keypress('O');
-				if (mx) Term_keypress('X');
-				if (kp) Term_keypress('P');
-
-                /* Send underscore as separator */
-				Term_keypress('_');
-
-				/* Hack -- Downshift and encode the keycode */
-				Term_keypress('0' + (code - 64) / 10);
-				Term_keypress('0' + (code - 64) % 10);
-
-				/* Terminate the sequence with 13 == '\r' */
-				Term_keypress(13);
+                /* Enqueue the "macro trigger" string */
+                for (i = 0; msg[i]; i++) Term_keypress(msg[i]);
             }
 
             break;
