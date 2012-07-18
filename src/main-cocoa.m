@@ -151,12 +151,6 @@ static NSFont *default_font;
 /* Called when the context is going down. */
 - (void)dispose;
 
-/* Returns the scale factor, that is, the scaling between our base logical coordinates and the image size. */
-- (NSSize)scaleFactor;
-
-/* Sets the scale factor and resizes appropriately */
-- (void)setScaleFactor:(NSSize)newScaleFactor;
-
 /* Returns the size of the image. */
 - (NSSize)imageSize;
 
@@ -166,11 +160,8 @@ static NSFont *default_font;
 /* Draw the given wide character into the given tile rect. */
 - (void)drawUniChar:(UniChar[])unicharString inRect:(NSRect)tile;
 
-/* Locks focus on the Angband image, and scales the CTM appropriately. */
+/* Locks focus on the Angband image. */
 - (CGContextRef)lockFocus;
-
-/* Locks focus on the Angband image but does NOT scale the CTM. Appropriate for drawing hairlines. */
-- (CGContextRef)lockFocusUnscaled;
 
 /* Unlocks focus. */
 - (void)unlockFocus;
@@ -224,48 +215,6 @@ static NSFont *default_font;
 
 /* To indicate that a grid element contains a picture, we store 0xFFFF. */
 #define NO_OVERDRAW ((wchar_t)(0xFFFF))
-
-/* Here is some support for rounding to pixels in a scaled context */
-static double push_pixel(double pixel, double scale, BOOL increase)
-{
-    double scaledPixel = pixel * scale;
-    /* Have some tolerance! */
-    double roundedPixel = round(scaledPixel);
-    if (fabs(roundedPixel - scaledPixel) <= .0001)
-    {
-        scaledPixel = roundedPixel;
-    }
-    else
-    {
-        scaledPixel = (increase ? ceil : floor)(scaledPixel);
-    }
-    return scaledPixel / scale;
-}
-
-/* Descriptions of how to "push pixels" in a given rect to integralize. For example, PUSH_LEFT means that we round expand the left edge if set, otherwise we shrink it. */
-enum
-{
-    PUSH_LEFT = 0x1,
-    PUSH_RIGHT = 0x2,
-    PUSH_BOTTOM = 0x4,
-    PUSH_TOP = 0x8
-};
-
-/* Return a rect whose border is in the "cracks" between tiles */
-static NSRect crack_rect(NSRect rect, NSSize scale, unsigned pushOptions)
-{
-    double rightPixel = push_pixel(NSMaxX(rect), scale.width, !! (pushOptions & PUSH_RIGHT));
-    double topPixel = push_pixel(NSMaxY(rect), scale.height, !! (pushOptions & PUSH_TOP));
-    double leftPixel = push_pixel(NSMinX(rect), scale.width, ! (pushOptions & PUSH_LEFT));
-    double bottomPixel = push_pixel(NSMinY(rect), scale.height, ! (pushOptions & PUSH_BOTTOM));
-    return NSMakeRect(leftPixel, bottomPixel, rightPixel - leftPixel, topPixel - bottomPixel);    
-}
-
-/* Returns the pixel push options (describing how we round) for the tile at a given index. Currently it's pretty uniform! */
-static unsigned push_options(unsigned x, unsigned y)
-{
-    return PUSH_BOTTOM | PUSH_LEFT;
-}
 
 /*
  * Graphics support
@@ -412,24 +361,6 @@ static bool initialized = FALSE;
     return NSMakeSize(floor(cols * tileSize.width + 2 * borderSize.width), floor(rows * tileSize.height + 2 * borderSize.height));
 }
 
-- (NSSize)scaleFactor
-{
-    if (inLiveResize)
-    {
-        NSSize baseSize = [self baseSize];
-#if BUFFER_WITH_CGLAYER
-        CGSize currentSize = CGLayerGetSize(angbandLayer);
-#else
-        NSSize currentSize = [angbandImage size];
-#endif
-        return NSMakeSize(currentSize.width / baseSize.width, currentSize.height / baseSize.height);
-    }
-    else
-    {
-        return [[self activeView] scaleFromBaseSize];
-    }
-}
-
 // qsort-compatible compare function for CGSizes
 static int compare_advances(const void *ap, const void *bp)
 {
@@ -557,25 +488,6 @@ static int compare_advances(const void *ap, const void *bp)
     
     /* Restore the old term */
     Term_activate(old);
-}
-
-- (void)setScaleFactor:(NSSize)newScaleFactor
-{
-    NSSize baseSize = [self baseSize];
-    NSSize newSize = NSMakeSize(baseSize.width * newScaleFactor.width,
-        baseSize.height * newScaleFactor.height);
-    
-    NSWindow *window = [self makePrimaryWindow];
-    NSRect frame = [window frame];
-
-    // Note:
-    // oldorigin.y + frame.size.height == neworigin.y + newSize.height
-
-    frame.origin.y += frame.size.height - newSize.height;
-    frame.size = newSize;
-    
-    [window setFrame:frame display:YES];
-
 }
 
 - (void)setTerm:(term *)t
@@ -728,7 +640,7 @@ static int compare_advances(const void *ap, const void *bp)
 /* Lock and unlock focus on our image or layer, setting up the CTM appropriately. */
 #if BUFFER_WITH_CGLAYER
 
-- (CGContextRef)lockFocusUnscaled
+- (CGContextRef)lockFocus
 {
     /* Create an NSGraphicsContext representing this CGLayer */
     CGContextRef ctx = CGLayerGetContext(angbandLayer);
@@ -756,7 +668,7 @@ static int compare_advances(const void *ap, const void *bp)
 
 #else
 
-- (CGContextRef)lockFocusUnscaled
+- (CGContextRef)lockFocus
 {
     /* Just lock focus on our image */
     [angbandImage lockFocus];
@@ -780,15 +692,6 @@ static int compare_advances(const void *ap, const void *bp)
 }
 
 #endif
-
-- (CGContextRef)lockFocus
-{
-    /* Do a lock focus unscaled, but then apply our scale factor */
-    CGContextRef ctx = [self lockFocusUnscaled];
-    NSSize scaleFactor = [self scaleFactor];
-    CGContextScaleCTM(ctx, scaleFactor.width, scaleFactor.height);
-    return ctx;
-}
 
 
 - (NSRect)rectInImageForTileAtX:(int)x Y:(int)y
@@ -998,11 +901,92 @@ static int compare_advances(const void *ap, const void *bp)
     return result;
 }
 
+/* Calc how many tiles can be in view size */
+- (NSSize)viewSize2ColsRows:(NSSize)size
+{
+    int rows, cols;
+    CGFloat w, h;
+
+    /* Subtract border */
+    w = size.width - 2 * borderSize.width;
+    h = size.height - 2 * borderSize.height;
+
+    /* How many tiles horizontally and vertically */
+    cols = floor(w / tileSize.width);
+    rows = floor(h / tileSize.height);
+
+    /* Minimal size */
+    if (cols < 1) cols = 1;
+    if (rows < 1) rows = 1;
+
+    if ((!terminal) || (terminal == angband_term[0]))
+    {
+        /* Hack the main window must be at least 80x24 */
+        if (cols < 80) cols = 80;
+        if (rows < 24) rows = 24;
+    }
+    
+    return NSMakeSize(cols, rows);
+}
+
+/* Calc size of view to contain cols x rows tiles */
+- (NSSize)colsRows2ViewSize:(NSSize)cols_rows
+{
+    CGFloat width = cols_rows.width * tileSize.width + 2 * borderSize.width;
+    CGFloat height = cols_rows.height * tileSize.height + 2 * borderSize.height;
+    return NSMakeSize(width, height);
+}
+
+
+/*
+ * Hack -- Restrict resizing to tileSize * n
+ * This is NSWindowDelegate protocol method called when resizing
+ */
+- (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
+{
+    /* Get the window */
+    NSWindow *window = [self makePrimaryWindow];
+
+    /* Get view size from window size */
+    NSRect viewRect = [window contentRectForFrameRect:
+                            NSMakeRect(0, 0, frameSize.width, frameSize.height)];
+
+    /* And how many tiles in view */
+    NSSize cols_rows = [self viewSize2ColsRows:
+                            NSMakeSize(viewRect.size.width, viewRect.size.height)];
+
+    /* Veiw size needed to display those tiles */
+    NSSize viewSize = [self colsRows2ViewSize:cols_rows];
+
+    /* Window rect needed to display that view */
+    NSRect windowRect = [window frameRectForContentRect:
+                            NSMakeRect(0, 0, viewSize.width, viewSize.height)];
+
+    /* Return size of the window */
+    return NSMakeSize(windowRect.size.width, windowRect.size.height);
+}
+
+
 - (void)angbandViewDidScale:(AngbandView *)view
 {
     /* If we're live-resizing with graphics, we're using the live resize optimization, so don't update the image. Otherwise do it. */
     if (! (inLiveResize && graphics_are_enabled()) && view == [self activeView])
     {
+        /* Mega-Hack -- Change cols & rows of Term instead of scaling view */
+        NSSize cols_rows = [self viewSize2ColsRows:[view frame].size];
+
+        /* Save it */
+        self->cols = cols_rows.width;
+        self->rows = cols_rows.height;
+
+        /* Resize the Term (if needed) */
+        if (terminal)
+        {
+            Term_activate(terminal);
+            Term_resize(cols, rows);
+        }
+
+
         [self updateImage];
         
         [self setNeedsDisplay:YES]; //we'll need to redisplay everything anyways, so avoid creating all those little redisplay rects
@@ -1288,7 +1272,6 @@ static void Term_init_cocoa(term *t)
     else
     {
         [window setTitle:[NSString stringWithFormat:@"Term %d", termIdx]];
-        [context setScaleFactor:NSMakeSize(1,1)];
     }
     
     
@@ -1559,7 +1542,7 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Clear the screen */
         case TERM_XTRA_CLEAR:
         {        
-            [angbandContext lockFocusUnscaled];
+            [angbandContext lockFocus];
             [[NSColor blackColor] set];
             NSRect imageRect = {NSZeroPoint, [angbandContext imageSize]};            
             NSRectFillUsingOperation(imageRect, NSCompositeCopy);
@@ -1632,19 +1615,9 @@ static errr Term_curs_cocoa(int x, int y)
     
     /* We'll need to redisplay in that rect */
     NSRect redisplayRect = rect;
-
-    /* Scale the rect. Normally lockFocus would set up the CTM for us, but here we're calling lockFocusUnscaled so we can have a uniform cursor size (e.g. 1 px) regardless of the scale factor. */
-    NSSize scaleFactor = [angbandContext scaleFactor];
-    rect.origin.x *= scaleFactor.width;
-    rect.origin.y *= scaleFactor.height;
-    rect.size.width *= scaleFactor.width;
-    rect.size.height *= scaleFactor.height;
-    
-    /* Go to the pixel boundaries corresponding to this tile */
-    rect = crack_rect(rect, NSMakeSize(1, 1), push_options(x, y));
     
     /* Lock focus and draw it */
-    [angbandContext lockFocusUnscaled];
+    [angbandContext lockFocus];
     [[NSColor yellowColor] set];
     NSFrameRectWithWidth(rect, 1);
     [angbandContext unlockFocus];
@@ -1845,23 +1818,15 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     /* Focus on our layer */
     [angbandContext lockFocus];
     
-    NSSize scaleFactor = [angbandContext scaleFactor];
-    
     /* Starting pixel */
     NSRect charRect = [angbandContext rectInImageForTileAtX:x Y:y];
     
     const CGFloat tileWidth = angbandContext->tileSize.width;
     
-    /* erase behind us */
-    unsigned leftPushOptions = push_options(x, y);
-    unsigned rightPushOptions = push_options(x + n - 1, y);
-    leftPushOptions &= ~ PUSH_RIGHT;
-    rightPushOptions &= ~ PUSH_LEFT;
-    
     [[NSColor blackColor] set];
     NSRect rectToClear = charRect;
     rectToClear.size.width = tileWidth * n;
-    NSRectFill(crack_rect(rectToClear, scaleFactor, leftPushOptions | rightPushOptions));
+    NSRectFill(rectToClear);
     
     NSFont *selectionFont = [[angbandContext selectionFont] screenFont];
     [selectionFont set];
@@ -2785,7 +2750,6 @@ static void initialize_file_paths(void)
     /* Update main window */
     AngbandContext *angbandContext = angband_term[keyTerm]->data;
     [(id)angbandContext setSelectionFont:newFont];
-    [(id)angbandContext setScaleFactor:NSMakeSize(1,1)];
     
     NSEnableScreenUpdates();
 }
