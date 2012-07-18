@@ -1913,7 +1913,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
         /*
          * 渡される文字列cpはEUCまたはSJISのバイト配列。
          * 漢字コードの1文字目を見つけたら、次のバイトと一緒に
-         * 1文字のwcharに変換して、2倍幅で描画。
+         * 1文字のUniCharに変換して、2倍幅で描画。
          */
         if (iskanji(cp[i]) && i < n-1){
             const char buf[2] = {cp[i], cp[++i]};
