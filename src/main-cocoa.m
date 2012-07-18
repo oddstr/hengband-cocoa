@@ -2463,8 +2463,8 @@ static BOOL send_event(NSEvent *event)
             /* See Carbon's Event.h about keycode */
             unsigned short code = [event keyCode];
 
-			/* Normal key -> simple keypress */
-			if (code < 64 && !mo && !mx)
+			/* Normal key without Option, Command, CTRL-Shift -> simple keypress */
+			if (code < 64 && !mo && !mx && (!mc || !ms))
 			{
 				/* Enqueue the keypress */
 				Term_keypress(c);
@@ -2476,14 +2476,14 @@ static BOOL send_event(NSEvent *event)
                 char msg[12];
 
                 /* Encode key */
-                sprintf(msg, "%c%s%s%s%s%lX%c",
-                        31,                    // Starting macro with '^_'
-                        mc ? "C" : "",         // Control flag
-                        ms ? "S" : "",         // Shift flag
-                        mo ? "O" : "",         // Option flag
-                        mx ? "X" : "",         // Command flag
-                        (unsigned long)(code), // Hex keycode 
-                        13);                   // Terminator
+                sprintf(msg, "%c%s%s%s%s%02hX%c",
+                        31,                // Starting macro with '^_'
+                        mc ? "C" : "",     // Control flag
+                        ms ? "S" : "",     // Shift flag
+                        mo ? "O" : "",     // Option flag
+                        mx ? "X" : "",     // Command flag
+                        code,              // Hex keycode 
+                        13);               // Terminator
 
                 /* Enqueue the "macro trigger" string */
                 for (i = 0; msg[i]; i++) Term_keypress(msg[i]);
