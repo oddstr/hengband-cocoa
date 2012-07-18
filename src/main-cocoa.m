@@ -1957,14 +1957,13 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
             rectToDraw.size.width = tileWidth;
             rectToDraw.origin.x += tileWidth * 2;
 
-            /* Done for this character */
-            continue;
-        }
+        } else
 #endif /* JP */
-
-        UniChar unicharString[2] = {(UniChar)cp[i], 0};
-        [angbandContext drawUniChar:unicharString inRect:rectToDraw];
-        rectToDraw.origin.x += tileWidth;
+        {
+            UniChar unicharString[2] = {(UniChar)cp[i], 0};
+            [angbandContext drawUniChar:unicharString inRect:rectToDraw];
+            rectToDraw.origin.x += tileWidth;
+        }
     }
 
     
