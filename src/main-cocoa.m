@@ -880,7 +880,7 @@ static int compare_advances(const void *ap, const void *bp)
 /* Calc how many tiles can be in view size */
 - (NSSize)viewSize2ColsRows:(NSSize)size
 {
-    int rows, cols;
+    int new_rows, new_cols;
     CGFloat w, h;
 
     /* Subtract border */
@@ -888,21 +888,21 @@ static int compare_advances(const void *ap, const void *bp)
     h = size.height - 2 * borderSize.height;
 
     /* How many tiles horizontally and vertically */
-    cols = floor(w / tileSize.width);
-    rows = floor(h / tileSize.height);
+    new_cols = floor(w / tileSize.width);
+    new_rows = floor(h / tileSize.height);
 
     /* Minimal size */
-    if (cols < 1) cols = 1;
-    if (rows < 1) rows = 1;
+    if (new_cols < 1) new_cols = 1;
+    if (new_rows < 1) new_rows = 1;
 
     if ((!terminal) || (terminal == angband_term[0]))
     {
         /* Hack the main window must be at least 80x24 */
-        if (cols < 80) cols = 80;
-        if (rows < 24) rows = 24;
+        if (new_cols < 80) new_cols = 80;
+        if (new_rows < 24) new_rows = 24;
     }
     
-    return NSMakeSize(cols, rows);
+    return NSMakeSize(new_cols, new_rows);
 }
 
 /* Calc size of view to contain cols x rows tiles */
@@ -1849,55 +1849,6 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     return (0);
 }
 
-/* From the Linux mbstowcs(3) man page:
- *   If dest is NULL, n is ignored, and the conversion  proceeds  as  above,
- *   except  that  the converted wide characters are not written out to mem-
- *   ory, and that no length limit exists.
- */
-static size_t Term_mbcs_cocoa(wchar_t *dest, const char *src, int n)
-{
-    int i;
-    int count = 0;
-
-    /* Unicode code point to UTF-8
-     *  0x0000-0x007f:   0xxxxxxx
-     *  0x0080-0x07ff:   110xxxxx 10xxxxxx
-     *  0x0800-0xffff:   1110xxxx 10xxxxxx 10xxxxxx
-     * 0x10000-0x1fffff: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-     * Note that UTF-16 limits Unicode to 0x10ffff. This code is not
-     * endian-agnostic.
-     */
-    for (i = 0; i < n || dest == NULL; i++) {
-        if ((src[i] & 0x80) == 0) {
-            if (dest != NULL) dest[count] = src[i];
-            if (src[i] == 0) break;
-        } else if ((src[i] & 0xe0) == 0xc0) {
-            if (dest != NULL) dest[count] = 
-                            (((unsigned char)src[i] & 0x1f) << 6)| 
-                            ((unsigned char)src[i+1] & 0x3f);
-            i++;
-        } else if ((src[i] & 0xf0) == 0xe0) {
-            if (dest != NULL) dest[count] = 
-                            (((unsigned char)src[i] & 0x0f) << 12) | 
-                            (((unsigned char)src[i+1] & 0x3f) << 6) |
-                            ((unsigned char)src[i+2] & 0x3f);
-            i += 2;
-        } else if ((src[i] & 0xf8) == 0xf0) {
-            if (dest != NULL) dest[count] = 
-                            (((unsigned char)src[i] & 0x0f) << 18) | 
-                            (((unsigned char)src[i+1] & 0x3f) << 12) |
-                            (((unsigned char)src[i+2] & 0x3f) << 6) |
-                            ((unsigned char)src[i+3] & 0x3f);
-            i += 3;
-        } else {
-            /* Found an invalid multibyte sequence */
-            return (size_t)-1;
-        }
-        count++;
-    }
-    return count;
-}
-
 /* Post a nonsense event so that our event loop wakes up */
 static void wakeup_event_loop(void)
 {
@@ -2831,48 +2782,6 @@ static void initialize_file_paths(void)
     
     return YES;
 }
-
-//- (void)applicationDidFinishLaunching:sender
-//{
-//    bool new_game = true;
-//
-//    /* Initialize file paths */
-//    initialize_file_paths();
-//
-//    /* Prepare the windows */
-//    init_windows();
-//    
-//    /* Note the "system" */
-//    ANGBAND_SYS = "mac";
-//    
-//	/* Save some info for later */
-//	player_euid = geteuid();
-//	player_egid = getegid();
-//    
-//    /* We are now initialized */
-//    initialized = TRUE;
-//    
-//    /* Handle "open_when_ready" */
-//    //handle_open_when_ready();
-//    
-//    /* Handle pending events (most notably update) and flush input */
-//    Term_flush();
-//
-//    /* Catch nasty signals */
-//    signals_init();
-//
-//    /* Initialize */
-//    init_angband();
-//
-//    /* Wait for response */
-//    pause_line(23);
-//
-//    /* Play the game */
-//    play_game(new_game);
-//
-//    /* Quit */
-//    quit(NULL);
-//}
 
 @end
 
