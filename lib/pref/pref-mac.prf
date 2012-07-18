@@ -68,24 +68,24 @@ T:N:2D
 T:M:2E
 T:Period:2F
 T:Grave:32
-T:KeypadDecimal:41
-T:KeypadMultiply:43
-T:KeypadPlus:45
-T:KeypadClear:47
-T:KeypadDivide:4B
-T:KeypadEnter:4C
-T:KeypadMinus:4E
-T:KeypadEquals:51
-T:Keypad0:52
-T:Keypad1:53
-T:Keypad2:54
-T:Keypad3:55
-T:Keypad4:56
-T:Keypad5:57
-T:Keypad6:58
-T:Keypad7:59
-T:Keypad8:5B
-T:Keypad9:5C
+T:KP_Decimal:41
+T:KP_Multiply:43
+T:KP_Plus:45
+T:KP_Clear:47
+T:KP_Divide:4B
+T:KP_Enter:4C
+T:KP_Minus:4E
+T:KP_Equals:51
+T:KP_0:52
+T:KP_1:53
+T:KP_2:54
+T:KP_3:55
+T:KP_4:56
+T:KP_5:57
+T:KP_6:58
+T:KP_7:59
+T:KP_8:5B
+T:KP_9:5C
 T:Return:24
 T:Tab:30
 T:Space:31
@@ -122,21 +122,21 @@ T:F12:6F
 T:F15:71
 T:Help:72
 T:Home:73
-T:PageUp:74
+T:Page_Up:74
 T:ForwardDelete:75
 T:F4:76
 T:End:77
 T:F2:78
-T:PageDown:79
+T:Page_Down:79
 T:F1:7A
-T:LeftArrow:7B
-T:RightArrow:7C
-T:DownArrow:7D
-T:UpArrow:7E
+T:Left:7B
+T:Right:7C
+T:Down:7D
+T:Up:7E
 T:Section:0A
 T:Yen:5D
 T:Underscore:5E
-T:KeypadComma:5F
+T:KP_Comma:5F
 T:Eisu:66
 T:Kana:68
 
@@ -150,58 +150,58 @@ T:Kana:68
 #
 
 A:0
-P:\[Keypad0]
+P:\[KP_0]
 
 A:1
-P:\[Keypad1]
+P:\[KP_1]
 
 A:2
-P:\[Keypad2]
+P:\[KP_2]
 
 A:3
-P:\[Keypad3]
+P:\[KP_3]
 
 A:4
-P:\[Keypad4]
+P:\[KP_4]
 
 A:5
-P:\[Keypad5]
+P:\[KP_5]
 
 A:6
-P:\[Keypad6]
+P:\[KP_6]
 
 A:7
-P:\[Keypad7]
+P:\[KP_7]
 
 A:8
-P:\[Keypad8]
+P:\[KP_8]
 
 A:9
-P:\[Keypad9]
+P:\[KP_9]
 
 A:.
-P:\[KeypadDecimal]
+P:\[KP_Decimal]
 
 A:*
-P:\[KeypadMultiply]
+P:\[KP_Multiply]
 
 A:+
-P:\[KeypadPlus]
+P:\[KP_Plus]
 
 #A:
-#P:\[KeypadClear]
+#P:\[KP_Clear]
 
 A:/
-P:\[KeypadDivide]
+P:\[KP_Divide]
 
 A:\n
-P:\[KeypadEnter]
+P:\[KP_Enter]
 
 A:-
-P:\[KeypadMinus]
+P:\[KP_Minus]
 
 A:=
-P:\[KeypadEquals]
+P:\[KP_Equals]
 
 #
 # Shift-Keypad -- Directed running
@@ -209,31 +209,31 @@ P:\[KeypadEquals]
 
 
 A:\e\e\\.1
-P:\[shift-Keypad1]
+P:\[shift-KP_1]
 
 A:\e\e\\.2
-P:\[shift-Keypad2]
+P:\[shift-KP_2]
 
 A:\e\e\\.3
-P:\[shift-Keypad3]
+P:\[shift-KP_3]
 
 A:\e\e\\.4
-P:\[shift-Keypad4]
+P:\[shift-KP_4]
 
 A:\e\e\\.5
-P:\[shift-Keypad5]
+P:\[shift-KP_5]
 
 A:\e\e\\.6
-P:\[shift-Keypad6]
+P:\[shift-KP_6]
 
 A:\e\e\\.7
-P:\[shift-Keypad7]
+P:\[shift-KP_7]
 
 A:\e\e\\.8
-P:\[shift-Keypad8]
+P:\[shift-KP_8]
 
 A:\e\e\\.9
-P:\[shift-Keypad9]
+P:\[shift-KP_9]
 
 
 #
@@ -242,31 +242,31 @@ P:\[shift-Keypad9]
 
 
 A:\e\e\\+1
-P:\[control-Keypad1]
+P:\[control-KP_1]
 
 A:\e\e\\+2
-P:\[control-Keypad2]
+P:\[control-KP_2]
 
 A:\e\e\\+3
-P:\[control-Keypad3]
+P:\[control-KP_3]
 
 A:\e\e\\+4
-P:\[control-Keypad4]
+P:\[control-KP_4]
 
 A:\e\e\\+5
-P:\[control-Keypad5]
+P:\[control-KP_5]
 
 A:\e\e\\+6
-P:\[control-Keypad6]
+P:\[control-KP_6]
 
 A:\e\e\\+7
-P:\[control-Keypad7]
+P:\[control-KP_7]
 
 A:\e\e\\+8
-P:\[control-Keypad8]
+P:\[control-KP_8]
 
 A:\e\e\\+9
-P:\[control-Keypad9]
+P:\[control-KP_9]
 
 
 
@@ -315,14 +315,14 @@ P:\[control-Keypad9]
 # Hack -- Arrow-Keys
 #
 A:4
-P:\[LeftArrow]
+P:\[Left]
 
 A:6
-P:\[RightArrow]
+P:\[Right]
 
 A:2
-P:\[DownArrow]
+P:\[Down]
 
 A:8
-P:\[UpArrow]
+P:\[Up]
 
