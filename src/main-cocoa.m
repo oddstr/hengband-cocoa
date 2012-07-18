@@ -374,6 +374,9 @@ static bool initialized = FALSE;
 @end
 
 
+/* Pixel width of padding inside rect of tile, outside glyph */
+#define TILE_GLYPH_PADDING 1
+
 @implementation NSImage (AngbandImages)
 
 /* Returns an image in the resource directoy of the bundle containing the Angband view class. */
@@ -483,8 +486,14 @@ static int compare_advances(const void *ap, const void *bp)
     fontDescender = [screenFont descender];
     
     // Record the tile size. Note that these are typically fractional values - which seems sketchy, but we end up scaling the heck out of our view anyways, so it seems to not matter.
-    tileSize.width = medianAdvance;
-    tileSize.height = [screenFont ascender] - [screenFont descender];
+    /* Hack -- add padding width  */
+    tileSize.width = medianAdvance + 2 * TILE_GLYPH_PADDING;
+    tileSize.height = [screenFont ascender] - [screenFont descender] + 2 * TILE_GLYPH_PADDING;
+
+    /* Hack -- Add leading of font to tile height */
+    tileSize.height += [screenFont leading];
+    /* and deepen descender */
+    fontDescender -= [screenFont leading];
 }
 
 - (void)updateImage
@@ -660,19 +669,25 @@ static int compare_advances(const void *ap, const void *bp)
     CGGlyph glyph = thisGlyphArray[0];
     CTFontGetAdvancesForGlyphs((CTFontRef)screenFont, kCTFontHorizontalOrientation, thisGlyphArray, advances, 1);
     CGSize advance = advances[0];
+
+    /* Hack -- padding in tile to prevent subpixel rendering problem */
+    NSRect tile_hack = NSMakeRect(NSMinX(tile) + TILE_GLYPH_PADDING,
+                                  NSMinY(tile) + TILE_GLYPH_PADDING,
+                                  NSWidth(tile) - 2 * TILE_GLYPH_PADDING,
+                                  NSHeight(tile) - 2 * TILE_GLYPH_PADDING);
     
     /* If our font is not monospaced, our tile width is deliberately not big enough for every character. In that event, if our glyph is too wide, we need to compress it horizontally. Compute the compression ratio. 1.0 means no compression. */
     double compressionRatio;
-    if (advance.width <= NSWidth(tile))
+    if (advance.width <= NSWidth(tile_hack))
     {
         /* Our glyph fits, so we can just draw it, possibly with an offset */
         compressionRatio = 1.0;
-        tileOffsetX = (NSWidth(tile) - advance.width)/2;
+        tileOffsetX = (NSWidth(tile_hack) - advance.width)/2;
     }
     else
     {
         /* Our glyph doesn't fit, so we'll have to compress it */
-        compressionRatio = NSWidth(tile) / advance.width;
+        compressionRatio = NSWidth(tile_hack) / advance.width;
         tileOffsetX = 0;
     }
     
@@ -682,8 +697,8 @@ static int compare_advances(const void *ap, const void *bp)
     CGFloat savedA = textMatrix.a;
     
     /* Set the position */
-    textMatrix.tx = tile.origin.x + tileOffsetX;
-    textMatrix.ty = tile.origin.y + tileOffsetY;
+    textMatrix.tx = tile_hack.origin.x + tileOffsetX;
+    textMatrix.ty = tile_hack.origin.y + tileOffsetY;
     
     /* Maybe squish it horizontally. */
     if (compressionRatio != 1.)
@@ -1851,6 +1866,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     NSFont *selectionFont = [[angbandContext selectionFont] screenFont];
     [selectionFont set];
 
+#if 0
     /* Handle overdraws */
     const int overdraws[2] = {x-1, x+n}; //left, right
     int i;
@@ -1862,8 +1878,18 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
         {
 #ifdef JP
             /* もし全角の2バイト目ならoverdrawしない */
-            if (((a & AF_KANJI2) && !(a & AF_TILE1)) || (a & AF_BIGTILE2) == AF_BIGTILE2)
-                continue;
+            //if (((a & AF_KANJI2) && !(a & AF_TILE1)) || (a & AF_BIGTILE2) == AF_BIGTILE2)
+            if (i == 0)
+            {
+                cptr this_row = &(angbandContext->charOverdrawCache) + y * angbandContext->cols;
+                if (iskanji2(this_row, overdrawX))
+                    continue;
+            }
+            else
+            {
+                if (iskanji(angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX]))
+                    continue;
+            }
 #else /* JP */
 #endif /* JP */
             char previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
@@ -1890,6 +1916,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
             }
         }
     }
+#endif /* 0 */
     
     /* Set the color */
     set_color_for_index(a);
@@ -1908,6 +1935,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 # endif
 #endif /* JP */
 
+    int i;
     for (i=0; i < n; i++) {
 #ifdef JP
         /*
