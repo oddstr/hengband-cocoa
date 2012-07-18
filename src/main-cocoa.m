@@ -137,10 +137,6 @@ static NSFont *default_font;
     
     /* Last time we drew, so we can throttle drawing */
     CFAbsoluteTime lastRefreshTime;
-    
-    /* To address subpixel rendering overdraw problems, we cache all the characters and attributes we're told to draw */
-    char *charOverdrawCache;
-    byte *attrOverdrawCache;
 }
 
 - (void)drawRect:(NSRect)rect inView:(NSView *)view;
@@ -630,13 +626,6 @@ static int compare_advances(const void *ap, const void *bp)
     }
 }
 
-/* Indication that we're redrawing everything, so get rid of the overdraw cache. */
-- (void)clearOverdrawCache
-{
-    bzero(charOverdrawCache, self->cols * self->rows * sizeof *charOverdrawCache);
-    bzero(attrOverdrawCache, self->cols * self->rows * sizeof *attrOverdrawCache);
-}
-
 /* Lock and unlock focus on our image or layer, setting up the CTM appropriately. */
 #if BUFFER_WITH_CGLAYER
 
@@ -715,9 +704,6 @@ static int compare_advances(const void *ap, const void *bp)
     /* Update our image */
     [self updateImage];
     
-    /* Clear our overdraw cache */
-    [self clearOverdrawCache];
-    
     /* Get redrawn */
     [self requestRedraw];
 }
@@ -732,10 +718,6 @@ static int compare_advances(const void *ap, const void *bp)
         
         /* Default border size */
         self->borderSize = NSMakeSize(2, 2);
-        
-        /* Allocate overdraw cache, unscanned and collectable. */
-        self->charOverdrawCache = NSAllocateCollectable(self->cols * self->rows *sizeof *charOverdrawCache, 0);
-        self->attrOverdrawCache = NSAllocateCollectable(self->cols * self->rows *sizeof *attrOverdrawCache, 0);
         
         /* Allocate our array of views */
         angbandViews = [[NSMutableArray alloc] init];
@@ -775,12 +757,6 @@ static int compare_advances(const void *ap, const void *bp)
     [primaryWindow close];
     [primaryWindow release];
     primaryWindow = nil;
-    
-    /* Free overdraw cache (unless we're GC, in which case it was allocated collectable) */
-    if (! [NSGarbageCollector defaultCollector]) free(self->charOverdrawCache);
-    self->charOverdrawCache = NULL;
-    if (! [NSGarbageCollector defaultCollector]) free(self->attrOverdrawCache);
-    self->attrOverdrawCache = NULL;
 }
 
 /* Usual Cocoa fare */
@@ -1547,7 +1523,6 @@ static errr Term_xtra_cocoa(int n, int v)
             NSRect imageRect = {NSZeroPoint, [angbandContext imageSize]};            
             NSRectFillUsingOperation(imageRect, NSCompositeCopy);
             [angbandContext unlockFocus];
-            [angbandContext clearOverdrawCache];
             [angbandContext setNeedsDisplay:YES];
             /* Success */
             break;
@@ -1639,9 +1614,6 @@ static errr Term_wipe_cocoa(int x, int y, int n)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     AngbandContext *angbandContext = Term->data;
-    
-    /* clear our overdraw cache for subpixel rendering */
-    [angbandContext clearOverdrawCache];
     
     /* Erase the block of characters */
     NSRect rect = [angbandContext rectInImageForTileAtX:x Y:y];
@@ -1795,25 +1767,8 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
-    /* Subpixel rendering looks really nice!  Unfortunately, drawing a string like this:
-     .@
-     causes subpixels to extend slightly into the region 'owned' by the period.  This means that when the user presses right,
-     those subpixels 'owned' by the period above do not get redrawn by Angband, so we leave little blue and red subpixel turds
-     all over the screen.  Turning off subpixel rendering fixes this, as does increasing the font advance by a pixel, but that is
-     ugly.  Our hack solution is to remember all of the characters we draw as well as their locations and colors (in charOverdrawCache),
-     and then re-blit the previous and next character (if any).
-     */
-    
     NSRect redisplayRect = NSZeroRect;
     AngbandContext* angbandContext = Term->data;
-    
-    /* record our data in our cache */
-    int start = y * angbandContext->cols + x;
-    int location;
-    for (location = 0; location < n; location++) {
-        angbandContext->charOverdrawCache[start + location] = cp[location];
-        angbandContext->attrOverdrawCache[start + location] = a;
-    }
     
     /* Focus on our layer */
     [angbandContext lockFocus];
@@ -1830,58 +1785,6 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     
     NSFont *selectionFont = [[angbandContext selectionFont] screenFont];
     [selectionFont set];
-
-#if 0
-    /* Handle overdraws */
-    const int overdraws[2] = {x-1, x+n}; //left, right
-    int i;
-    for (i=0; i < 2; i++) {
-        int overdrawX = overdraws[i];
-        
-        // Nothing to overdraw if we're at an edge
-        if (overdrawX >= 0 && (size_t)overdrawX < angbandContext->cols)
-        {
-#ifdef JP
-            /* もし全角の2バイト目ならoverdrawしない */
-            //if (((a & AF_KANJI2) && !(a & AF_TILE1)) || (a & AF_BIGTILE2) == AF_BIGTILE2)
-            if (i == 0)
-            {
-                cptr this_row = &(angbandContext->charOverdrawCache) + y * angbandContext->cols;
-                if (iskanji2(this_row, overdrawX))
-                    continue;
-            }
-            else
-            {
-                if (iskanji(angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX]))
-                    continue;
-            }
-#else /* JP */
-#endif /* JP */
-            char previouslyDrawnVal = angbandContext->charOverdrawCache[y * angbandContext->cols + overdrawX];
-            // Don't overdraw if it's not text
-            if (previouslyDrawnVal != NO_OVERDRAW)
-            {
-                NSRect overdrawRect = [angbandContext rectInImageForTileAtX:overdrawX Y:y];
-                NSRect expandedRect = crack_rect(overdrawRect, scaleFactor, push_options(overdrawX, y));
-                
-                // Make sure we redisplay it
-                [[NSColor blackColor] set];
-                NSRectFill(expandedRect);
-                redisplayRect = NSUnionRect(redisplayRect, expandedRect);
-                
-                // Redraw text if we have any
-                if (previouslyDrawnVal != 0)
-                {
-                    byte color = angbandContext->attrOverdrawCache[y * angbandContext->cols + overdrawX]; 
-                    
-                    set_color_for_index(color);
-                    UniChar unicharString[2] = {(UniChar)previouslyDrawnVal, 0};
-                    [angbandContext drawUniChar:unicharString inRect:overdrawRect];
-                }
-            }
-        }
-    }
-#endif /* 0 */
     
     /* Set the color */
     set_color_for_index(a);
