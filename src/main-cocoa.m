@@ -74,9 +74,6 @@ enum
 #define START_OPEN_GAME 2
 static BOOL start_when_ready = START_NOT_YET;
 
-/* Delay handling of pre-emptive "quit" event */
-static BOOL quit_when_ready = FALSE;
-
 /* Whether or not we allow sounds (only relevant for the screensaver, where the user can't configure it in-game) */
 static BOOL allow_sounds = YES;
 
@@ -203,9 +200,6 @@ static NSFont *default_font;
 
 /* Begins an Angband game. This is the entry point for starting off. */
 + (void)beginGame;
-
-/* Ends an Angband game. */
-+ (void)endGame;
 
 /* Internal method */
 - (AngbandView *)activeView;
@@ -814,17 +808,6 @@ static int compare_advances(const void *ap, const void *bp)
      * After here app will quit in applicationDidFinishLaunching:
      */
 }
-
-+ (void)endGame
-{    
-    /* Hack -- Forget messages */
-    msg_flag = FALSE;
-    
-    p_ptr->playing = FALSE;
-    p_ptr->leaving = TRUE;
-    quit_when_ready = TRUE;
-}
-
 
 - (IBAction)setGraphicsMode:(NSMenuItem *)sender
 {
@@ -1846,7 +1829,6 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 /* Post a nonsense event so that our event loop wakes up */
 static void wakeup_event_loop(void)
 {
-    return;
     /* Big hack - send a nonsense event to make us update */
     NSEvent *event = [NSEvent otherEventWithType:NSApplicationDefined location:NSZeroPoint modifierFlags:0 timestamp:0 windowNumber:0 context:NULL subtype:AngbandEventWakeup data1:0 data2:0];
     [NSApp postEvent:event atStart:NO];
@@ -2157,33 +2139,6 @@ static NSString *get_data_directory(void)
     return [@"~/Documents/Hengband/" stringByExpandingTildeInPath];
 }
 
-/*
- * Handle quit_when_ready, by Peter Ammon,
- * slightly modified to check inkey_flag.
- */
-static void quit_calmly(void)
-{
-    /* Quit immediately if game's not started */
-    if (!game_in_progress || !character_generated) quit(NULL);
-    
-    /* Save the game and Quit (if it's safe) */
-    if (inkey_flag)
-    {
-        /* Hack -- Forget messages */
-        msg_flag = FALSE;
-        
-        /* Save the game */
-        do_cmd_save_game(FALSE);
-        record_current_savefile();
-        
-        
-        /* Quit */
-        quit(NULL);
-    }
-    
-    /* Wait until inkey_flag is set */
-}
-
 
 /* returns YES if we contain an AngbandView (and hence should direct our events to Angband) */
 static BOOL contains_angband_view(NSView *view)
@@ -2231,6 +2186,11 @@ static BOOL get_cmd_init(void)
 /* Encodes an NSEvent Angband-style, or forwards it along.  Returns YES if the event was sent to Angband, NO if Cocoa (or nothing) handled it */
 static BOOL send_event(NSEvent *event)
 {
+    /* Hack -- Check first for wakeup_event_loop event */
+    if ([event type] == NSApplicationDefined && [event subtype] == AngbandEventWakeup)
+    {
+        return YES;
+    }
         
     /* If the receiving window is not an Angband window, then do nothing */
     if (! contains_angband_view([[event window] contentView]))
@@ -2307,15 +2267,6 @@ static BOOL send_event(NSEvent *event)
             break;
         }
             
-        case NSApplicationDefined:
-        {
-            if ([event subtype] == AngbandEventWakeup)
-            {
-                return YES;
-            }
-            break;
-        }
-            
         default:
             [NSApp sendEvent:event];
             return YES;
@@ -2332,32 +2283,19 @@ static BOOL check_events(int wait)
     
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
-    /* Handles the quit_when_ready flag */
-    if (quit_when_ready) quit_calmly();
-    
     NSDate* endDate;
     if (wait == CHECK_EVENTS_WAIT) endDate = [NSDate distantFuture];
     else endDate = [NSDate distantPast];
     
     NSEvent* event;
     for (;;) {
-        if (quit_when_ready)
+        event = [NSApp nextEventMatchingMask:-1 untilDate:endDate inMode:NSDefaultRunLoopMode dequeue:YES];
+        if (! event)
         {
-            /* send escape events until we quit */
-            //Term_keypress(0x1B, 0);
-            Term_keypress(0x1B);
             [pool drain];
-            return false;
+            return FALSE;
         }
-        else {
-            event = [NSApp nextEventMatchingMask:-1 untilDate:endDate inMode:NSDefaultRunLoopMode dequeue:YES];
-            if (! event)
-            {
-                [pool drain];
-                return FALSE;
-            }
-            if (send_event(event)) break;
-        }
+        if (send_event(event)) break;
     }
     
     [pool drain];
@@ -2697,12 +2635,31 @@ static void initialize_file_paths(void)
         return NSTerminateNow;
     }
     else {
-        //cmd_insert(CMD_QUIT);
-        quit(NULL);
+        /* Paranoia */
+        if (!can_save)
+        {
+#ifdef JP
+            plog("今は終了できません。");
+#else
+            plog("You may not do that right now.");
+#endif
+
+            return NSTerminateCancel;
+        }
+
+        /* Hack -- Forget messages */
+        msg_flag = FALSE;
+
+        forget_lite();
+        forget_view();
+        clear_mon_lite();
+
+        /* Save the game and quit */
+        Term_key_push(SPECIAL_KEY_QUIT);
+
         /* Post an escape event so that we can return from our get-key-event function */
         wakeup_event_loop();
-//void do_cmd_save_and_exit(void)
-        quit_when_ready = true;
+
         // must return Cancel, not Later, because we need to get out of the run loop and back to Angband's loop
         return NSTerminateCancel;
     }
