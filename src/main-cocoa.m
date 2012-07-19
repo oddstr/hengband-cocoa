@@ -2457,7 +2457,6 @@ static void initialize_file_paths(void)
 {
     /* Game is in progress */
     start_when_ready = START_NEW_GAME;
-    wakeup_event_loop();
 }
 
 - (IBAction)editFont:sender
@@ -2555,8 +2554,6 @@ static void initialize_file_paths(void)
         
         /* Game is in progress */
         start_when_ready = START_OPEN_GAME;
-
-        wakeup_event_loop();
     }
     
     [pool drain];
