@@ -61,7 +61,8 @@ enum
 enum
 {
     Angband_NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7,
-    Angband_NSWindowCollectionBehaviorFullScreenAuxiliary = 1 << 8
+    Angband_NSWindowCollectionBehaviorFullScreenAuxiliary = 1 << 8,
+    Angband_NSFullScreenWindowMask = 1 << 14
 };
 
 @interface NSWindow (AngbandLionRedeclares)
@@ -196,6 +197,10 @@ static NSFont *default_font;
 
 /* Internal method */
 - (AngbandView *)activeView;
+- (NSSize)viewSize2ColsRows:(NSSize)size;
+- (NSSize)colsRows2ViewSize:(NSSize)cols_rows;
+- (NSSize)windowSize2ColsRows:(NSSize)size;
+- (NSSize)colsRows2WindowSize:(NSSize)cols_rows;
 
 @end
 
@@ -663,7 +668,43 @@ static bool initialized = FALSE;
     
     /* Update our glyph info */
     [self updateGlyphInfo];
+
+    /* Hack -- resize window */
+    NSWindow *window = [self makePrimaryWindow];
+    NSRect oldRect = [window frame];
+
+    if ([window styleMask] & Angband_NSFullScreenWindowMask)
+    {
+        /* When fullscreen, simply change cols & rows */
+        NSSize cols_rows = [self windowSize2ColsRows:
+                                 NSMakeSize(oldRect.size.width, oldRect.size.height)];
+
+        /* Remember */
+        self->cols = cols_rows.width;
+        self->rows = cols_rows.height;
+
+        /* Resize the Term (if needed) */
+        if (terminal)
+        {
+            Term_activate(terminal);
+            Term_resize(cols, rows);
+        }
+    }
+    else
+    {
+        /* Get size fit to current cols & rows with new font */
+        NSSize newSize = [self colsRows2WindowSize:NSMakeSize(self->cols, self->rows)];
+        NSRect newRect = {oldRect.origin, newSize};
+
+        /* Note that point (0,0) is at the BOTTOM-left corner */
+        /* old y + old height == new y + new height */
+        newRect.origin.y += oldRect.size.height- newSize.height;
+
+        /* Resize the window */
+        [window setFrame:newRect display:YES];
+    }
     
+
     /* Update our image */
     [self updateImage];
     
@@ -861,23 +902,25 @@ static bool initialized = FALSE;
     return NSMakeSize(width, height);
 }
 
-
-/*
- * Hack -- Restrict resizing to tileSize * n
- * This is NSWindowDelegate protocol method called when resizing
- */
-- (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
+/* Calc how many tiles can be in window size */
+- (NSSize)windowSize2ColsRows:(NSSize)size
 {
     /* Get the window */
     NSWindow *window = [self makePrimaryWindow];
 
     /* Get view size from window size */
     NSRect viewRect = [window contentRectForFrameRect:
-                            NSMakeRect(0, 0, frameSize.width, frameSize.height)];
+                            NSMakeRect(0, 0, size.width, size.height)];
 
-    /* And how many tiles in view */
-    NSSize cols_rows = [self viewSize2ColsRows:
+    return [self viewSize2ColsRows:
                             NSMakeSize(viewRect.size.width, viewRect.size.height)];
+}
+
+/* Calc size of window to contain cols x rows tiles */
+- (NSSize)colsRows2WindowSize:(NSSize)cols_rows
+{
+    /* Get the window */
+    NSWindow *window = [self makePrimaryWindow];
 
     /* Veiw size needed to display those tiles */
     NSSize viewSize = [self colsRows2ViewSize:cols_rows];
@@ -888,6 +931,20 @@ static bool initialized = FALSE;
 
     /* Return size of the window */
     return NSMakeSize(windowRect.size.width, windowRect.size.height);
+}
+
+
+/*
+ * Hack -- Restrict resizing to tileSize * n
+ * This is NSWindowDelegate protocol method called when resizing
+ */
+- (NSSize)windowWillResize:(NSWindow *)sender toSize:(NSSize)frameSize
+{
+    /* How many tiles in view */
+    NSSize cols_rows = [self windowSize2ColsRows:frameSize];
+
+    /* Return size of the window */
+    return [self colsRows2WindowSize:cols_rows];
 }
 
 
