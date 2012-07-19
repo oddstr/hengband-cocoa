@@ -1235,7 +1235,7 @@ static void Term_init_cocoa(term *t)
     {
         if (angband_term[termIdx] == t)
         {
-            autosaveName = [NSString stringWithFormat:@"HengbandTerm-%d", termIdx];
+            autosaveName = [NSString stringWithFormat:@"AngbandTerm-%d", termIdx];
             break;
         }
     }
