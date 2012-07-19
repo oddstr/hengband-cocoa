@@ -1905,6 +1905,13 @@ static term *term_data_link(int i)
     return newterm;
 }
 
+
+#ifdef JP
+# define DEFAULT_FONT_NAME @"Osaka-Mono"
+#else /* JP */
+# define DEFAULT_FONT_NAME @"Menlo"
+#endif /* JP */
+
 /*
  * Load preferences from preferences file for current host+current user+
  * current application.
@@ -1915,7 +1922,7 @@ static void load_prefs()
     
     /* Make some default defaults */
     NSDictionary *defaults = [[NSDictionary alloc] initWithObjectsAndKeys:
-                              @"Menlo", @"FontName",
+                              DEFAULT_FONT_NAME, @"FontName",
                               [NSNumber numberWithFloat:13.f], @"FontSize",
                               [NSNumber numberWithInt:60], @"FramesPerSecond",
                               [NSNumber numberWithBool:YES], @"AllowSound",
@@ -1935,7 +1942,7 @@ static void load_prefs()
     
     /* font */
     default_font = [[NSFont fontWithName:[defs valueForKey:@"FontName-0"] size:[defs floatForKey:@"FontSize-0"]] retain];
-    if (! default_font) default_font = [[NSFont fontWithName:@"Menlo" size:13.] retain];
+    if (! default_font) default_font = [[NSFont fontWithName:DEFAULT_FONT_NAME size:13.] retain];
 }
 
 #if 0
