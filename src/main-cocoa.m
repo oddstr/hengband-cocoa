@@ -1846,6 +1846,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
 /* Post a nonsense event so that our event loop wakes up */
 static void wakeup_event_loop(void)
 {
+    return;
     /* Big hack - send a nonsense event to make us update */
     NSEvent *event = [NSEvent otherEventWithType:NSApplicationDefined location:NSZeroPoint modifierFlags:0 timestamp:0 windowNumber:0 context:NULL subtype:AngbandEventWakeup data1:0 data2:0];
     [NSApp postEvent:event atStart:NO];
@@ -2625,14 +2626,26 @@ static void initialize_file_paths(void)
 
 - (IBAction)saveGame:sender
 {
-    /* Hack -- Forget messages */
-    msg_flag = FALSE;
+    if (game_in_progress && character_generated && can_save)
+    {
+
+        /* Hack -- Forget messages */
+        msg_flag = FALSE;
+
+        /* Save the game */
+        do_cmd_save_game(FALSE);
     
-    /* Save the game */
-    do_cmd_save_game(FALSE);
-    
-    /* Record the current save file so we can select it by default next time. It's a little sketchy that this only happens when we save through the menu; ideally game-triggered saves would trigger it too. */
-    record_current_savefile();
+        /* Record the current save file so we can select it by default next time. It's a little sketchy that this only happens when we save through the menu; ideally game-triggered saves would trigger it too. */
+        record_current_savefile();
+    }
+    else
+    {
+#ifdef JP
+        plog("今、セーブすることは出来ません。");
+#else
+        plog("You may not do that right now.");
+#endif
+    }
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem
@@ -2649,6 +2662,10 @@ static void initialize_file_paths(void)
     else if (sel == @selector(openGame:))
     {
         return ! game_in_progress;
+    }
+    else if (sel == @selector(saveGame:))
+    {
+        return (game_in_progress && character_generated && can_save);
     }
     else if (sel == @selector(setRefreshRate:) && [superitem(menuItem) tag] == 150)
     {
@@ -2684,6 +2701,7 @@ static void initialize_file_paths(void)
         quit(NULL);
         /* Post an escape event so that we can return from our get-key-event function */
         wakeup_event_loop();
+//void do_cmd_save_and_exit(void)
         quit_when_ready = true;
         // must return Cancel, not Later, because we need to get out of the run loop and back to Angband's loop
         return NSTerminateCancel;
