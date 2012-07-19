@@ -266,7 +266,6 @@ static void load_prefs(void);
 static void load_sounds(void);
 static void init_windows(void);
 static void initialize_file_paths(void);
-static void handle_open_when_ready(void);
 static void play_sound(int event);
 static void update_term_visibility(void);
 static BOOL check_events(int wait);
@@ -795,9 +794,6 @@ static int compare_advances(const void *ap, const void *bp)
     /* We are now initialized */
     initialized = TRUE;
     
-    /* Handle "open_when_ready" */
-    handle_open_when_ready();
-    
     /* Handle pending events (most notably update) and flush input */
     Term_flush();
 
@@ -1156,11 +1152,6 @@ static NSMenuItem *superitem(NSMenuItem *self)
 }
 
 @end
-
-/*
- * Delay handling of double-clicked savefiles
- */
-Boolean open_when_ready = FALSE;
 
 
 
@@ -2163,26 +2154,6 @@ static NSString *get_data_directory(void)
 }
 
 /*
- * Handle the "open_when_ready" flag
- */
-static void handle_open_when_ready(void)
-{
-    /* Check the flag XXX XXX XXX make a function for this */
-    if (open_when_ready && initialized && !game_in_progress)
-    {
-        /* Forget */
-        open_when_ready = FALSE;
-        
-        /* Game is in progress */
-        game_in_progress = TRUE;
-        
-        /* Wait for a keypress */
-        pause_line(23);
-    }
-}
-
-
-/*
  * Handle quit_when_ready, by Peter Ammon,
  * slightly modified to check inkey_flag.
  */
@@ -2763,6 +2734,9 @@ static void initialize_file_paths(void)
 /* Delegate method that gets called if we're asked to open a file. */
 - (BOOL)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
+    bool f = true;
+    while(f) sleep(1); 
+
     /* Can't open a file once we've started */
     if (game_in_progress) return NO;
     
