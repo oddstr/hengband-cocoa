@@ -2343,8 +2343,6 @@ static BOOL check_events(int wait)
 /* Update window visibility to match what's in p_ptr, so we show or hide terms that have or do not have contents respectively. */
 static void update_term_visibility(void)
 {
-    //if (! op_ptr) return; //paranoia
-    
     /* Make a mask of window flags that matter */
     size_t i;
     u32b significantWindowFlagMask = 0;
@@ -2366,8 +2364,7 @@ static void update_term_visibility(void)
             BOOL isVisible = [angbandContext isOrderedIn];
             
             /* Ensure the first term is always visible. The remaining terms depend on the op_ptr. */
-            //BOOL shouldBeVisible = (i == 0 || (op_ptr->window_flag[i] & significantWindowFlagMask));
-            BOOL shouldBeVisible = (i == 0);
+            BOOL shouldBeVisible = (i == 0 || (window_flag[i] & significantWindowFlagMask));
             
             if (isVisible && ! shouldBeVisible)
             {
