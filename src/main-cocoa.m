@@ -201,6 +201,8 @@ static NSFont *default_font;
 - (NSSize)colsRows2ViewSize:(NSSize)cols_rows;
 - (NSSize)windowSize2ColsRows:(NSSize)size;
 - (NSSize)colsRows2WindowSize:(NSSize)cols_rows;
+- (BOOL)resizeTermWithSize:(NSSize)cols_rows;
+- (BOOL)resizeTermToCols:(int)new_cols rows:(int)new_rows;
 
 @end
 
@@ -676,19 +678,8 @@ static bool initialized = FALSE;
     if ([window styleMask] & Angband_NSFullScreenWindowMask)
     {
         /* When fullscreen, simply change cols & rows */
-        NSSize cols_rows = [self windowSize2ColsRows:
-                                 NSMakeSize(oldRect.size.width, oldRect.size.height)];
-
-        /* Remember */
-        self->cols = cols_rows.width;
-        self->rows = cols_rows.height;
-
-        /* Resize the Term (if needed) */
-        if (terminal)
-        {
-            Term_activate(terminal);
-            Term_resize(cols, rows);
-        }
+        [self resizeTermWithSize:
+            [self windowSize2ColsRows:oldRect.size]];
     }
     else
     {
@@ -866,6 +857,11 @@ static bool initialized = FALSE;
     return result;
 }
 
+
+/*
+ * Handle window/view size and tile columns and rows.
+ */
+
 /* Calc how many tiles can be in view size */
 - (NSSize)viewSize2ColsRows:(NSSize)size
 {
@@ -933,6 +929,34 @@ static bool initialized = FALSE;
     return NSMakeSize(windowRect.size.width, windowRect.size.height);
 }
 
+/* Resize term with NSSize width as cols, height as rows. */
+- (BOOL)resizeTermWithSize:(NSSize)cols_rows
+{
+    BOOL success = [self resizeTermToCols:(int)(cols_rows.width)
+                                     rows:(int)(cols_rows.height)];
+    return success;
+}
+
+/* Resize term */
+- (BOOL)resizeTermToCols:(int)new_cols rows:(int)new_rows
+{
+    BOOL success = false;
+
+    /* Save it to self */
+    self->cols = new_cols;
+    self->rows = new_rows;
+
+    /* Resize the Term (if needed) */
+    if (terminal)
+    {
+        Term_activate(terminal);
+        Term_resize(new_cols, new_rows);
+        success = true;
+    }
+
+    return success;
+}
+
 
 /*
  * Hack -- Restrict resizing to tileSize * n
@@ -954,19 +978,7 @@ static bool initialized = FALSE;
     if (! (inLiveResize && graphics_are_enabled()) && view == [self activeView])
     {
         /* Mega-Hack -- Change cols & rows of Term instead of scaling view */
-        NSSize cols_rows = [self viewSize2ColsRows:[view frame].size];
-
-        /* Save it */
-        self->cols = cols_rows.width;
-        self->rows = cols_rows.height;
-
-        /* Resize the Term (if needed) */
-        if (terminal)
-        {
-            Term_activate(terminal);
-            Term_resize(cols, rows);
-        }
-
+        [self resizeTermWithSize:[self viewSize2ColsRows:[view frame].size]];
 
         [self updateImage];
         
