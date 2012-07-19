@@ -408,16 +408,17 @@ static int compare_advances(const void *ap, const void *bp)
     
     // Record the descender
     fontDescender = [screenFont descender];
+    /* Hack -- deepen descender by landing height */
+    fontDescender -= [screenFont leading];
     
     // Record the tile size. Note that these are typically fractional values - which seems sketchy, but we end up scaling the heck out of our view anyways, so it seems to not matter.
     /* Hack -- add padding width  */
     tileSize.width = medianAdvance + 2 * TILE_GLYPH_PADDING;
-    tileSize.height = [screenFont ascender] - [screenFont descender] + 2 * TILE_GLYPH_PADDING;
+    tileSize.height = [screenFont ascender] - fontDescender + 2 * TILE_GLYPH_PADDING;
 
-    /* Hack -- Add leading of font to tile height */
-    tileSize.height += [screenFont leading];
-    /* and deepen descender */
-    fontDescender -= [screenFont leading];
+    /* Hack -- round up tile size */
+    tileSize.width = ceil(tileSize.width);
+    tileSize.height = ceil(tileSize.height);
 }
 
 - (void)updateImage
