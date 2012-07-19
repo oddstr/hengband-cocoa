@@ -88,9 +88,6 @@ static NSFont *default_font;
 
 @class AngbandView;
 
-/* The max number of glyphs we support */
-#define GLYPH_COUNT 256
-
 /* An AngbandContext represents a logical Term (i.e. what Angband thinks is a window). This typically maps to one NSView, but may map to more than one NSView (e.g. the Test and real screen saver view). */
 @interface AngbandContext : NSObject <NSWindowDelegate>
 {
@@ -121,10 +118,6 @@ static NSFont *default_font;
     
     /* If this context owns a window, here it is */
     NSWindow *primaryWindow;
-    
-    /* "Glyph info": an array of the CGGlyphs and their widths corresponding to the above font. */
-    CGGlyph glyphArray[GLYPH_COUNT];
-    CGFloat glyphWidths[GLYPH_COUNT];
     
     /* The size of one tile */
     NSSize tileSize;
@@ -354,66 +347,38 @@ static bool initialized = FALSE;
     return NSMakeSize(floor(cols * tileSize.width + 2 * borderSize.width), floor(rows * tileSize.height + 2 * borderSize.height));
 }
 
-// qsort-compatible compare function for CGSizes
-static int compare_advances(const void *ap, const void *bp)
-{
-    const CGSize *a = ap, *b = bp;
-    return (a->width > b->width) - (a->width < b->width);
-}
+/* The max number of glyphs we support */
+/* Hack -- we check glyph width only with one character 'M' */
+#define GLYPH_COUNT 1
 
 - (void)updateGlyphInfo
 {
+    CGGlyph glyphArray[GLYPH_COUNT];
     
-    // Update glyphArray and glyphWidths
     NSFont *screenFont = [angbandViewFont screenFont];
     
-    // Generate a string containing each MacRoman character
-    unsigned char latinString[GLYPH_COUNT];
-    size_t i;
-    for (i=0; i < GLYPH_COUNT; i++) latinString[i] = (unsigned char)i;
-    
-    // Turn that into unichar. Angband uses ISO Latin 1.
-    unichar unicharString[GLYPH_COUNT] = {0};
-    NSString *allCharsString = [[NSString alloc] initWithBytes:latinString length:sizeof latinString encoding:NSISOLatin1StringEncoding];
-    [allCharsString getCharacters:unicharString range:NSMakeRange(0, MIN(GLYPH_COUNT, [allCharsString length]))];
-    [allCharsString autorelease];
+    // Make unichar string 
+    unichar unicharString[GLYPH_COUNT] = {(unichar)'M'};
     
     // Get glyphs
     bzero(glyphArray, sizeof glyphArray);
     CTFontGetGlyphsForCharacters((CTFontRef)screenFont, unicharString, glyphArray, GLYPH_COUNT);
     
-    // Get advances. Record the max advance.
+    // Get advance and record it
     CGSize advances[GLYPH_COUNT] = {};
     CTFontGetAdvancesForGlyphs((CTFontRef)screenFont, kCTFontHorizontalOrientation, glyphArray, advances, GLYPH_COUNT);
-    for (i=0; i < GLYPH_COUNT; i++) {
-        glyphWidths[i] = advances[i].width;
-    }
-    
-    // For good non-mono-font support, use the median advance. Start by sorting all advances.
-    qsort(advances, GLYPH_COUNT, sizeof *advances, compare_advances);
-    
-    // Skip over any initially empty run
-    size_t startIdx;
-    for (startIdx = 0; startIdx < GLYPH_COUNT; startIdx++)
-    {
-        if (advances[startIdx].width > 0) break;
-    }
-    
-    // Pick the center to find the median
-    CGFloat medianAdvance = 0;
-    if (startIdx < GLYPH_COUNT)
-    { // In case we have all zero advances for some reason
-        medianAdvance = advances[(startIdx + GLYPH_COUNT)/2].width;
-    }
-    
+    CGFloat advance = advances[0].width;
+
+
     // Record the descender
     fontDescender = [screenFont descender];
     /* Hack -- deepen descender by landing height */
     fontDescender -= [screenFont leading];
+
     
     // Record the tile size. Note that these are typically fractional values - which seems sketchy, but we end up scaling the heck out of our view anyways, so it seems to not matter.
     /* Hack -- add padding width  */
-    tileSize.width = medianAdvance + 2 * TILE_GLYPH_PADDING;
+    tileSize.width = advance + 2 * TILE_GLYPH_PADDING;
     tileSize.height = [screenFont ascender] - fontDescender + 2 * TILE_GLYPH_PADDING;
 
     /* Hack -- round up tile size */
