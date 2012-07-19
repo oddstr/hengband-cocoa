@@ -272,6 +272,7 @@ static void initialize_file_paths(void);
 static void play_sound(int event);
 static void update_term_visibility(void);
 static BOOL check_events(int wait);
+static BOOL get_cmd_init(void);
 //static void cocoa_file_open_hook(const char *path, file_type ftype);
 static BOOL send_event(NSEvent *event);
 static void record_current_savefile(void);
@@ -771,6 +772,7 @@ static int compare_advances(const void *ap, const void *bp)
 /* Entry point for initializing Angband */
 + (void)beginGame
 {
+    BOOL new_game;
     
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
@@ -799,28 +801,13 @@ static int compare_advances(const void *ap, const void *bp)
 
     init_angband();
 
-	/* Prompt the user */
-#ifdef JP
-	prt("'ファイル'メニューより'新規'または'開く...'を選択してください。", 23, 10);
-#else
-	prt("[Choose 'New' or 'Open' from the 'File' menu]", 23, 15);
-#endif
-
-	/* Flush the prompt */
-	Term_fresh();
-
-    while(start_when_ready == START_NOT_YET)
-    {
-        check_events(CHECK_EVENTS_WAIT);
-    }
+    new_game = get_cmd_init();
     
     [pool drain];
     
     game_in_progress = TRUE;
-    if(start_when_ready == START_NEW_GAME)
-        play_game(true);
-    else /* start_when_ready == START_OPEN_GAME */
-        play_game(false);
+
+    play_game(new_game);
 
     /*
      * play_game never returns until the game is finished.
@@ -2208,20 +2195,25 @@ static BOOL contains_angband_view(NSView *view)
 }
 
 
-// No need for event loop methods
-#if 0
 /*
- *    Run the event loop and return a gameplay status to init_angband
+ *    Run the event loop and return whether new_game or not
  */
-static errr get_cmd_init(void)
+static BOOL get_cmd_init(void)
 {     
-    if (cmd.command == CMD_NULL)
+    if (start_when_ready == START_NOT_YET)
     {
-        /* Prompt the user */ 
-        prt("[Choose 'New' or 'Open' from the 'File' menu]", 23, 17);
+        /* Prompt the user */
+#ifdef JP
+        prt("'ファイル'メニューより'新規'または'開く...'を選択してください。", 23, 10);
+#else
+        prt("[Choose 'New' or 'Open' from the 'File' menu]", 23, 15);
+#endif
+
+        /* Flush the prompt */
         Term_fresh();
-        
-        while (cmd.command == CMD_NULL) {
+
+        while (start_when_ready == START_NOT_YET)
+        {
             NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
             NSEvent *event = [NSApp nextEventMatchingMask:NSAnyEventMask untilDate:[NSDate distantFuture] inMode:NSDefaultRunLoopMode dequeue:YES];
             if (event) [NSApp sendEvent:event];
@@ -2229,22 +2221,11 @@ static errr get_cmd_init(void)
         }
     }
     
-    /* Push the command to the game. */
-    cmd_insert_s(&cmd);
-    
-    return 0; 
+    if (start_when_ready == START_NEW_GAME)
+        return true;
+    else /* start_when_ready == START_OPEN_GAME */
+        return false;
 } 
-
-
-/* Return a command */
-static errr cocoa_get_cmd(cmd_context context, bool wait)
-{
-    if (context == CMD_INIT) 
-        return get_cmd_init();
-    else 
-        return textui_get_cmd(context, wait);
-}
-#endif /* 0 */
 
 /* Encodes an NSEvent Angband-style, or forwards it along.  Returns YES if the event was sent to Angband, NO if Cocoa (or nothing) handled it */
 static BOOL send_event(NSEvent *event)
