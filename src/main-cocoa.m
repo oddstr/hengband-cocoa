@@ -69,7 +69,10 @@ enum
 @end
 
 /* Whether or not to start new game */
-static BOOL new_game = FALSE;
+#define START_NOT_YET 0
+#define START_NEW_GAME 1
+#define START_OPEN_GAME 2
+static BOOL start_when_ready = START_NOT_YET;
 
 /* Delay handling of pre-emptive "quit" event */
 static BOOL quit_when_ready = FALSE;
@@ -793,23 +796,36 @@ static int compare_advances(const void *ap, const void *bp)
     
     /* We are now initialized */
     initialized = TRUE;
-    
-    /* Handle pending events (most notably update) and flush input */
-    Term_flush();
 
     init_angband();
 
-    pause_line(23);
+	/* Prompt the user */
+#ifdef JP
+	prt("'ファイル'メニューより'新規'または'開く...'を選択してください。", 23, 10);
+#else
+	prt("[Choose 'New' or 'Open' from the 'File' menu]", 23, 15);
+#endif
+
+	/* Flush the prompt */
+	Term_fresh();
+
+    while(start_when_ready == START_NOT_YET)
+    {
+        check_events(CHECK_EVENTS_WAIT);
+    }
     
-    /*
-     * Play a game -- "new_game" is set by "new", "open" or the open document
-     * even handler as appropriate
-     */
-        
     [pool drain];
     
-    new_game = TRUE;
-    play_game(new_game);
+    game_in_progress = TRUE;
+    if(start_when_ready == START_NEW_GAME)
+        play_game(true);
+    else /* start_when_ready == START_OPEN_GAME */
+        play_game(false);
+
+    /*
+     * play_game never returns until the game is finished.
+     * After here app will quit in applicationDidFinishLaunching:
+     */
 }
 
 + (void)endGame
@@ -2520,9 +2536,8 @@ static void initialize_file_paths(void)
 - (IBAction)newGame:sender
 {
     /* Game is in progress */
-    game_in_progress = TRUE;
-    //cmd.command = CMD_NEWGAME;
-    new_game = TRUE;
+    start_when_ready = START_NEW_GAME;
+    wakeup_event_loop();
 }
 
 - (IBAction)editFont:sender
@@ -2619,9 +2634,9 @@ static void initialize_file_paths(void)
         record_current_savefile();
         
         /* Game is in progress */
-        game_in_progress = TRUE;
-        //cmd.command = CMD_LOADFILE;
-        new_game = FALSE;
+        start_when_ready = START_OPEN_GAME;
+
+        wakeup_event_loop();
     }
     
     [pool drain];
@@ -2734,9 +2749,6 @@ static void initialize_file_paths(void)
 /* Delegate method that gets called if we're asked to open a file. */
 - (BOOL)application:(NSApplication *)sender openFiles:(NSArray *)filenames
 {
-    bool f = true;
-    while(f) sleep(1); 
-
     /* Can't open a file once we've started */
     if (game_in_progress) return NO;
     
@@ -2748,8 +2760,7 @@ static void initialize_file_paths(void)
     if (! [file getFileSystemRepresentation:savefile maxLength:sizeof savefile]) return NO;
     
     /* Success, remember to load it */
-    //cmd.command = CMD_LOADFILE;
-    new_game = FALSE;
+    start_when_ready = START_OPEN_GAME;
     
     /* Wake us up in case this arrives while we're sitting at the Welcome screen! */
     wakeup_event_loop();
