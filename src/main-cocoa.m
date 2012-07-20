@@ -2393,6 +2393,9 @@ static BOOL check_events(int wait)
 /* Update window visibility to match what's in p_ptr, so we show or hide terms that have or do not have contents respectively. */
 static void update_term_visibility(void)
 {
+    /* Hack -- do not unless playing */
+    if (!p_ptr->playing) return;
+
     /* Make a mask of window flags that matter */
     size_t i;
     u32b significantWindowFlagMask = 0;
