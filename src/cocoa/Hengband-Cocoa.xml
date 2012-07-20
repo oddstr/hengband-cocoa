@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string>$NAME$_Icons</string>
 	<key>CFBundleIdentifier</key>
-	<string>jp.sourceforge.hengband.$EXECUTABLE$</string>
+	<string>jp.sourceforge.hengband.$NAME$</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
@@ -18,14 +18,12 @@
 	<string>$VERSION$</string>
 	<key>CFBundleLongVersionString</key>
 	<string>$VERSION$, Copyright $COPYRIGHT$</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © $COPYRIGHT$</string>
 	<key>CFBundleGetInfoString</key>
 	<string>$VERSION$, © $COPYRIGHT$</string>
 	<key>CFBundleSignature</key>
-	<string>A271</string>
+	<string>Heng</string>
 	<key>CFBundleVersion</key>
-	<string>1.0</string>
+	<string>r3105</string>
 	<key>CGDisableCoalescedUpdates</key>
 	<true/>
 	<key>NSMainNibFile</key>
