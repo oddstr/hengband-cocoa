@@ -2221,7 +2221,15 @@ static void init_windows(void)
 /* Return the directory into which we put data (save and config) */
 static NSString *get_data_directory(void)
 {
-    return [@"~/Documents/Hengband/" stringByExpandingTildeInPath];
+    NSString *documentsDirectory;
+    NSArray *paths = NSSearchPathForDirectoriesInDomains
+        (NSDocumentDirectory, NSUserDomainMask, YES);
+    if ([paths count] > 0)
+        documentsDirectory = [paths objectAtIndex:0];
+    else
+        documentsDirectory = [@"~/Documents/" stringByExpandingTildeInPath];
+
+    return [documentsDirectory stringByAppendingPathComponent:@"/Hengband/"];
 }
 
 
@@ -2443,7 +2451,15 @@ static void hook_plog(const char * str)
 {
     if (str)
     {
+#ifdef JP
+# if defined(EUC)
+        NSString *string = [NSString stringWithCString:str encoding:NSJapaneseEUCStringEncoding];
+# elif defined(SJIS)
+        NSString *string = [NSString stringWithCString:str encoding:NSShiftJISStringEncoding];
+# endif
+#else /* JP */
         NSString *string = [NSString stringWithCString:str encoding:NSMacOSRomanStringEncoding];
+#endif /* JP */
         NSRunAlertPanel(@"Danger Will Robinson", @"%@", @"OK", nil, nil, string);
     }
 }
@@ -2519,9 +2535,6 @@ static void initialize_file_paths(void)
      * Hack -- init_file_paths can't locate those data-storing dirs
      * separately from data-reading dirs, so we need to do so manually
      */
-
-    /* Get parent directory */
-    NSString *parentDir = get_data_directory();
 
     /* Free first */
     string_free(ANGBAND_DIR_SAVE);
