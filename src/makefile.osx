@@ -120,6 +120,7 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	@mkdir -p $(APPBIN)
 	@mkdir -p $(APPRES)
 	@mkdir -p $(APPRES)/English.lproj/MainMenu.nib 
+	@mkdir -p $(APPRES)/Japanese.lproj/MainMenu.nib 
 	@mkdir -p $(APPRES)/lib/apex
 	@mkdir -p $(APPRES)/lib/data
 	@mkdir -p $(APPRES)/lib/edit
@@ -151,6 +152,8 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	install -m 644 $(ICONFILES) $(APPRES)
 	cp cocoa/English.lproj/MainMenu.nib/*ib $(APPRES)/English.lproj/MainMenu.nib
 	cp cocoa/English.lproj/InfoPlist.strings $(APPRES)/English.lproj
+	cp cocoa/Japanese.lproj/MainMenu.nib/*ib $(APPRES)/Japanese.lproj/MainMenu.nib
+	cp cocoa/Japanese.lproj/InfoPlist.strings $(APPRES)/Japanese.lproj
 	sed -e 's/\$$VERSION\$$/$(VERSION)/' -e 's/\$$COPYRIGHT\$$/$(COPYRIGHT)/' \
 		-e 's/\$$NAME\$$/$(NAME)/' -e 's/\$$EXECUTABLE\$$/$(EXE)/' \
 		$(PLIST) > $(APPCONT)/Info.plist

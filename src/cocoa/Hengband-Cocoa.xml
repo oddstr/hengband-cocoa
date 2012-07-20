@@ -26,6 +26,10 @@
 	<string>r3105</string>
 	<key>CGDisableCoalescedUpdates</key>
 	<true/>
+	<key>CFBundleDisplayName</key>
+	<string>$NAME$</string>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
