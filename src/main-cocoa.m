@@ -21,8 +21,11 @@
 
 /* Default creator signature */
 #ifndef ANGBAND_CREATOR
-# define ANGBAND_CREATOR 'A271'
+# define ANGBAND_CREATOR 'Heng'
 #endif
+
+/* Needed globals */
+u32b _fcreator, _ftype;
 
 /* Mac headers */
 #include <Cocoa/Cocoa.h>
@@ -269,7 +272,6 @@ static void play_sound(int event);
 static void update_term_visibility(void);
 static BOOL check_events(int wait);
 static BOOL get_cmd_init(void);
-//static void cocoa_file_open_hook(const char *path, file_type ftype);
 static BOOL send_event(NSEvent *event);
 static void record_current_savefile(void);
 
@@ -789,6 +791,10 @@ static bool initialized = FALSE;
 	/* Save some info for later */
     player_euid = geteuid();
     player_egid = getegid();
+
+    /* Needed globals */
+    _ftype = 'TEXT';
+    _fcreator = ANGBAND_CREATOR;
     
     /* We are now initialized */
     initialized = TRUE;
@@ -2449,26 +2455,18 @@ static void hook_quit(const char * str)
     exit(0);
 }
 
-#if 0
 /* Set HFS file type and creator codes on a path */
-static void cocoa_file_open_hook(const char *path, file_type ftype)
+void fsetfileinfo(cptr path, u32b fcreator, u32b ftype)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSString *pathString = [NSString stringWithUTF8String:path];
     if (pathString)
     {   
-        u32b mac_type = 'TEXT';
-        if (ftype == FTYPE_RAW)
-            mac_type = 'DATA';
-        else if (ftype == FTYPE_SAVE)
-            mac_type = 'SAVE';
-        
-        NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedLong:mac_type], NSFileHFSTypeCode, [NSNumber numberWithUnsignedLong:ANGBAND_CREATOR], NSFileHFSCreatorCode, nil];
+        NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithUnsignedLong:ftype], NSFileHFSTypeCode, [NSNumber numberWithUnsignedLong:fcreator], NSFileHFSCreatorCode, nil];
         [[NSFileManager defaultManager] setAttributes:attrs ofItemAtPath:pathString error:NULL];
     }
     [pool drain];
 }
-#endif /* 0 */
 
 /*** Main program ***/
 
@@ -2807,11 +2805,6 @@ int main(int argc, char* argv[])
     return (0);
 }
 
-/* those externed in externs.h #if defined(MACH_O_CARBON) */
-u32b _fcreator, _ftype;
-void fsetfileinfo(cptr path, u32b fcreator, u32b ftype)
-{
-}
 #endif /* MACINTOSH || MACH_O_CARBON */
 
 /* vim: set autoindent shiftwidth=4 tabstop=4 expandtab: */
