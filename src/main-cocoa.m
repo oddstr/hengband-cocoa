@@ -69,6 +69,8 @@ enum
 - (void)setRestorable:(BOOL)flag;
 @end
 
+#define ANGBAND_TERM_MAX 8
+
 /* Whether or not to start new game */
 #define START_NOT_YET 0
 #define START_NEW_GAME 1
@@ -862,6 +864,29 @@ static bool initialized = FALSE;
  * Handle window/view size and tile columns and rows.
  */
 
+/* set cols & rows and save it to defaults */
+- (void)setCols:(int)new_cols rows:(int)new_rows
+{
+    /* set it */
+    self->cols = new_cols;
+    self->rows = new_rows;
+
+    /* save it */
+    int termIdx;
+    for (termIdx = 0; termIdx < ANGBAND_TERM_MAX; termIdx++)
+    {
+        if (angband_term[termIdx] == self->terminal)
+        {
+            NSUserDefaults *defs = [NSUserDefaults angbandDefaults];
+            [defs setInteger:new_cols
+                           forKey:[NSString stringWithFormat:@"TermCols-%d", termIdx]];
+            [defs setInteger:new_rows
+                           forKey:[NSString stringWithFormat:@"TermRows-%d", termIdx]];
+            break;
+        }
+    }
+}
+
 /* Calc how many tiles can be in view size */
 - (NSSize)viewSize2ColsRows:(NSSize)size
 {
@@ -943,8 +968,7 @@ static bool initialized = FALSE;
     BOOL success = false;
 
     /* Save it to self */
-    self->cols = new_cols;
-    self->rows = new_rows;
+    [self setCols:new_cols rows:new_rows];
 
     /* Resize the Term (if needed) */
     if (terminal)
@@ -1206,8 +1230,6 @@ static void record_current_savefile(void)
 
 /*** Support for the "z-term.c" package ***/
 
-#define ANGBAND_TERM_MAX 8
-
 /*
  * Initialize a new Term
  *
@@ -1217,6 +1239,9 @@ static void Term_init_cocoa(term *t)
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     
     AngbandContext *context = [[AngbandContext alloc] init];
+
+    /* Hack -- init cols & rows */
+    [context setCols:t->wid rows:t->hgt];
     
     /* Give the term a hard retain on context (for GC) */
     t->data = (void *)CFRetain(context);
@@ -1284,8 +1309,10 @@ static void Term_init_cocoa(term *t)
     static NSPoint lastPoint = {0, 0};
     lastPoint = [window cascadeTopLeftFromPoint:lastPoint];
     
+    NSRect debugRect = [window frame];
     /* And maybe that's all for naught */
     if (autosaveName) [window setFrameAutosaveName:autosaveName];
+    debugRect = [window frame];
     
     /* Tell it about its term. Do this after we've sized it so that the sizing doesn't trigger redrawing and such. */
     [context setTerm:t];
@@ -1875,11 +1902,21 @@ static void wakeup_event_loop(void)
  */
 static term *term_data_link(int i)
 {    
+    int cols, rows;
     /* Allocate */
     term *newterm = ZNEW(term);
     
+    /* Hack -- get saved defaults of cols & rows */
+    NSUserDefaults *defs = [NSUserDefaults angbandDefaults];
+    cols = [defs integerForKey:[NSString stringWithFormat:@"TermCols-%d", i]];
+    rows = [defs integerForKey:[NSString stringWithFormat:@"TermRows-%d", i]];
+
+    /* Hack -- not saved */
+    if (cols == 0) cols = 80;
+    if (rows == 0) rows = 24;
+
     /* Initialize the term */
-    term_init(newterm, 80, 24, 256 /* keypresses, for some reason? */);
+    term_init(newterm, cols, rows, 256 /* keypresses, for some reason? */);
     
     /* Use a "software" cursor */
     newterm->soft_cursor = TRUE;
@@ -2541,7 +2578,6 @@ static void initialize_file_paths(void)
         forKey:[NSString stringWithFormat:@"FontName-%d", keyTerm]];
     [defs setFloat:[newFont pointSize]
         forKey:[NSString stringWithFormat:@"FontSize-%d", keyTerm]];
-    [defs synchronize];
     
     NSDisableScreenUpdates();
     
@@ -2661,6 +2697,9 @@ static void initialize_file_paths(void)
     
     //once beginGame finished, the game is over - that's how Angband works, and we should quit
     game_is_finished = TRUE;
+
+    [[NSUserDefaults angbandDefaults] synchronize];
+
     [NSApp terminate:self];
 }
 
