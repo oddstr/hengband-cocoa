@@ -2479,7 +2479,7 @@ static void initialize_file_paths(void)
 {
     NSFileManager *fm = [NSFileManager defaultManager];
     
-    char libpath[PATH_MAX+1] = {0};
+    char libpath[PATH_MAX+1] = {0}, basepath[PATH_MAX+1] = {0};
     
     /* Get the path to the lib directory in the bundle */
     NSString *libString = [[[NSBundle bundleForClass:[AngbandView class]] resourcePath] stringByAppendingPathComponent:@"/lib"];
@@ -2494,19 +2494,16 @@ static void initialize_file_paths(void)
     [libString getFileSystemRepresentation:libpath maxLength:sizeof libpath];
     strlcat(libpath, "/", sizeof libpath);
     
-#if 0
     /* Get the path to the Angband directory in ~/Documents */
     NSString *angbandBase = get_data_directory();
     [angbandBase getFileSystemRepresentation:basepath maxLength:sizeof basepath];
     strlcat(basepath, "/", sizeof basepath);
     
     /* Create the save and config directories if necessary */
-    NSString *config = [angbandBase stringByAppendingPathComponent:@"/config/"];
     NSString *save = [angbandBase stringByAppendingPathComponent:@"/save/"];
     NSString *user = [angbandBase stringByAppendingPathComponent:@"/user/"];
     NSError *error = nil;
     BOOL success = YES;
-    success = success && [fm createDirectoryAtPath:config withIntermediateDirectories:YES attributes:nil error:&error];
     success = success && [fm createDirectoryAtPath:save withIntermediateDirectories:YES attributes:nil error:&error];
     success = success && [fm createDirectoryAtPath:user withIntermediateDirectories:YES attributes:nil error:&error];
     if (! success)
@@ -2515,9 +2512,24 @@ static void initialize_file_paths(void)
         [[NSApplication sharedApplication] presentError:error];
         exit(0);
     }
-#endif /* 0 */
     
     init_file_paths(libpath);
+
+    /*
+     * Hack -- init_file_paths can't locate those data-storing dirs
+     * separately from data-reading dirs, so we need to do so manually
+     */
+
+    /* Get parent directory */
+    NSString *parentDir = get_data_directory();
+
+    /* Free first */
+    string_free(ANGBAND_DIR_SAVE);
+    string_free(ANGBAND_DIR_USER);
+
+    /* Store */
+    ANGBAND_DIR_SAVE = string_make([save UTF8String]);
+    ANGBAND_DIR_USER = string_make([user UTF8String]);
 }
 
 @interface AngbandAppDelegate : NSObject {
