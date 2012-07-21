@@ -1098,6 +1098,42 @@ static NSMenuItem *superitem(NSMenuItem *self)
     return primaryWindow;
 }
 
+/* Use this NSWindowDelegate method to make subwindows frontmost */
+- (void)windowDidEnterFullScreen:(NSNotification *)notification
+{
+    int i;
+    for (i = 1; i < ANGBAND_TERM_MAX; i++) {
+        term *t = angband_term[i];
+        if (!t) continue;
+
+        AngbandContext *context = t->data;
+        if (!context) continue;
+
+        NSWindow *window = context->primaryWindow;
+        if (!window) continue;
+
+        [window setLevel:NSFloatingWindowLevel];
+    }
+}
+
+/* Reset subwindow level to normal */
+- (void)windowDidExitFullScreen:(NSNotification *)notification
+{
+    int i;
+    for (i = 1; i < ANGBAND_TERM_MAX; i++) {
+        term *t = angband_term[i];
+        if (!t) continue;
+
+        AngbandContext *context = t->data;
+        if (!context) continue;
+
+        NSWindow *window = context->primaryWindow;
+        if (!window) continue;
+
+        [window setLevel:NSNormalWindowLevel];
+    }
+}
+
 - (void)orderFront
 {
     [[[angbandViews lastObject] window] makeKeyAndOrderFront:self];
