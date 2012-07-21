@@ -162,7 +162,7 @@ static NSFont *default_font;
 - (void)unlockFocus;
 
 /* Returns the primary window for this angband context, creating it if necessary */
-- (NSWindow *)makePrimaryWindow;
+- (NSWindow *)makePrimaryWindow:(BOOL)isMain;
 
 /* Called to add a new Angband view */
 - (void)addAngbandView:(AngbandView *)view;
@@ -676,7 +676,7 @@ static bool initialized = FALSE;
     [self updateGlyphInfo];
 
     /* Hack -- resize window */
-    NSWindow *window = [self makePrimaryWindow];
+    NSWindow *window = self->primaryWindow;
     NSRect oldRect = [window frame];
 
     if ([window styleMask] & Angband_NSFullScreenWindowMask)
@@ -932,11 +932,8 @@ static bool initialized = FALSE;
 /* Calc how many tiles can be in window size */
 - (NSSize)windowSize2ColsRows:(NSSize)size
 {
-    /* Get the window */
-    NSWindow *window = [self makePrimaryWindow];
-
     /* Get view size from window size */
-    NSRect viewRect = [window contentRectForFrameRect:
+    NSRect viewRect = [self->primaryWindow contentRectForFrameRect:
                             NSMakeRect(0, 0, size.width, size.height)];
 
     return [self viewSize2ColsRows:
@@ -946,14 +943,11 @@ static bool initialized = FALSE;
 /* Calc size of window to contain cols x rows tiles */
 - (NSSize)colsRows2WindowSize:(NSSize)cols_rows
 {
-    /* Get the window */
-    NSWindow *window = [self makePrimaryWindow];
-
     /* Veiw size needed to display those tiles */
     NSSize viewSize = [self colsRows2ViewSize:cols_rows];
 
     /* Window rect needed to display that view */
-    NSRect windowRect = [window frameRectForContentRect:
+    NSRect windowRect = [self->primaryWindow frameRectForContentRect:
                             NSMakeRect(0, 0, viewSize.width, viewSize.height)];
 
     /* Return size of the window */
@@ -1053,7 +1047,7 @@ static NSMenuItem *superitem(NSMenuItem *self)
     }
 }
 
-- (NSWindow *)makePrimaryWindow
+- (NSWindow *)makePrimaryWindow:(BOOL)isMain
 {
     if (! primaryWindow)
     {
@@ -1061,8 +1055,29 @@ static NSMenuItem *superitem(NSMenuItem *self)
         NSRect contentRect = {NSZeroPoint, [self baseSize]};
         contentRect.size.width *= 2;
         contentRect.size.height *= 2;
+
+        NSUInteger mask = NSTitledWindowMask
+                        | NSResizableWindowMask
+                        | NSMiniaturizableWindowMask;
         
-        primaryWindow = [[NSWindow alloc] initWithContentRect:contentRect styleMask:NSTitledWindowMask | NSResizableWindowMask | NSMiniaturizableWindowMask backing:NSBackingStoreBuffered defer:YES];
+        /* Hack -- Main term is NSWindow, but sub are NSPanel */
+        if (isMain)
+        {
+            primaryWindow = [[NSWindow alloc]
+                             initWithContentRect:contentRect
+                                       styleMask:mask
+                                         backing:NSBackingStoreBuffered
+                                           defer:YES];
+        }
+        else
+        {
+            primaryWindow = [[NSPanel alloc]
+                             initWithContentRect:contentRect
+                                       styleMask:(mask | NSUtilityWindowMask)
+                                         backing:NSBackingStoreBuffered
+                                           defer:YES];
+            [primaryWindow setLevel:NSNormalWindowLevel];
+        }
         
         /* Not to be released when closed */
         [primaryWindow setReleasedWhenClosed:NO];
@@ -1271,17 +1286,8 @@ static void Term_init_cocoa(term *t)
         }
     }
     
-    /* Set its font. */
-    NSString *fontName = [[NSUserDefaults angbandDefaults] 
-        stringForKey:[NSString stringWithFormat:@"FontName-%d", termIdx]];
-    if (! fontName) fontName = [default_font fontName];
-    float fontSize = [[NSUserDefaults angbandDefaults] 
-        floatForKey:[NSString stringWithFormat:@"FontSize-%d", termIdx]];
-    if (! fontSize) fontSize = [default_font pointSize];
-    [context setSelectionFont:[NSFont fontWithName:fontName size:fontSize]];
-        
     /* Get the window */
-    NSWindow *window = [context makePrimaryWindow];
+    NSWindow *window = [context makePrimaryWindow:(termIdx == 0)];
     
     /* Set its title and, for auxiliary terms, tentative size */
     if (termIdx == 0)
@@ -1317,6 +1323,15 @@ static void Term_init_cocoa(term *t)
     
     /* And maybe that's all for naught */
     if (autosaveName) [window setFrameAutosaveName:autosaveName];
+
+    /* Set its font. */
+    NSString *fontName = [[NSUserDefaults angbandDefaults] 
+        stringForKey:[NSString stringWithFormat:@"FontName-%d", termIdx]];
+    if (! fontName) fontName = [default_font fontName];
+    float fontSize = [[NSUserDefaults angbandDefaults] 
+        floatForKey:[NSString stringWithFormat:@"FontSize-%d", termIdx]];
+    if (! fontSize) fontSize = [default_font pointSize];
+    [context setSelectionFont:[NSFont fontWithName:fontName size:fontSize]];
     
     /* Tell it about its term. Do this after we've sized it so that the sizing doesn't trigger redrawing and such. */
     [context setTerm:t];
