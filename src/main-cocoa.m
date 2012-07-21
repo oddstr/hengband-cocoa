@@ -1315,10 +1315,8 @@ static void Term_init_cocoa(term *t)
     static NSPoint lastPoint = {0, 0};
     lastPoint = [window cascadeTopLeftFromPoint:lastPoint];
     
-    NSRect debugRect = [window frame];
     /* And maybe that's all for naught */
     if (autosaveName) [window setFrameAutosaveName:autosaveName];
-    debugRect = [window frame];
     
     /* Tell it about its term. Do this after we've sized it so that the sizing doesn't trigger redrawing and such. */
     [context setTerm:t];
