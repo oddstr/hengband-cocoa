@@ -41,19 +41,6 @@ u32b _fcreator, _ftype;
 # define USE_LIVE_RESIZE_CACHE 1
 #endif
 
-#if 0
-/*
- * Support the improved game command handling
- */
-#include "textui.h"
-static game_command cmd = { CMD_NULL, 0 };
-
-
-/* Our command-fetching function */
-static errr cocoa_get_cmd(cmd_context context, bool wait);
-
-#endif /* 0 */
-
 /* Application defined event numbers */
 enum
 {
@@ -211,6 +198,7 @@ static NSFont *default_font;
 
 @end
 
+#if 0 // TODO: Graphics re-support
 /* To indicate that a grid element contains a picture, we store 0xFFFF. */
 #define NO_OVERDRAW ((wchar_t)(0xFFFF))
 
@@ -249,10 +237,15 @@ static int graf_mode_req = 0;
  */
 static BOOL graphics_are_enabled(void)
 {
-    // TODO: fix graphics
-    return false;
-    //return current_graphics_mode && current_graphics_mode->grafID != GRAPHICS_NONE;
+    current_graphics_mode && current_graphics_mode->grafID != GRAPHICS_NONE;
 }
+#else
+static int graf_mode_req = 0;
+static BOOL graphics_are_enabled(void)
+{
+    return false;
+}
+#endif // TODO: Graphics re-support
 
 /*
  * Hack -- game in progress
@@ -265,10 +258,14 @@ static void wakeup_event_loop(void);
 static void hook_plog(const char *str);
 static void hook_quit(const char * str);
 static void load_prefs(void);
+#if 0 // TODO: Sound re-support
 static void load_sounds(void);
+#endif // TODO: Sound re-support
 static void init_windows(void);
 static void initialize_file_paths(void);
+#if 0 // TODO: Sound re-support
 static void play_sound(int event);
+#endif // TODO: Sound re-support
 static void update_term_visibility(void);
 static BOOL check_events(int wait);
 static BOOL get_cmd_init(void);
@@ -1413,6 +1410,7 @@ static void Term_nuke_cocoa(term *t)
     [pool drain];
 }
 
+#if 0 // TODO: Graphics re-support
 /* Returns the CGImageRef corresponding to an image with the given name in the resource directory, transferring ownership to the caller */
 static CGImageRef create_angband_image(NSString *name)
 {
@@ -1474,14 +1472,14 @@ static CGImageRef create_angband_image(NSString *name)
     }
     return result;
 }
+#endif // TODO: Graphics re-support
 
 /*
  * React to changes
  */
 static errr Term_xtra_cocoa_react(void)
 {
-// TODO: fix graphics
-#if 0
+#if 0 // TODO: Graphics re-support
     /* Don't actually switch graphics until the game is running */
     if (!initialized || !game_in_progress) return (-1);
 
@@ -1545,7 +1543,7 @@ static errr Term_xtra_cocoa_react(void)
     }
     
     [pool drain];
-#endif /* 0 */ // fix graphics
+#endif // TODO: Graphics re-support
     
     /* Success */
     return (0);
@@ -1734,6 +1732,7 @@ static errr Term_wipe_cocoa(int x, int y, int n)
     return (0);
 }
 
+#if 0 // TODO: Graphics re-support
 static void draw_image_tile(CGImageRef image, NSRect srcRect, NSRect dstRect, NSCompositingOperation op)
 {
     /* When we use high-quality resampling to draw a tile, pixels from outside the tile may bleed in, causing graphics artifacts. Work around that. */
@@ -1744,14 +1743,6 @@ static void draw_image_tile(CGImageRef image, NSRect srcRect, NSRect dstRect, NS
     CGImageRelease(subimage);
 }
 
-// TODO: fix graphics
-static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
-                            const char *cp, const byte *tap,
-                            const char *tcp)
-{
-    return (0);
-}
-#if 0
 static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
                             const wchar_t *cp, const byte *tap,
                             const wchar_t *tcp)
@@ -1841,7 +1832,14 @@ static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
     /* Success */
     return (0);
 }
-#endif /* 0 */
+#else
+static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
+                            const char *cp, const byte *tap,
+                            const char *tcp)
+{
+    return (0);
+}
+#endif // TODO: Graphics re-support
 
 
 /* Special flags in the attr data */
@@ -2356,16 +2354,6 @@ static BOOL send_event(NSEvent *event)
             if ([[NSApp mainMenu] performKeyEquivalent:event]) break;
             
             unsigned modifiers = [event modifierFlags];
-            
-// Want to use command key in macros
-#if 0
-            /* Send all NSCommandKeyMasks through */
-            if (modifiers & NSCommandKeyMask)
-            {
-                [NSApp sendEvent:event];
-                break;
-            }
-#endif /* 0 */
             
             if (! [[event characters] length]) break;
 
