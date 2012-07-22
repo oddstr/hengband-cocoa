@@ -306,13 +306,10 @@ static bool initialized = FALSE;
 @interface AngbandView : NSView
 {
     IBOutlet AngbandContext *angbandContext;
-    NSSize scaleFromBaseSize;
 }
 
 - (void)setAngbandContext:(AngbandContext *)context;
 - (AngbandContext *)angbandContext;
-
-- (NSSize)scaleFromBaseSize;
 
 @end
 
@@ -351,8 +348,7 @@ static bool initialized = FALSE;
 
 - (NSSize)baseSize
 {
-    /* We round the base size down. If we round it up, I believe we may end up with pixels that nobody "owns" that may accumulate garbage. In general rounding down is harmless, because any lost pixels may be sopped up by the border. */
-    return NSMakeSize(floor(cols * tileSize.width + 2 * borderSize.width), floor(rows * tileSize.height + 2 * borderSize.height));
+    return NSMakeSize(cols * tileSize.width + 2 * borderSize.width, rows * tileSize.height + 2 * borderSize.height);
 }
 
 /* The max number of glyphs we support */
@@ -1155,23 +1151,6 @@ static NSMenuItem *superitem(NSMenuItem *self)
 }
 
 
-- (NSRect)convertBaseRect:(NSRect)rect toView:(NSView *)angbandView
-{
-    if (! angbandView) return NSZeroRect;
-    
-    NSSize ourSize = [self baseSize];
-    NSSize theirSize = [angbandView bounds].size;
-    
-    double dx = theirSize.width / ourSize.width;
-    double dy = theirSize.height / ourSize.height;
-    
-    rect.size.width *= dx;
-    rect.origin.x *= dx;
-    rect.size.height *= dy;
-    rect.origin.y *= dy;
-    return rect;
-}
-
 - (void)setNeedsDisplay:(BOOL)val
 {
     for (NSView *angbandView in angbandViews)
@@ -1184,7 +1163,7 @@ static NSMenuItem *superitem(NSMenuItem *self)
 {
     for (NSView *angbandView in angbandViews)
     {
-        [angbandView setNeedsDisplayInRect:[self convertBaseRect:rect toView:angbandView]];
+        [angbandView setNeedsDisplayInRect:rect];
     }
 }
 
@@ -1216,14 +1195,6 @@ static NSMenuItem *superitem(NSMenuItem *self)
         /* Tell the Angband context to draw into us */
         [angbandContext drawRect:rect inView:self];
     }
-}
-
-- (NSSize)scaleFromBaseSize
-{
-    if (! angbandContext) return NSMakeSize(1, 1);
-    NSSize baseSize = [angbandContext baseSize];
-    NSSize boundsSize = [self bounds].size;
-    return NSMakeSize(boundsSize.width / baseSize.width, boundsSize.height / baseSize.height);
 }
 
 - (void)setAngbandContext:(AngbandContext *)context
