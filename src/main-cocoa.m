@@ -24,6 +24,17 @@
 # define ANGBAND_CREATOR 'Heng'
 #endif
 
+#ifdef JP
+/* Encoding for cptr <-> NSString conversion */
+# if defined(EUC)
+#  define CSTRING_ENC NSJapaneseEUCStringEncoding
+# elif defined(SJIS)
+#  define CSTRING_ENC NSShiftJISStringEncoding
+# endif
+#else /* JP */
+# define CSTRING_ENC NSMacOSRomanStringEncoding
+#endif /* JP */
+
 /* Needed globals */
 u32b _fcreator, _ftype;
 
@@ -1818,16 +1829,6 @@ static errr Term_pict_cocoa(int x, int y, int n, const byte *ap,
 #define AF_BIGTILE2 0xf0
 #define AF_TILE1   0x80
 
-#ifdef JP
-#define AF_KANJI1  0x10
-#define AF_KANJI2  0x20
-#define AF_KANJIC  0x0f
-/*
- * 全角文字対応。
- * 属性に全角文字の１バイト目、２バイト目も記憶。
- * By FIRST
- */
-#endif
 /*
  * Low level graphics.  Assumes valid input.
  *
@@ -1862,17 +1863,6 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
     /* Draw each */
     NSRect rectToDraw = charRect;
 
-#ifdef JP
-    /* Encoding for cptr -> NSString conversion */
-# if defined(EUC)
-    NSStringEncoding enc = NSJapaneseEUCStringEncoding;
-# elif defined(SJIS)
-    NSStringEncoding enc = NSShiftJISStringEncoding;
-# else
-    error!
-# endif
-#endif /* JP */
-
     int i;
     for (i=0; i < n; i++) {
 #ifdef JP
@@ -1885,7 +1875,7 @@ static errr Term_text_cocoa(int x, int y, int n, byte a, cptr cp)
             const char buf[2] = {cp[i], cp[++i]};
             UniChar unicharString[2] =
             {
-                [[NSString stringWithCString:buf encoding:enc] characterAtIndex:0],
+                [[NSString stringWithCString:buf encoding:CSTRING_ENC] characterAtIndex:0],
                 0
             };
 
@@ -2466,15 +2456,7 @@ static void hook_plog(const char * str)
 {
     if (str)
     {
-#ifdef JP
-# if defined(EUC)
-        NSString *string = [NSString stringWithCString:str encoding:NSJapaneseEUCStringEncoding];
-# elif defined(SJIS)
-        NSString *string = [NSString stringWithCString:str encoding:NSShiftJISStringEncoding];
-# endif
-#else /* JP */
-        NSString *string = [NSString stringWithCString:str encoding:NSMacOSRomanStringEncoding];
-#endif /* JP */
+        NSString *string = [NSString stringWithCString:str encoding:CSTRING_ENC];
         NSRunAlertPanel(@"Danger Will Robinson", @"%@", @"OK", nil, nil, string);
     }
 }
