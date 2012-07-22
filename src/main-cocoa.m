@@ -1054,10 +1054,7 @@ static NSMenuItem *superitem(NSMenuItem *self)
 {
     if (! primaryWindow)
     {
-        /* The base size is quite small, so double its width and height as an initial guess */
         NSRect contentRect = {NSZeroPoint, [self baseSize]};
-        contentRect.size.width *= 2;
-        contentRect.size.height *= 2;
 
         NSUInteger mask = NSTitledWindowMask
                         | NSResizableWindowMask
