@@ -719,7 +719,7 @@ static bool initialized = FALSE;
         self->rows = 24;
         
         /* Default border size */
-        self->borderSize = NSMakeSize(2, 2);
+        self->borderSize = NSMakeSize(1, 1);
         
         /* Allocate our array of views */
         angbandViews = [[NSMutableArray alloc] init];
@@ -1617,9 +1617,22 @@ static errr Term_xtra_cocoa(int n, int v)
         case TERM_XTRA_CLEAR:
         {        
             [angbandContext lockFocus];
-            [[NSColor blackColor] set];
+
+            /* Hack -- draw the frame border for visuality */
+            /* First totally fill the view with gray */
             NSRect imageRect = {NSZeroPoint, [angbandContext imageSize]};            
-            NSRectFillUsingOperation(imageRect, NSCompositeCopy);
+            [[NSColor colorWithSRGBRed:0.2 green:0.2 blue:0.2 alpha:1] set];
+            NSRectFill(imageRect);
+
+            /* Then, draw inside the border with black */
+            NSSize borderSize = angbandContext->borderSize;
+            imageRect.origin.x += borderSize.width;
+            imageRect.origin.y += borderSize.height;
+            imageRect.size.width -= borderSize.width * 2;
+            imageRect.size.height -= borderSize.height * 2;
+            [[NSColor blackColor] set];
+            NSRectFill(imageRect);
+
             [angbandContext unlockFocus];
             [angbandContext setNeedsDisplay:YES];
             /* Success */
