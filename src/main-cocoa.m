@@ -2641,7 +2641,13 @@ static void initialize_file_paths(void)
             break;
         }
     }
-    
+
+    if (keyTerm == ANGBAND_TERM_MAX)
+    {
+       // none is key window
+       return;
+    }
+
     NSFont *oldFont = default_font;
     NSFont *newFont = [sender convertFont:oldFont];
     if (! newFont) return; //paranoia
