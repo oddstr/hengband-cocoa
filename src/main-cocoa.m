@@ -675,6 +675,12 @@ static bool initialized = FALSE;
     /* Update our glyph info */
     [self updateGlyphInfo];
 
+    /* Hack -- don't resize or redraw in initialization */
+    if (!self->terminal)
+    {
+        return;
+    }
+
     /* Hack -- resize window */
     NSWindow *window = self->primaryWindow;
     NSRect oldRect = [window frame];
@@ -1321,6 +1327,15 @@ static void Term_init_cocoa(term *t)
             break;
         }
     }
+
+    /* Set its font. */
+    NSString *fontName = [[NSUserDefaults angbandDefaults] 
+        stringForKey:[NSString stringWithFormat:@"FontName-%d", termIdx]];
+    if (! fontName) fontName = [default_font fontName];
+    float fontSize = [[NSUserDefaults angbandDefaults] 
+        floatForKey:[NSString stringWithFormat:@"FontSize-%d", termIdx]];
+    if (! fontSize) fontSize = [default_font pointSize];
+    [context setSelectionFont:[NSFont fontWithName:fontName size:fontSize]];
     
     /* Get the window */
     NSWindow *window = [context makePrimaryWindow:(termIdx == 0)];
@@ -1359,15 +1374,6 @@ static void Term_init_cocoa(term *t)
     
     /* And maybe that's all for naught */
     if (autosaveName) [window setFrameAutosaveName:autosaveName];
-
-    /* Set its font. */
-    NSString *fontName = [[NSUserDefaults angbandDefaults] 
-        stringForKey:[NSString stringWithFormat:@"FontName-%d", termIdx]];
-    if (! fontName) fontName = [default_font fontName];
-    float fontSize = [[NSUserDefaults angbandDefaults] 
-        floatForKey:[NSString stringWithFormat:@"FontSize-%d", termIdx]];
-    if (! fontSize) fontSize = [default_font pointSize];
-    [context setSelectionFont:[NSFont fontWithName:fontName size:fontSize]];
     
     /* Tell it about its term. Do this after we've sized it so that the sizing doesn't trigger redrawing and such. */
     [context setTerm:t];
