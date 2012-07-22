@@ -175,7 +175,11 @@ PACKAGE_NAME = $(NAME)-$(VERSION)
 dist: install
 	@rm -rf disttemp*
 	mkdir -p disttemp/Docs
-	cp ../changes.txt ../copying.txt ../faq.txt ../readme.txt disttemp/Docs
+	cp ../autopick.txt ../autopick_eng.txt ../readme.txt ../readme_angband \
+		../readme_eng.txt ../readme_mac_jp.txt disttemp/Docs
+	mkdir -p disttemp/src
+	cp main-cocoa.m makefile.osx disttemp/src
+	cp -R -p cocoa disttemp/src
 	cp -R -p "$(APPBNDL)" disttemp
 	SetFile -a B disttemp/$(APPNAME)
 
