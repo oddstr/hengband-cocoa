@@ -26,6 +26,11 @@ CFLAGS = -g -I. $(WARNINGS) $(OPT) -DMACH_O_CARBON -DHAVE_MKSTEMP $(ENCODINGS) -
 LIBS = -framework Cocoa
 DEPLOYMENT_TARGET = MACOSX_DEPLOYMENT_TARGET=10.5
 
+# Import user prefs
+# If you don't want to edit this file, put your module redefinitions
+# and build flags in "./config"
+-include config
+
 OBJS = \
 	artifact.o autopick.o avatar.o birth.o bldg.o cave.o \
 	cmd1.o cmd2.o cmd3.o cmd4.o cmd5.o cmd6.o do-spell.o \
