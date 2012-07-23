@@ -2371,14 +2371,38 @@ static BOOL send_event(NSEvent *event)
             /* See Carbon's Event.h about keycode */
             unsigned short code = [event keyCode];
 
+            /* Treat control-code-generating keys specially */
+            char special = 0;
+            switch(code) {
+                case kVK_Return:
+                    special = '\r'; break;
+                case kVK_ANSI_KeypadEnter:
+                    special = '\r'; break;
+                case kVK_Escape:
+                    special = '\e'; break;
+                case kVK_Tab:
+                    special = '\t'; break;
+                case kVK_Delete:
+                    special = '\b'; break;
+                case kVK_ForwardDelete:
+                    special = '\x7F'; break;
+            }
+
+            /* Special keys without modifier */
+            if (special && !mo && !mx && !mc && !ms)
+            {
+				/* Enqueue the special character */
+				Term_keypress(special);
+            }
 			/* Normal key without Option, Command, CTRL-Shift -> simple keypress */
-			if (code < 64 && !mo && !mx && (!mc || !ms))
+            else if (!special && code < 64 && !mo && !mx && (
+                        !mc || (!ms && mc && !(' ' <= c && c <= '~'))))
 			{
 				/* Enqueue the keypress */
 				Term_keypress(c);
 			}
-            /* Special key or with modifier */
-            else if (code <= 127)
+            /* Other special keys or with modifier */
+            else
             {
                 int i;
                 char msg[12];
