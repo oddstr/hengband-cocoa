@@ -2574,10 +2574,12 @@ static void initialize_file_paths(void)
     /* Create the save and config directories if necessary */
     NSString *save = [angbandBase stringByAppendingPathComponent:@"/save/"];
     NSString *user = [angbandBase stringByAppendingPathComponent:@"/user/"];
+    NSString *apex = [angbandBase stringByAppendingPathComponent:@"/apex/"];
     NSError *error = nil;
     BOOL success = YES;
     success = success && [fm createDirectoryAtPath:save withIntermediateDirectories:YES attributes:nil error:&error];
     success = success && [fm createDirectoryAtPath:user withIntermediateDirectories:YES attributes:nil error:&error];
+    success = success && [fm createDirectoryAtPath:apex withIntermediateDirectories:YES attributes:nil error:&error];
     if (! success)
     {
         NSRunAlertPanel(@"Unable to create directory", @"Unable to create directory in %@ (error was %@).  Hengband has to quit.", @"Nuts", nil, nil, angbandBase, error);
@@ -2595,10 +2597,12 @@ static void initialize_file_paths(void)
     /* Free first */
     string_free(ANGBAND_DIR_SAVE);
     string_free(ANGBAND_DIR_USER);
+    string_free(ANGBAND_DIR_APEX);
 
     /* Store */
     ANGBAND_DIR_SAVE = string_make([save UTF8String]);
     ANGBAND_DIR_USER = string_make([user UTF8String]);
+    ANGBAND_DIR_APEX = string_make([apex UTF8String]);
 }
 
 static errr type_NSString(NSString *string)
