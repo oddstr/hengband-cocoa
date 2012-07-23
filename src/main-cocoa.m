@@ -71,6 +71,7 @@ enum
 @end
 
 #define ANGBAND_TERM_MAX 8
+#define KEY_BUF_SIZE 1024
 
 /* Whether or not to start new game */
 #define START_NOT_YET 0
@@ -660,6 +661,17 @@ static bool initialized = FALSE;
 
 #endif
 
+/* Function to get rect with new size in which top left point is not changed */
+static NSRect resizeRectAccordingToTopLeft(NSRect rect, NSSize new_size)
+{
+    return NSMakeRect(
+            rect.origin.x,
+            rect.origin.y + rect.size.height - new_size.height,
+                // old y + old height == new y + new height
+            new_size.width,
+            new_size.height
+            );
+}
 
 - (NSRect)rectInImageForTileAtX:(int)x Y:(int)y
 {
@@ -699,11 +711,7 @@ static bool initialized = FALSE;
     {
         /* Get size fit to current cols & rows with new font */
         NSSize newSize = [self colsRows2WindowSize:NSMakeSize(self->cols, self->rows)];
-        NSRect newRect = {oldRect.origin, newSize};
-
-        /* Note that point (0,0) is at the BOTTOM-left corner */
-        /* old y + old height == new y + new height */
-        newRect.origin.y += oldRect.size.height- newSize.height;
+        NSRect newRect = resizeRectAccordingToTopLeft(oldRect, newSize);
 
         /* Resize the window */
         [window setFrame:newRect display:YES];
@@ -880,6 +888,30 @@ static bool initialized = FALSE;
  * Handle window/view size and tile columns and rows.
  */
 
+/* Set window title to Term # - (cols)x(rows) */
+- (void)updateWindowTitle
+{
+    NSString *sizeStr = [NSString stringWithFormat:@"- %dx%d", self->cols, self->rows];
+    NSWindow *window = self->primaryWindow;
+    if (!window) return;
+
+    int termIdx;
+    for (termIdx = 0; termIdx < ANGBAND_TERM_MAX; termIdx++)
+    {
+        if (angband_term[termIdx] == self->terminal)
+        {
+            if (termIdx == 0)
+            {
+                [window setTitle:[@"Hengband " stringByAppendingString:sizeStr]];
+            }
+            else
+            {
+                [window setTitle:[NSString stringWithFormat:@"Term %d %@", termIdx, sizeStr]];
+            }
+        }
+    }
+}
+
 /* set cols & rows and save it to defaults */
 - (void)setCols:(int)new_cols rows:(int)new_rows
 {
@@ -901,6 +933,9 @@ static bool initialized = FALSE;
             break;
         }
     }
+    
+    /* Hack -- show term size on title bar of window */
+    [self updateWindowTitle];
 }
 
 /* Calc how many tiles can be in view size */
@@ -1105,9 +1140,9 @@ static NSMenuItem *superitem(NSMenuItem *self)
     return primaryWindow;
 }
 
-/* Use this NSWindowDelegate method to make subwindows frontmost */
 - (void)windowDidEnterFullScreen:(NSNotification *)notification
 {
+	/* Use this NSWindowDelegate method to make subwindows frontmost */
     int i;
     for (i = 1; i < ANGBAND_TERM_MAX; i++) {
         term *t = angband_term[i];
@@ -1139,6 +1174,11 @@ static NSMenuItem *superitem(NSMenuItem *self)
 
         [window setLevel:NSNormalWindowLevel];
     }
+
+    NSRect frame = [self->primaryWindow frame];
+    NSSize newSize = [self colsRows2WindowSize:[self windowSize2ColsRows:frame.size]];
+    frame = resizeRectAccordingToTopLeft(frame, newSize);
+    [self->primaryWindow setFrame:frame display:YES];
 }
 
 - (void)orderFront
@@ -1316,17 +1356,6 @@ static void Term_init_cocoa(term *t)
     /* Get the window */
     NSWindow *window = [context makePrimaryWindow:(termIdx == 0)];
     
-    /* Set its title and, for auxiliary terms, tentative size */
-    if (termIdx == 0)
-    {
-        [window setTitle:@"Hengband"];
-    }
-    else
-    {
-        [window setTitle:[NSString stringWithFormat:@"Term %d", termIdx]];
-    }
-    
-    
     /* If this is the first term, and we support full screen (Mac OS X Lion or later), then allow it to go full screen (sweet). Allow other terms to be FullScreenAuxilliary, so they can at least show up. Unfortunately in Lion they don't get brought to the full screen space; but they would only make sense on multiple displays anyways so it's not a big loss. */
     if ([window respondsToSelector:@selector(toggleFullScreen:)])
     {
@@ -1353,6 +1382,9 @@ static void Term_init_cocoa(term *t)
     
     /* Tell it about its term. Do this after we've sized it so that the sizing doesn't trigger redrawing and such. */
     [context setTerm:t];
+
+    /* Update window title */
+    [context updateWindowTitle];
     
     /* Only order front if it's the first term. Other terms will be ordered front from update_term_visibility(). This is to work around a problem where Angband aggressively tells us to initialize terms that don't do anything! */
     if (t == angband_term[0]) [context orderFront];
@@ -1923,7 +1955,7 @@ static void wakeup_event_loop(void)
  */
 static term *term_data_link(int i)
 {    
-    int cols, rows;
+    int cols, rows, keys;
     /* Allocate */
     term *newterm = ZNEW(term);
     
@@ -1935,9 +1967,12 @@ static term *term_data_link(int i)
     /* Hack -- not saved */
     if (cols == 0) cols = 80;
     if (rows == 0) rows = 24;
+    
+    /* Hack -- many keys */
+    keys = ((i == 0) ? KEY_BUF_SIZE : 16);
 
     /* Initialize the term */
-    term_init(newterm, cols, rows, 256 /* keypresses, for some reason? */);
+    term_init(newterm, cols, rows, keys);
     
     /* Use a "software" cursor */
     newterm->soft_cursor = TRUE;
@@ -2542,6 +2577,32 @@ static void initialize_file_paths(void)
     ANGBAND_DIR_USER = string_make([user UTF8String]);
 }
 
+static errr type_NSString(NSString *string)
+{
+    /* Paranoia */
+    if (!string) return (-1);
+
+    /* Restrict string size to key buffer size of the term */
+    char buf[KEY_BUF_SIZE];
+
+    /* Tolerant of incovnversible characters */
+    NSData *data = [string dataUsingEncoding:CSTRING_ENC allowLossyConversion:YES];
+    int length = [data length];
+
+    if (length >= KEY_BUF_SIZE)
+    {
+        length = KEY_BUF_SIZE - 1;
+    }
+
+    [data getBytes:buf length:length];
+
+    /* NSData doesn't have null terminate. We append it */
+    buf[length] = '\0';
+
+    return type_string(buf, KEY_BUF_SIZE);
+}
+
+
 @interface AngbandAppDelegate : NSObject {
     IBOutlet NSMenu *terminalsMenu;
 }
@@ -2552,6 +2613,29 @@ static void initialize_file_paths(void)
 @end
 
 @implementation AngbandAppDelegate
+
+/* Handle paste */
+- (void)paste:(id)sender {
+    if (game_in_progress)
+    {
+        /* Get data as string from pasteboard */
+        NSString *string = [[NSPasteboard generalPasteboard]
+            stringForType:NSPasteboardTypeString];
+        if (!string) return;
+
+        if (0 == type_NSString(string))
+        {
+            /* Success. Go back to event loop */
+            wakeup_event_loop();
+        }
+        else
+        {
+            /* Something went wrong */
+            NSBeep();
+        }
+    }
+}
+
 - (IBAction)newGame:sender
 {
     /* Game is in progress */
