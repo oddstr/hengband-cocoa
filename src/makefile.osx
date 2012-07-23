@@ -21,7 +21,7 @@ WARNINGS = -W -Wall -Wno-unused-parameter -Wno-missing-field-initializers
 JUST_C = -std=c99 -Wdeclaration-after-statement
 OBJ_CFLAGS = -std=c99 -x objective-c -mmacosx-version-min=10.5
 ENCODINGS = -DJP -DEUC
-CFLAGS = -g -I. $(WARNINGS) $(OPT) -DMACH_O_CARBON -DHAVE_MKSTEMP $(ENCODINGS) -DC99 -DL64 \
+CFLAGS = -g -I. $(WARNINGS) $(OPT) -DMACH_O_CARBON -DHAVE_MKSTEMP $(ENCODINGS) \
 	-fno-stack-protector $(ARCH)
 LIBS = -framework Cocoa
 DEPLOYMENT_TARGET = MACOSX_DEPLOYMENT_TARGET=10.5
