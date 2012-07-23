@@ -18,18 +18,21 @@ Finder で右クリック→パッケージの内容を表示して下さい。
 
 2. ビルド方法について
 
-変愚蛮怒の最新版ソースを入手し、 src/ 以下に
-cocoa/
-main-cocoa.m
-makefile.osx
-をコピーします。ターミナルで src/ に cd し、
+build/ 以下のファイルを変愚蛮怒の最新版ソースツリーに設置します。
+src/cocoa/ （ディレクトリ全体）
+src/h-type.h （上書き）
+src/main-cocoa.m
+src/makefile.osx
+lib/pref/pref-mac.prf （上書き）
+
+ターミナルで src/ に cd し、
 make -f makefile.osx
-するとビルドできます。（要 Xcode）
+するとツリートップにビルドされます。（要 Xcode）
 
 
 3. 未サポートの機能・既知の問題
 
-・日本語の入力
+・IMEによる日本語入力（ペーストは可能）
 ・テキストのコピー
 
 ・グラフィックタイル
