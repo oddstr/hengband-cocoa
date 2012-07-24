@@ -16,7 +16,10 @@ EXE = hengband
 VERSION = 2.0.0
 COPYRIGHT = 2012 Hengband Dev Team.
 
-ARCH = -arch i386 -arch x86_64
+# For now, buggy in 64bit
+#ARCH = -arch i386 -arch x86_64
+ARCH = -arch i386
+
 WARNINGS = -W -Wall -Wno-unused-parameter -Wno-missing-field-initializers
 JUST_C = -std=c99 -Wdeclaration-after-statement
 OBJ_CFLAGS = -std=c99 -x objective-c -mmacosx-version-min=10.5
