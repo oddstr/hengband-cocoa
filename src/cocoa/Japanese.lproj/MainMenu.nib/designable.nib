@@ -219,6 +219,24 @@
 									<reference key="NSOnImage" ref="433757408"/>
 									<reference key="NSMixedImage" ref="336434334"/>
 								</object>
+								<object class="NSMenuItem" id="487247046">
+									<reference key="NSMenu" ref="285202175"/>
+									<bool key="NSIsDisabled">YES</bool>
+									<bool key="NSIsSeparator">YES</bool>
+									<string key="NSTitle"/>
+									<string key="NSKeyEquiv"/>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="433757408"/>
+									<reference key="NSMixedImage" ref="336434334"/>
+								</object>
+								<object class="NSMenuItem" id="746684730">
+									<reference key="NSMenu" ref="285202175"/>
+									<string key="NSTitle">ムービーを開く...</string>
+									<string key="NSKeyEquiv"/>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="433757408"/>
+									<reference key="NSMixedImage" ref="336434334"/>
+								</object>
 							</array>
 						</object>
 					</object>
@@ -571,6 +589,14 @@
 					</object>
 					<int key="connectionID">343</int>
 				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">openMovie:</string>
+						<reference key="source" ref="27347545"/>
+						<reference key="destination" ref="746684730"/>
+					</object>
+					<int key="connectionID">428</int>
+				</object>
 			</array>
 			<object class="IBMutableOrderedSet" key="objectRecords">
 				<array key="orderedObjects">
@@ -750,6 +776,8 @@
 							<reference ref="631772514"/>
 							<reference ref="608499362"/>
 							<reference ref="962826103"/>
+							<reference ref="487247046"/>
+							<reference ref="746684730"/>
 						</array>
 						<reference key="parent" ref="911133406"/>
 					</object>
@@ -905,6 +933,16 @@
 						<reference key="object" ref="417607266"/>
 						<reference key="parent" ref="910893778"/>
 					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">426</int>
+						<reference key="object" ref="487247046"/>
+						<reference key="parent" ref="285202175"/>
+					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">427</int>
+						<reference key="object" ref="746684730"/>
+						<reference key="parent" ref="285202175"/>
+					</object>
 				</array>
 			</object>
 			<dictionary class="NSMutableDictionary" key="flattenedProperties">
@@ -947,6 +985,8 @@
 				<string key="353.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="422.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="423.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="426.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="427.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="5.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="56.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="57.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -962,7 +1002,7 @@
 			<nil key="activeLocalization"/>
 			<dictionary class="NSMutableDictionary" key="localizations"/>
 			<nil key="sourceID"/>
-			<int key="maxID">425</int>
+			<int key="maxID">428</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<array class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -973,7 +1013,7 @@
 						<string key="editFont:">id</string>
 						<string key="newGame:">id</string>
 						<string key="openGame:">id</string>
-						<string key="showTerminal:">id</string>
+						<string key="openMovie:">id</string>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="actionInfosByName">
 						<object class="IBActionInfo" key="editFont:">
@@ -988,8 +1028,8 @@
 							<string key="name">openGame:</string>
 							<string key="candidateClassName">id</string>
 						</object>
-						<object class="IBActionInfo" key="showTerminal:">
-							<string key="name">showTerminal:</string>
+						<object class="IBActionInfo" key="openMovie:">
+							<string key="name">openMovie:</string>
 							<string key="candidateClassName">id</string>
 						</object>
 					</dictionary>

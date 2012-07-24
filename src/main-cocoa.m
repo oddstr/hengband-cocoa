@@ -2667,6 +2667,7 @@ static errr type_NSString(NSString *string)
 - (IBAction)newGame:sender;
 - (IBAction)editFont:sender;
 - (IBAction)openGame:sender;
+- (IBAction)openMovie:sender;
 
 @end
 
@@ -2757,6 +2758,44 @@ static errr type_NSString(NSString *string)
     [(id)angbandContext setSelectionFont:newFont];
     
     NSEnableScreenUpdates();
+}
+
+/* Open recorded movie file */
+- (IBAction)openMovie:sender
+{
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    int panelResult;
+    
+    /* Set up an open panel */
+    NSOpenPanel* panel = [NSOpenPanel openPanel];
+    [panel setCanChooseFiles:YES];
+    [panel setCanChooseDirectories:NO];
+    [panel setResolvesAliases:YES];
+    [panel setTreatsFilePackagesAsDirectories:YES];
+    [panel setAllowedFileTypes:[NSArray arrayWithObject:@"amv"]];
+    [panel setTitle:@"Open Movie File"];
+    [panel setDirectoryURL:[NSURL fileURLWithPath:
+        [get_data_directory() stringByAppendingPathComponent:@"/user/"]]];
+    
+    /* Run it */
+    panelResult = [panel runModal];
+    if (panelResult == NSFileHandlingPanelOKButton)
+    {
+        NSArray* filenames = [panel filenames];
+        if ([filenames count] > 0)
+        {
+            char buf[1024];
+            [[filenames objectAtIndex:0] getFileSystemRepresentation:buf maxLength:1024];
+
+            /* We use _aux() to prevent from path prefixed by ANGBAND_DIR_USER */
+            prepare_browse_movie_aux(buf);
+
+            /* tell event loop to play_game() */
+            start_when_ready = START_OPEN_GAME;
+        }
+    }
+    
+    [pool drain];
 }
 
 - (IBAction)openGame:sender
