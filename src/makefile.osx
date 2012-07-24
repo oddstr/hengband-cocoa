@@ -186,7 +186,7 @@ dist: install
 	cp ../autopick.txt ../autopick_eng.txt ../readme.txt ../readme_angband \
 		../readme_eng.txt disttemp/Docs
 	mkdir -p disttemp/build
-	cp ../lib/pref/pref-mac.prf main-cocoa.m makefile.osx h-type.h disttemp/build
+	cp ../lib/pref/pref-mac.prf main-cocoa.m makefile.osx disttemp/build
 	cp -R -p cocoa disttemp/build
 	cp ../readme_mac_jp.txt disttemp
 	cp -R -p "$(APPBNDL)" disttemp

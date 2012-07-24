@@ -1,21 +1,11 @@
 /* File: h-type.h */
 
-#ifndef INCLUDED_H_TYPE_H
-#define INCLUDED_H_TYPE_H
-
-#if defined(__STDC__)
-# if __STDC_VERSION__ >= 199901L
-#  define C99
-# endif
-#endif
-
-#if defined(__LP64__)
-# define L64
-#endif
-
 #ifdef C99
 #include <stdint.h>
 #endif
+
+#ifndef INCLUDED_H_TYPE_H
+#define INCLUDED_H_TYPE_H
 
 /*
  * Basic "types".
