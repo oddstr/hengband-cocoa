@@ -241,6 +241,22 @@
 									<reference key="NSOnImage" ref="433757408"/>
 									<reference key="NSMixedImage" ref="336434334"/>
 								</object>
+								<object class="NSMenuItem" id="402694708">
+									<reference key="NSMenu" ref="285202175"/>
+									<string key="NSTitle">Broadcast...</string>
+									<string key="NSKeyEquiv"/>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="433757408"/>
+									<reference key="NSMixedImage" ref="336434334"/>
+								</object>
+								<object class="NSMenuItem" id="178880994">
+									<reference key="NSMenu" ref="285202175"/>
+									<string key="NSTitle">Watch Broadcast...</string>
+									<string key="NSKeyEquiv"/>
+									<int key="NSMnemonicLoc">2147483647</int>
+									<reference key="NSOnImage" ref="433757408"/>
+									<reference key="NSMixedImage" ref="336434334"/>
+								</object>
 							</array>
 						</object>
 					</object>
@@ -605,6 +621,22 @@
 					</object>
 					<int key="connectionID">430</int>
 				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">chuukeiServer:</string>
+						<reference key="source" ref="27347545"/>
+						<reference key="destination" ref="402694708"/>
+					</object>
+					<int key="connectionID">433</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">chuukeiClient:</string>
+						<reference key="source" ref="27347545"/>
+						<reference key="destination" ref="178880994"/>
+					</object>
+					<int key="connectionID">434</int>
+				</object>
 			</array>
 			<object class="IBMutableOrderedSet" key="objectRecords">
 				<array key="orderedObjects">
@@ -786,6 +818,8 @@
 							<reference ref="962826103"/>
 							<reference ref="826665205"/>
 							<reference ref="326174752"/>
+							<reference ref="402694708"/>
+							<reference ref="178880994"/>
 						</array>
 						<reference key="parent" ref="911133406"/>
 					</object>
@@ -951,6 +985,16 @@
 						<reference key="object" ref="326174752"/>
 						<reference key="parent" ref="285202175"/>
 					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">431</int>
+						<reference key="object" ref="402694708"/>
+						<reference key="parent" ref="285202175"/>
+					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">432</int>
+						<reference key="object" ref="178880994"/>
+						<reference key="parent" ref="285202175"/>
+					</object>
 				</array>
 			</object>
 			<dictionary class="NSMutableDictionary" key="flattenedProperties">
@@ -995,6 +1039,8 @@
 				<string key="423.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="426.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="427.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="431.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="432.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="5.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="56.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="57.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
@@ -1010,7 +1056,7 @@
 			<nil key="activeLocalization"/>
 			<dictionary class="NSMutableDictionary" key="localizations"/>
 			<nil key="sourceID"/>
-			<int key="maxID">430</int>
+			<int key="maxID">434</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<array class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -1018,12 +1064,22 @@
 					<string key="className">AngbandAppDelegate</string>
 					<string key="superclassName">NSObject</string>
 					<dictionary class="NSMutableDictionary" key="actions">
+						<string key="chuukeiClient:">id</string>
+						<string key="chuukeiServer:">id</string>
 						<string key="editFont:">id</string>
 						<string key="newGame:">id</string>
 						<string key="openGame:">id</string>
 						<string key="openMovie:">id</string>
 					</dictionary>
 					<dictionary class="NSMutableDictionary" key="actionInfosByName">
+						<object class="IBActionInfo" key="chuukeiClient:">
+							<string key="name">chuukeiClient:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="chuukeiServer:">
+							<string key="name">chuukeiServer:</string>
+							<string key="candidateClassName">id</string>
+						</object>
 						<object class="IBActionInfo" key="editFont:">
 							<string key="name">editFont:</string>
 							<string key="candidateClassName">id</string>

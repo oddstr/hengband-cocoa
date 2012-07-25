@@ -2668,6 +2668,10 @@ static errr type_NSString(NSString *string)
 - (IBAction)editFont:sender;
 - (IBAction)openGame:sender;
 - (IBAction)openMovie:sender;
+#ifdef CHUUKEI
+- (IBAction)chuukeiServer:sender;
+- (IBAction)chuukeiClient:sender;
+#endif /* CHUUKEI */
 
 @end
 
@@ -2759,6 +2763,90 @@ static errr type_NSString(NSString *string)
     
     NSEnableScreenUpdates();
 }
+
+#ifdef CHUUKEI
+/* Connect to chuukei server */
+static BOOL open_chuukei_pref()
+{
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    int panelResult;
+    BOOL success = NO;
+    NSString *xtraDir = [get_data_directory() stringByAppendingPathComponent:@"/xtra/"];
+    
+    /* Set up an open panel */
+    NSOpenPanel* panel = [NSOpenPanel openPanel];
+    [panel setCanChooseFiles:YES];
+    [panel setCanChooseDirectories:NO];
+    [panel setResolvesAliases:YES];
+    [panel setTreatsFilePackagesAsDirectories:YES];
+    [panel setTitle:@"Select server pref file"];
+    [panel setDirectoryURL:[NSURL fileURLWithPath:xtraDir]];
+    
+    /* Run it */
+    panelResult = [panel runModal];
+    if (panelResult == NSFileHandlingPanelOKButton)
+    {
+        NSArray* filenames = [panel filenames];
+        if ([filenames count] > 0)
+        {
+            NSString *fullPath = [filenames objectAtIndex:0];
+            NSString *lastComponent = [fullPath lastPathComponent];
+
+            /* Check if file is in xtra dir */
+            if ([[xtraDir stringByAppendingPathComponent:lastComponent]
+                                         isEqualToString:fullPath])
+            {
+                char buf[1024];
+                strncpy(buf, [lastComponent UTF8String], 1024);
+                success = (0 == connect_chuukei_server(buf));
+                plog(format("Remote server connection %s.", success ? "OK" : "failed"));
+            }
+            else
+            {
+                plog("Select chuukei pref file in xtra dir");
+            }
+        }
+    }
+
+    [pool drain];
+
+    return success;
+}
+
+- (IBAction)chuukeiServer:sender
+{
+    if ([sender state] == NSOnState)
+    {
+        chuukei_server = FALSE;
+        [sender setState:NSOffState];
+    }
+    else
+    {
+        if (open_chuukei_pref())
+        {
+            chuukei_server = TRUE;
+
+            [sender setState:NSOnState];
+
+            plog("Select New or Open from File menu, and your play will be broadcasted!");
+
+            /* Back to event loop to wait for user's command */
+        }
+    }
+}
+
+- (IBAction)chuukeiClient:sender
+{
+    if (open_chuukei_pref())
+    {
+        chuukei_server = FALSE;
+        chuukei_client = TRUE;
+
+        /* tell event loop to play_game() */
+        start_when_ready = START_OPEN_GAME;
+    }
+}
+#endif /* CHUUKEI */
 
 /* Open recorded movie file */
 - (IBAction)openMovie:sender
@@ -2871,34 +2959,20 @@ static errr type_NSString(NSString *string)
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem
 {
     SEL sel = [menuItem action];
-    if (sel == @selector(newGame:))
-    {
-        return ! game_in_progress;
-    }
-    else if (sel == @selector(editFont:))
-    {
-        return YES;
-    }
-    else if (sel == @selector(openGame:))
-    {
-        return ! game_in_progress;
-    }
-    else if (sel == @selector(saveGame:))
+    if (sel == @selector(saveGame:))
     {
         return (game_in_progress && character_generated && can_save);
     }
-    else if (sel == @selector(setRefreshRate:) && [superitem(menuItem) tag] == 150)
+    else if (sel == @selector(newGame:)
+          || sel == @selector(chuukeiServer:)
+          || sel == @selector(chuukeiClient:)
+          || sel == @selector(openMovie:)
+          || sel == @selector(openGame:)
+            )
     {
-        [menuItem setState:[menuItem tag] == frames_per_second];
-        return YES;
+        return ! game_in_progress;
     }
     else return YES;
-}
-
-- (IBAction)setRefreshRate:(NSMenuItem *)menuItem
-{
-    frames_per_second = [menuItem tag];
-    [[NSUserDefaults angbandDefaults] setInteger:frames_per_second forKey:@"FramesPerSecond"];
 }
 
 - (void)applicationDidFinishLaunching:sender
