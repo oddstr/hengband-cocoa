@@ -130,18 +130,23 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	@mkdir -p $(APPRES)/English.lproj/MainMenu.nib 
 	@mkdir -p $(APPRES)/Japanese.lproj/MainMenu.nib 
 	@mkdir -p $(APPRES)/lib/apex
+	@mkdir -p $(APPRES)/lib/bone
 	@mkdir -p $(APPRES)/lib/data
 	@mkdir -p $(APPRES)/lib/edit
 	@mkdir -p $(APPRES)/lib/file
 	@mkdir -p $(APPRES)/lib/help
+	@mkdir -p $(APPRES)/lib/info
 	@mkdir -p $(APPRES)/lib/save
 	@mkdir -p $(APPRES)/lib/pref
 	@mkdir -p $(APPRES)/lib/script
 	@mkdir -p $(APPRES)/lib/user
+	@mkdir -p $(APPRES)/lib/xtra/font
 	@mkdir -p $(APPRES)/lib/xtra/graf
+	@mkdir -p $(APPRES)/lib/xtra/music
 	@mkdir -p $(APPRES)/lib/xtra/sound
 
 	@echo copying files...
+	@cp ../lib/apex/readme.txt ../lib/apex/h_scores.raw $(APPRES)/lib/apex
 	@cp ../lib/edit/*.txt $(APPRES)/lib/edit
 	@cp ../lib/file/*.txt $(APPRES)/lib/file
 	@cp ../lib/help/*.txt $(APPRES)/lib/help
@@ -151,8 +156,8 @@ install: $(EXE) $(ICONFILES) $(PLIST) $(LIBFILES)
 	# 'optionally' install sound and graphics tiles, if present
 	# TODO: read the tile pngs from $(APPRES)/lib/xtra/graf/
 	# so we can just recursively copy that directory.
-	-cp ../lib/xtra/graf/graphics.txt $(APPRES)/lib/xtra/graf
-	-cp ../lib/xtra/graf/*.png $(APPRES)/
+	-cp ../lib/xtra/font/*.FON ../lib/xtra/font/*.fnt $(APPRES)/lib/xtra/font
+	-cp ../lib/xtra/graf/*.bmp $(APPRES)/lib/xtra/graf
 	-cp ../lib/xtra/sound/*.wav $(APPRES)/lib/xtra/sound
 	-cp ../lib/xtra/sound/sound.cfg $(APPRES)/lib/xtra/sound
 
