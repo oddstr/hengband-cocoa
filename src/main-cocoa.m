@@ -2545,6 +2545,23 @@ void fsetfileinfo(cptr path, u32b fcreator, u32b ftype)
 
 /*** Main program ***/
 
+static BOOL prepare_data_dir(NSString* dstPath, NSString* srcPath, NSError** error)
+{
+    NSFileManager *fm = [NSFileManager defaultManager];
+    BOOL isDir;
+
+    /* Check if dir exists */
+    if ([fm fileExistsAtPath:dstPath isDirectory:&isDir] && isDir)
+    {
+        /* dstPath exists and is a directory. Assume ok. */
+        return YES;
+    }
+    else
+    {
+        /* dstPath does not exit or is not a directory. Try to copy srcPath */
+        return [fm copyItemAtPath:srcPath toPath:dstPath error:error];
+    }
+}
 
 /* Set up file paths, including the lib directory */
 static void initialize_file_paths(void)
@@ -2566,6 +2583,10 @@ static void initialize_file_paths(void)
     [libString getFileSystemRepresentation:libpath maxLength:sizeof libpath];
     strlcat(libpath, "/", sizeof libpath);
     
+    /* First init paths with dirs in the bundle */
+    init_file_paths(libpath);
+
+    
     /* Get the path to the Angband directory in ~/Documents */
     NSString *angbandBase = get_data_directory();
     [angbandBase getFileSystemRepresentation:basepath maxLength:sizeof basepath];
@@ -2575,19 +2596,26 @@ static void initialize_file_paths(void)
     NSString *save = [angbandBase stringByAppendingPathComponent:@"/save/"];
     NSString *user = [angbandBase stringByAppendingPathComponent:@"/user/"];
     NSString *apex = [angbandBase stringByAppendingPathComponent:@"/apex/"];
+    NSString *xtra = [angbandBase stringByAppendingPathComponent:@"/xtra/"];
+
+    NSString *saveInBundle = [libString stringByAppendingPathComponent:@"/save/"];
+    NSString *userInBundle = [libString stringByAppendingPathComponent:@"/user/"];
+    NSString *apexInBundle = [libString stringByAppendingPathComponent:@"/apex/"];
+    NSString *xtraInBundle = [libString stringByAppendingPathComponent:@"/xtra/"];
+
     NSError *error = nil;
     BOOL success = YES;
-    success = success && [fm createDirectoryAtPath:save withIntermediateDirectories:YES attributes:nil error:&error];
-    success = success && [fm createDirectoryAtPath:user withIntermediateDirectories:YES attributes:nil error:&error];
-    success = success && [fm createDirectoryAtPath:apex withIntermediateDirectories:YES attributes:nil error:&error];
+    success = success && prepare_data_dir(save, saveInBundle, &error);
+    success = success && prepare_data_dir(user, userInBundle, &error);
+    success = success && prepare_data_dir(apex, apexInBundle, &error);
+    success = success && prepare_data_dir(xtra, xtraInBundle, &error);
+
     if (! success)
     {
         NSRunAlertPanel(@"Unable to create directory", @"Unable to create directory in %@ (error was %@).  Hengband has to quit.", @"Nuts", nil, nil, angbandBase, error);
         [[NSApplication sharedApplication] presentError:error];
         exit(0);
     }
-    
-    init_file_paths(libpath);
 
     /*
      * Hack -- init_file_paths can't locate those data-storing dirs
@@ -2598,11 +2626,13 @@ static void initialize_file_paths(void)
     string_free(ANGBAND_DIR_SAVE);
     string_free(ANGBAND_DIR_USER);
     string_free(ANGBAND_DIR_APEX);
+    string_free(ANGBAND_DIR_XTRA);
 
     /* Store */
     ANGBAND_DIR_SAVE = string_make([save UTF8String]);
     ANGBAND_DIR_USER = string_make([user UTF8String]);
     ANGBAND_DIR_APEX = string_make([apex UTF8String]);
+    ANGBAND_DIR_XTRA = string_make([xtra UTF8String]);
 }
 
 static errr type_NSString(NSString *string)
