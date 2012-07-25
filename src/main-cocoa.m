@@ -1067,16 +1067,6 @@ static NSRect resizeRectAccordingToTopLeft(NSRect rect, NSSize new_size)
     }
 }
 
-
-static NSMenuItem *superitem(NSMenuItem *self)
-{
-    NSMenu *supermenu = [[self menu] supermenu];
-    int index = [supermenu indexOfItemWithSubmenu:[self menu]];
-    if (index == -1) return nil;
-    else return [supermenu itemAtIndex:index];
-}
-
-
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem
 {
     int tag = [menuItem tag];
