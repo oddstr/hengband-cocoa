@@ -55,11 +55,15 @@ OSX_OBJS = main-cocoa.o
 # Build the "Hengband" program
 #
 
+# disable 64-bit build
+#$(EXE).o: $(OBJS)
+#	$(LD) -r -arch x86_64 -o $@.x86_64 $(OBJS)
+#	$(LD) -r -arch i386 -o $@.i386 $(OBJS)
+#	lipo -arch x86_64 $@.x86_64 -arch i386 $@.i386 -create -output $(EXE).o
 
 $(EXE).o: $(OBJS)
-	$(LD) -r -arch x86_64 -o $@.x86_64 $(OBJS)
 	$(LD) -r -arch i386 -o $@.i386 $(OBJS)
-	lipo -arch x86_64 $@.x86_64 -arch i386 $@.i386 -create -output $(EXE).o
+	lipo -arch i386 $@.i386 -create -output $(EXE).o
 
 $(EXE): $(EXE).o $(OSX_OBJS)
 	$(DEPLOYMENT_TARGET) $(CC) $(CFLAGS) $(LDFLAGS) -o $(EXE) $(EXE).o $(OSX_OBJS) $(LIBS) 
