@@ -2595,6 +2595,7 @@ static void initialize_file_paths(void)
 
     NSError *error = nil;
     BOOL success = YES;
+    success = success && [fm createDirectoryAtPath:angbandBase withIntermediateDirectories:YES attributes:nil error:&error];
     success = success && prepare_data_dir(save, saveInBundle, &error);
     success = success && prepare_data_dir(user, userInBundle, &error);
     success = success && prepare_data_dir(apex, apexInBundle, &error);
