@@ -1622,7 +1622,7 @@ static errr Term_xtra_cocoa(int n, int v)
             NSRect imageRect = {NSZeroPoint, [angbandContext imageSize]};            
             NSRectFillUsingOperation(imageRect, NSCompositeCopy);
 
-            [[NSColor colorWithSRGBRed:0.2 green:0.2 blue:0.2 alpha:1] set];
+            [[NSColor colorWithCalibratedRed:0.2 green:0.2 blue:0.2 alpha:1] set];
             NSFrameRectWithWidth(imageRect, 1);
 
             [angbandContext unlockFocus];
@@ -2674,7 +2674,7 @@ static errr type_NSString(NSString *string)
     {
         /* Get data as string from pasteboard */
         NSString *string = [[NSPasteboard generalPasteboard]
-            stringForType:NSPasteboardTypeString];
+            stringForType:NSStringPboardType];
         if (!string) return;
 
         if (0 == type_NSString(string))
@@ -2771,10 +2771,9 @@ static BOOL open_chuukei_pref()
     [panel setResolvesAliases:YES];
     [panel setTreatsFilePackagesAsDirectories:YES];
     [panel setTitle:@"Select server pref file"];
-    [panel setDirectoryURL:[NSURL fileURLWithPath:xtraDir]];
     
     /* Run it */
-    panelResult = [panel runModal];
+    panelResult = [panel runModalForDirectory:xtraDir file:nil types:nil];
     if (panelResult == NSFileHandlingPanelOKButton)
     {
         NSArray* filenames = [panel filenames];
@@ -2844,7 +2843,11 @@ static BOOL open_chuukei_pref()
 {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     int panelResult;
+    NSString* startingDirectory;
     
+    /* Get where we think the save files are */
+    startingDirectory = [get_data_directory() stringByAppendingPathComponent:@"/user/"];
+
     /* Set up an open panel */
     NSOpenPanel* panel = [NSOpenPanel openPanel];
     [panel setCanChooseFiles:YES];
@@ -2853,11 +2856,9 @@ static BOOL open_chuukei_pref()
     [panel setTreatsFilePackagesAsDirectories:YES];
     [panel setAllowedFileTypes:[NSArray arrayWithObject:@"amv"]];
     [panel setTitle:@"Open Movie File"];
-    [panel setDirectoryURL:[NSURL fileURLWithPath:
-        [get_data_directory() stringByAppendingPathComponent:@"/user/"]]];
     
     /* Run it */
-    panelResult = [panel runModal];
+    panelResult = [panel runModalForDirectory:startingDirectory file:nil types:nil];
     if (panelResult == NSFileHandlingPanelOKButton)
     {
         NSArray* filenames = [panel filenames];
