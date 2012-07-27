@@ -3,6 +3,8 @@ hengband-cocoa
 This project is a Mac OS X cocoa frontend of Hengband, one of the most popular  
 Angband-clone roguelike game from Japan. Code is greatly inherited from recent  
 vanilla Angband sorce tree.
+Works on Mac OS X Lion, and maybe on Snow Leopard.
+Not no Leopard, which is now under estimation.
 
 ## Build
     $ cd src
@@ -13,7 +15,8 @@ vanilla Angband sorce tree.
 # 変愚蛮怒 Mac OS X
 
 ローグライクゲーム、変愚蛮怒 2.0.0 の Mac フロントエンドです。  
-Lion にて動作確認。未確認ですが、 OSX 10.5 以上で動くと思われます。  
+Mac OS X 10.7.4 にて動作確認。 
+10.5では現状では動作しません。→対応可能か確認中。
 
 ## ビルド
 
