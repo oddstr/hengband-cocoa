@@ -1641,7 +1641,6 @@ static errr Term_xtra_cocoa(int n, int v)
             /* Delay (milliseconds) */
         case TERM_XTRA_DELAY:
         {
-#if 0
             /* If needed */
             if (v > 0)
             {
@@ -1659,7 +1658,6 @@ static errr Term_xtra_cocoa(int n, int v)
                 } while ([date timeIntervalSinceNow] >= 0);
                 
             }
-#endif /* 0 */
             
             /* Success */
             break;
